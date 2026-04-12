@@ -12,7 +12,7 @@ export interface TerrainData {
 }
 
 const TERRAIN_THRESHOLD = 0.05;
-const LAND_HEIGHT_SCALE = 0.35;
+const LAND_HEIGHT_SCALE = 0.5;
 // Ocean vertices pushed below ocean mesh to avoid dark gap
 const NOISE_SCALE = 0.8;
 const NOISE_OCTAVES = 6;
@@ -20,7 +20,7 @@ const NOISE_LACUNARITY = 2.0;
 const NOISE_PERSISTENCE = 0.5;
 
 // Land colors by elevation
-const COLOR_BEACH = new THREE.Color('#c8b878');
+const COLOR_BEACH = new THREE.Color('#88cc55');
 const COLOR_GRASS_LOW = new THREE.Color('#55cc33');
 const COLOR_GRASS_MID = new THREE.Color('#44bb44');
 const COLOR_ROCKY = new THREE.Color('#99aa55');
@@ -32,7 +32,7 @@ const COLOR_OCEAN_SHALLOW = new THREE.Color('#55ccee');
 const COLOR_OCEAN_COAST = new THREE.Color('#77ddcc');
 
 export function generateTerrain(seed?: number): TerrainData {
-  const geometry = new THREE.IcosahedronGeometry(GLOBE_RADIUS, 80);
+  const geometry = new THREE.IcosahedronGeometry(GLOBE_RADIUS, 120);
   const posAttr = geometry.getAttribute('position');
   const vertexCount = posAttr.count;
 
