@@ -399,13 +399,29 @@ function inDesert(lat: number, lng: number): number {
 }
 
 export function createWorldMask(): WorldMask {
-  function isLand(lat: number, lng: number): boolean {
-    if (lat < -65) return true;  // Antarctica
-    if (lat > 78) return true;   // Arctic ice
-    for (const continent of CONTINENTS) {
-      if (pointInPolygon(lng, lat, continent)) return true;
+  // Pre-compute land bitmap for O(1) lookups (720x360 = 1° resolution)
+  const BW = 720, BH = 360;
+  const bitmap = new Uint8Array(BW * BH);
+  for (let iy = 0; iy < BH; iy++) {
+    const lat = 90 - iy * (180 / BH);
+    for (let ix = 0; ix < BW; ix++) {
+      const lng = -180 + ix * (360 / BW);
+      let land = false;
+      if (lat < -65 || lat > 78) land = true;
+      else {
+        for (const continent of CONTINENTS) {
+          if (pointInPolygon(lng, lat, continent)) { land = true; break; }
+        }
+      }
+      bitmap[iy * BW + ix] = land ? 1 : 0;
     }
-    return false;
+  }
+
+  function isLand(lat: number, lng: number): boolean {
+    const ix = Math.floor(((lng + 180) / 360) * BW) % BW;
+    const iy = Math.floor(((90 - lat) / 180) * BH);
+    const iyc = Math.max(0, Math.min(BH - 1, iy));
+    return bitmap[iyc * BW + ix] === 1;
   }
 
   function getBiome(lat: number, lng: number): string {

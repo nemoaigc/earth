@@ -168,10 +168,6 @@ export function generateTerrain(): TerrainData {
     }
   }
 
-  console.log(`[terrain] vertices: ${vertexCount}, land: ${vertexCount - oceanCount}, ocean: ${oceanCount}, landPoints: ${landPoints.length}, coastPoints: ${coastPoints.length}`);
-  const biomeCounts: Record<string, number> = {};
-  for (const p of landPoints) biomeCounts[p.biome] = (biomeCounts[p.biome] || 0) + 1;
-  console.log('[terrain] biomes:', biomeCounts);
 
   geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
   geometry.computeVertexNormals();
