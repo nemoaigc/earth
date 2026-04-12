@@ -5,6 +5,7 @@ import { PalmTrees } from './features/PalmTrees';
 import { Rocks } from './features/Rocks';
 import { Villages } from './features/Villages';
 import { Windmills } from './features/Windmills';
+import { Mountains } from './features/Mountains';
 import { Lighthouses } from './features/Lighthouses';
 import { Balloons } from './features/Balloons';
 import { SkyDome } from './sky/SkyDome';
@@ -59,6 +60,9 @@ scene.add(villages.group);
 
 const windmills = new Windmills(globe.terrainData);
 scene.add(windmills.group);
+
+const mountains = new Mountains(globe.terrainData);
+scene.add(mountains.group);
 
 const lighthouses = new Lighthouses(globe.terrainData);
 scene.add(lighthouses.group);
@@ -145,6 +149,7 @@ function animate(): void {
   rocks.update(elapsed);
   villages.update(elapsed);
   windmills.update(elapsed);
+  mountains.update(elapsed);
   lighthouses.update(elapsed);
   balloons.update(elapsed);
 
