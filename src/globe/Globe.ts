@@ -19,8 +19,8 @@ export class Globe {
     this.terrainData = generateTerrain();
     this.terrainMaterial = new THREE.MeshPhongMaterial({
       vertexColors: true,
-      shininess: 5,
-      flatShading: false,
+      shininess: 8,
+      flatShading: true,
     });
     this.terrain = new THREE.Mesh(
       this.terrainData.geometry,
