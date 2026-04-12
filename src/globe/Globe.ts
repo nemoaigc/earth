@@ -37,8 +37,8 @@ export class Globe {
     this.group.add(this.atmosphere.mesh);
   }
 
-  update(time: number, sunDirection: THREE.Vector3, atmosphereColor: THREE.Color): void {
+  update(time: number, atmosphereColor: THREE.Color): void {
     this.ocean.update(time);
-    this.atmosphere.update(sunDirection, atmosphereColor);
+    this.atmosphere.updateColor(atmosphereColor);
   }
 }

@@ -115,7 +115,7 @@ function animate(): void {
     (globe.ocean.material as any)._foamColorUniform.value.copy(state.oceanFoam);
   }
 
-  globe.update(elapsed, state.sunDirection, state.atmosphereColor);
+  globe.update(elapsed, state.atmosphereColor);
 
   // --- Sky elements ---
   clouds.update(elapsed, state.cloudOpacity);

@@ -50,7 +50,7 @@ export class Atmosphere {
     this.mesh = new THREE.Mesh(geometry, this.material);
   }
 
-  update(_sunDirection: THREE.Vector3, color: THREE.Color): void {
+  updateColor(color: THREE.Color): void {
     this.material.uniforms.uColor.value.copy(color);
   }
 }

@@ -81,8 +81,24 @@ export function generateTerrain(): TerrainData {
     const biome = mask.getBiome(lat, lng);
 
     if (biome !== 'ocean') {
+      // Check distance to coast: sample nearby points for ocean
+      let coastDist = 1.0; // 1.0 = far from coast
+      for (let step = 1; step <= 5; step++) {
+        const d = step * 2; // check 2°, 4°, 6°, 8°, 10° away
+        const nearOcean =
+          !mask.isLand(lat + d, lng) || !mask.isLand(lat - d, lng) ||
+          !mask.isLand(lat, lng + d) || !mask.isLand(lat, lng - d) ||
+          !mask.isLand(lat + d, lng + d) || !mask.isLand(lat - d, lng - d);
+        if (nearOcean) {
+          coastDist = step / 5; // 0.2 = very close, 1.0 = far
+          break;
+        }
+      }
+      // Smooth ramp: height scales with distance from coast
+      const coastFactor = coastDist * coastDist; // quadratic ramp — gentle near coast
+
       const noise = Math.abs(sampleNoise(nx, ny, nz, 5, 2.0, 0.5, 1.2));
-      const heightNorm = noise;
+      const heightNorm = noise * coastFactor;
       const height = heightNorm * LAND_HEIGHT_SCALE;
       const newRadius = GLOBE_RADIUS + height;
 
