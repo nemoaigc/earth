@@ -16,6 +16,8 @@ import { Stars } from './sky/Stars';
 import { Rain } from './sky/Rain';
 import { DayNightCycle } from './systems/DayNightCycle';
 import { CameraController } from './systems/Camera';
+import { CSS2DRenderer } from 'three/examples/jsm/renderers/CSS2DRenderer.js';
+import { Labels } from './features/Labels';
 
 // --- Renderer ---
 const renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -28,6 +30,14 @@ if (appEl) {
   appEl.innerHTML = '';
   appEl.appendChild(renderer.domElement);
 }
+
+const labelRenderer = new CSS2DRenderer();
+labelRenderer.setSize(window.innerWidth, window.innerHeight);
+labelRenderer.domElement.style.position = 'absolute';
+labelRenderer.domElement.style.top = '0';
+labelRenderer.domElement.style.left = '0';
+labelRenderer.domElement.style.pointerEvents = 'none';
+appEl?.appendChild(labelRenderer.domElement);
 
 // --- Scene ---
 const scene = new THREE.Scene();
@@ -65,6 +75,9 @@ const flowers = new Flowers(globe.terrainData);
 scene.add(flowers.group);
 const grass = new Grass(globe.terrainData);
 scene.add(grass.group);
+
+const labels = new Labels();
+scene.add(labels.group);
 
 // --- Sky elements ---
 const skyDome = new SkyDome();
@@ -141,11 +154,14 @@ function animate(): void {
 
   cameraController.update(deltaTime);
   renderer.render(scene, cameraController.camera);
+  labels.update(cameraController.camera);
+  labelRenderer.render(scene, cameraController.camera);
 }
 
 animate();
 
 window.addEventListener('resize', () => {
   renderer.setSize(window.innerWidth, window.innerHeight);
+  labelRenderer.setSize(window.innerWidth, window.innerHeight);
   cameraController.resize(window.innerWidth / window.innerHeight);
 });
