@@ -2,15 +2,15 @@ import * as THREE from 'three';
 import type { TerrainData } from '../globe/terrain';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 
-const PALM_COUNT = 60;
+const PALM_COUNT = 80;
 
 function buildPalmGeometry(): THREE.BufferGeometry {
   const parts: THREE.BufferGeometry[] = [];
 
   // --- Trunk: slightly curved cylinder ---
   const trunkSegments = 8;
-  const trunkHeight = 0.22;
-  const trunkRadius = 0.012;
+  const trunkHeight = 0.35;
+  const trunkRadius = 0.018;
   const trunkGeo = new THREE.CylinderGeometry(
     trunkRadius * 0.6,
     trunkRadius,
@@ -41,7 +41,7 @@ function buildPalmGeometry(): THREE.BufferGeometry {
   parts.push(trunkGeo);
 
   // --- Fronds ---
-  const frondColor = new THREE.Color('#2d8a1e');
+  const frondColor = new THREE.Color('#33bb22');
   const frondCount = 6;
   for (let f = 0; f < frondCount; f++) {
     const angle = (f / frondCount) * Math.PI * 2;

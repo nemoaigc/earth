@@ -20,14 +20,14 @@ const NOISE_LACUNARITY = 2.0;
 const NOISE_PERSISTENCE = 0.5;
 
 // Land colors by elevation
-const COLOR_GRASS_LOW = new THREE.Color('#5aad45');
-const COLOR_GRASS_MID = new THREE.Color('#6ec455');
-const COLOR_ROCKY = new THREE.Color('#a08860');
-const COLOR_SNOW = new THREE.Color('#e0d8c8');
+const COLOR_GRASS_LOW = new THREE.Color('#55cc33');
+const COLOR_GRASS_MID = new THREE.Color('#44bb44');
+const COLOR_ROCKY = new THREE.Color('#99aa55');
+const COLOR_SNOW = new THREE.Color('#ddddcc');
 
-// Ocean colors
-const COLOR_OCEAN_DEEP = new THREE.Color('#0e3d7a');
-const COLOR_OCEAN_SHALLOW = new THREE.Color('#1a6aaa');
+// Ocean colors - bright turquoise
+const COLOR_OCEAN_DEEP = new THREE.Color('#22aadd');
+const COLOR_OCEAN_SHALLOW = new THREE.Color('#55ccee');
 
 export function generateTerrain(seed?: number): TerrainData {
   const geometry = new THREE.IcosahedronGeometry(GLOBE_RADIUS, 80);

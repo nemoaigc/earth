@@ -1,8 +1,8 @@
 import * as THREE from 'three';
 import type { TerrainData } from '../globe/terrain';
 
-const TREE_COUNT = 400;
-const TREE_COLORS = ['#2d5a1e', '#3a7a2a', '#4a8a35', '#2a6a20', '#357a28'];
+const TREE_COUNT = 600;
+const TREE_COLORS = ['#33aa22', '#44cc33', '#55dd44', '#2d9922', '#44bb28'];
 
 export class Trees {
   group: THREE.Group;
@@ -14,9 +14,8 @@ export class Trees {
     this.group = new THREE.Group();
     this.timeUniform = { value: 0 };
 
-    const geometry = new THREE.ConeGeometry(0.06, 0.18, 6);
-    // Shift geometry so the base sits at y=0
-    geometry.translate(0, 0.09, 0);
+    const geometry = new THREE.ConeGeometry(0.08, 0.35, 6);
+    geometry.translate(0, 0.175, 0);
 
     this.material = new THREE.MeshPhongMaterial({
       vertexColors: false,

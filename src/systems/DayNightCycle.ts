@@ -75,42 +75,42 @@ function makeKeyFrame(
 }
 
 const KEY_FRAMES: KeyFrame[] = [
-  // Day — bright, full color
+  // Day — bright vivid sky
   makeKeyFrame(0.25,
-    '#fffae6', 1.5,
-    '#aabbdd', 0.6,
-    '#2266cc', '#88bbee',
-    '#99bbdd', 10, 50,
-    '#4488ff',
+    '#ffffff', 1.8,
+    '#aaccee', 0.7,
+    '#2288dd', '#66ccff',
+    '#88ccee', 15, 60,
+    '#44aaff',
     0.6, 0, 0, 0,
-    '#ffffff', '#1a6acc'),
-  // Sunset — warm orange tint
+    '#ffffff', '#55ccee'),
+  // Sunset — warm golden
   makeKeyFrame(0.45,
-    '#ffaa44', 0.8,
-    '#aa6644', 0.3,
-    '#1a2a5a', '#dd6633',
-    '#886644', 8, 40,
-    '#ff8844',
-    0.5, 0.2, 0, 0,
-    '#cc9966', '#1a4488'),
-  // Night — dark, desaturated
+    '#ffbb55', 1.0,
+    '#cc8855', 0.4,
+    '#1a3366', '#ee7744',
+    '#aa7755', 10, 45,
+    '#ff9944',
+    0.5, 0.1, 0, 0,
+    '#ddaa77', '#3388aa'),
+  // Night — deep blue, not black
   makeKeyFrame(0.7,
-    '#445577', 0.2,
-    '#1a2a4a', 0.2,
-    '#050510', '#0a0a20',
-    '#0a0a1a', 5, 30,
-    '#2244aa',
+    '#556688', 0.25,
+    '#223355', 0.25,
+    '#060818', '#0c1430',
+    '#0c1225', 8, 35,
+    '#3355aa',
     0.2, 1.0, 0.8, 0,
-    '#223344', '#152a55'),
-  // Dawn — cool blue-pink tint
+    '#334466', '#1a3355'),
+  // Dawn — soft blue-purple
   makeKeyFrame(0.95,
-    '#ffcc88', 0.6,
-    '#7766aa', 0.3,
-    '#223366', '#cc8855',
-    '#776655', 8, 40,
-    '#6688cc',
-    0.4, 0.3, 0.1, 0,
-    '#8888aa', '#112255'),
+    '#ffcc88', 0.7,
+    '#8877bb', 0.4,
+    '#2244aa', '#dd9966',
+    '#887766', 10, 45,
+    '#7799dd',
+    0.4, 0.2, 0.1, 0,
+    '#9999bb', '#2255aa'),
 ];
 
 function lerpScalar(a: number, b: number, t: number): number {
@@ -134,7 +134,7 @@ export class DayNightCycle {
 
   constructor() {
     this.cycleDuration = CYCLE_DURATION;
-    this.elapsed = 0;
+    this.elapsed = CYCLE_DURATION * 0.25; // Start at daytime
 
     this.isRaining = false;
     this.rainTimer = 0;
@@ -147,23 +147,23 @@ export class DayNightCycle {
 
     this.state = {
       sunDirection: new THREE.Vector3(1, 0.3, 0),
-      sunColor: new THREE.Color('#fffae6'),
-      sunIntensity: 1.2,
-      ambientColor: new THREE.Color('#8899bb'),
-      ambientIntensity: 0.4,
-      skyTopColor: new THREE.Color('#2266cc'),
-      skyBottomColor: new THREE.Color('#88bbee'),
-      fogColor: new THREE.Color('#99bbdd'),
-      fogNear: 10,
-      fogFar: 50,
-      atmosphereColor: new THREE.Color('#4488ff'),
+      sunColor: new THREE.Color('#ffffff'),
+      sunIntensity: 1.8,
+      ambientColor: new THREE.Color('#aaccee'),
+      ambientIntensity: 0.7,
+      skyTopColor: new THREE.Color('#2288dd'),
+      skyBottomColor: new THREE.Color('#66ccff'),
+      fogColor: new THREE.Color('#88ccee'),
+      fogNear: 15,
+      fogFar: 60,
+      atmosphereColor: new THREE.Color('#44aaff'),
       cloudOpacity: 0.6,
       starVisibility: 0,
       auroraVisibility: 0,
       rainIntensity: 0,
       timeOfDay: 0,
       terrainTint: new THREE.Color('#ffffff'),
-      oceanColor: new THREE.Color('#1a6acc'),
+      oceanColor: new THREE.Color('#55ccee'),
     };
   }
 

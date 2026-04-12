@@ -30,7 +30,7 @@ if (appEl) {
 
 // --- Scene ---
 const scene = new THREE.Scene();
-scene.fog = new THREE.Fog('#99bbdd', 10, 50);
+scene.fog = new THREE.Fog('#88ccee', 15, 60);
 
 // --- Day/Night Cycle ---
 const dayNight = new DayNightCycle();
@@ -86,12 +86,12 @@ const rain = new Rain();
 scene.add(rain.group);
 
 // --- Lights ---
-const sunLight = new THREE.DirectionalLight('#fffae6', 1.5);
+const sunLight = new THREE.DirectionalLight('#ffffff', 1.8);
 sunLight.position.copy(dayNight.state.sunDirection).multiplyScalar(20);
 sunLight.castShadow = false;
 scene.add(sunLight);
 
-const ambientLight = new THREE.AmbientLight('#aabbdd', 0.6);
+const ambientLight = new THREE.AmbientLight('#aaccee', 0.7);
 scene.add(ambientLight);
 
 // --- Animation loop ---
