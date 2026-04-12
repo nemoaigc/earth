@@ -17,6 +17,7 @@ export interface DayNightState {
   auroraVisibility: number;
   rainIntensity: number;
   timeOfDay: number;
+  // Auto-derived from sun state — not in keyframes
   terrainTint: THREE.Color;
   oceanColor: THREE.Color;
 }
@@ -37,11 +38,9 @@ interface KeyFrame {
   starVisibility: number;
   auroraVisibility: number;
   rainIntensity: number;
-  terrainTint: THREE.Color;
-  oceanColor: THREE.Color;
 }
 
-const CYCLE_DURATION = 120; // seconds
+const CYCLE_DURATION = 120;
 
 function makeKeyFrame(
   time: number,
@@ -50,8 +49,7 @@ function makeKeyFrame(
   skyTop: string, skyBottom: string,
   fogColor: string, fogNear: number, fogFar: number,
   atmosphereColor: string,
-  cloudOpacity: number, starVisibility: number, auroraVisibility: number, rainIntensity: number,
-  terrainTint: string, oceanColor: string
+  cloudOpacity: number, starVisibility: number, auroraVisibility: number, rainIntensity: number
 ): KeyFrame {
   return {
     time,
@@ -69,53 +67,68 @@ function makeKeyFrame(
     starVisibility,
     auroraVisibility,
     rainIntensity,
-    terrainTint: new THREE.Color(terrainTint),
-    oceanColor: new THREE.Color(oceanColor),
   };
 }
 
 const KEY_FRAMES: KeyFrame[] = [
-  // Day — bright vivid sky
+  // Day — bright blue sky, full sunlight
   makeKeyFrame(0.25,
     '#ffffff', 1.8,
     '#aaccee', 0.7,
     '#2288dd', '#66ccff',
     '#88ccee', 15, 60,
     '#44aaff',
-    0.6, 0, 0, 0,
-    '#ffffff', '#55ccee'),
-  // Sunset — dramatic purple/orange
-  makeKeyFrame(0.45,
-    '#ffaa44', 1.0,
-    '#cc7755', 0.35,
-    '#442266', '#ff6633',
-    '#995544', 10, 45,
-    '#ff7744',
-    0.5, 0.1, 0, 0,
-    '#cc9966', '#226688'),
-  // Night — deep blue, not black
-  makeKeyFrame(0.7,
-    '#556688', 0.25,
-    '#223355', 0.25,
-    '#060818', '#0c1430',
-    '#0c1225', 8, 35,
+    0.6, 0, 0, 0),
+  // Golden hour — warm orange glow
+  makeKeyFrame(0.42,
+    '#ffcc66', 1.3,
+    '#ddaa77', 0.5,
+    '#3366aa', '#ffbb55',
+    '#ccaa77', 12, 50,
+    '#ffaa55',
+    0.5, 0, 0, 0),
+  // Sunset — deep orange, sky darkening
+  makeKeyFrame(0.50,
+    '#ff8844', 0.7,
+    '#aa7755', 0.35,
+    '#1a2244', '#dd6633',
+    '#885544', 10, 40,
+    '#ff6633',
+    0.4, 0.15, 0, 0),
+  // Night — moonlight blue, planet still visible
+  makeKeyFrame(0.70,
+    '#aabbdd', 0.3,
+    '#334466', 0.3,
+    '#080c1a', '#101830',
+    '#101828', 8, 35,
     '#3355aa',
-    0.2, 1.0, 0.8, 0,
-    '#334466', '#1a3355'),
-  // Dawn — soft blue-purple
-  makeKeyFrame(0.95,
-    '#ffcc88', 0.7,
-    '#8877bb', 0.4,
-    '#2244aa', '#dd9966',
-    '#887766', 10, 45,
-    '#7799dd',
-    0.4, 0.2, 0.1, 0,
-    '#9999bb', '#2255aa'),
+    0.15, 1.0, 0.8, 0),
+  // Pre-dawn — sky starts warming
+  makeKeyFrame(0.90,
+    '#ffbb77', 0.5,
+    '#887766', 0.35,
+    '#112244', '#cc8855',
+    '#776655', 10, 45,
+    '#6688bb',
+    0.35, 0.3, 0.1, 0),
+  // Dawn — brightening quickly
+  makeKeyFrame(0.98,
+    '#ffddaa', 1.0,
+    '#aabb99', 0.5,
+    '#2277bb', '#88bbdd',
+    '#99aabb', 12, 50,
+    '#55aadd',
+    0.5, 0.05, 0, 0),
 ];
 
 function lerpScalar(a: number, b: number, t: number): number {
   return a + (b - a) * t;
 }
+
+// Reusable temp colors to avoid GC
+const _white = new THREE.Color('#ffffff');
+const _baseCyan = new THREE.Color('#55ccee');
+const _tmpColor = new THREE.Color();
 
 export class DayNightCycle {
   state: DayNightState;
@@ -142,7 +155,7 @@ export class DayNightCycle {
     this.rainFadeIn = 3;
     this.rainFadeOut = 5;
     this.rainPeak = 0;
-    this.nextRainCheck = 0.5; // check halfway through first cycle
+    this.nextRainCheck = 0.5;
     this.cycleCount = 0;
 
     this.state = {
@@ -161,7 +174,7 @@ export class DayNightCycle {
       starVisibility: 0,
       auroraVisibility: 0,
       rainIntensity: 0,
-      timeOfDay: 0,
+      timeOfDay: 0.25,
       terrainTint: new THREE.Color('#ffffff'),
       oceanColor: new THREE.Color('#55ccee'),
     };
@@ -173,7 +186,6 @@ export class DayNightCycle {
     const timeOfDay = (this.elapsed / this.cycleDuration) % 1;
     this.state.timeOfDay = timeOfDay;
 
-    // Detect cycle completion
     if (timeOfDay < prevTimeOfDay) {
       this.cycleCount++;
     }
@@ -213,7 +225,6 @@ export class DayNightCycle {
       range = after.time - before.time;
       progress = (timeOfDay - before.time) / range;
     } else {
-      // Wrapping around (e.g. dawn -> day across 0)
       range = (1 - before.time) + after.time;
       if (timeOfDay >= before.time) {
         progress = (timeOfDay - before.time) / range;
@@ -221,10 +232,9 @@ export class DayNightCycle {
         progress = (1 - before.time + timeOfDay) / range;
       }
     }
-    // Smooth step for nicer transitions
     const t = progress * progress * (3 - 2 * progress);
 
-    // Interpolate all properties
+    // Interpolate keyframe properties
     this.state.sunColor.lerpColors(before.sunColor, after.sunColor, t);
     this.state.sunIntensity = lerpScalar(before.sunIntensity, after.sunIntensity, t);
     this.state.ambientColor.lerpColors(before.ambientColor, after.ambientColor, t);
@@ -238,13 +248,21 @@ export class DayNightCycle {
     this.state.cloudOpacity = lerpScalar(before.cloudOpacity, after.cloudOpacity, t);
     this.state.starVisibility = lerpScalar(before.starVisibility, after.starVisibility, t);
     this.state.auroraVisibility = lerpScalar(before.auroraVisibility, after.auroraVisibility, t);
-    this.state.terrainTint.lerpColors(before.terrainTint, after.terrainTint, t);
-    this.state.oceanColor.lerpColors(before.oceanColor, after.oceanColor, t);
 
-    // Base rain from keyframes
+    // === AUTO-DERIVE terrain & ocean from sun state ===
+    // brightness: 30% floor — planet is NEVER fully dark
+    const brightness = Math.min(1.0, Math.max(0.3, this.state.sunIntensity * 0.5 + 0.3));
+
+    // terrainTint: sunColor diluted toward white, then scaled by brightness
+    _tmpColor.copy(this.state.sunColor).lerp(_white, 0.6);
+    this.state.terrainTint.copy(_tmpColor).multiplyScalar(brightness);
+
+    // oceanColor: base cyan tinted slightly by sunColor, then scaled by brightness
+    _tmpColor.copy(_baseCyan).lerp(this.state.sunColor, 0.15);
+    this.state.oceanColor.copy(_tmpColor).multiplyScalar(brightness);
+
+    // Rain
     let baseRain = lerpScalar(before.rainIntensity, after.rainIntensity, t);
-
-    // Occasional rain system
     this.updateRain(deltaTime, timeOfDay);
     this.state.rainIntensity = Math.max(baseRain, this.getRainOverlay());
   }
@@ -259,18 +277,16 @@ export class DayNightCycle {
       }
     }
 
-    // Check for new rain event (~10% chance per cycle, checked once per cycle)
     const checkPoint = this.nextRainCheck;
     if (!this.isRaining && timeOfDay >= checkPoint && timeOfDay < checkPoint + 0.02) {
       if (Math.random() < 0.1) {
         this.isRaining = true;
         this.rainTimer = 0;
-        this.rainDuration = 8 + Math.random() * 12; // 8-20 seconds
-        this.rainPeak = 0.5 + Math.random() * 0.5; // 0.5-1.0
+        this.rainDuration = 8 + Math.random() * 12;
+        this.rainPeak = 0.5 + Math.random() * 0.5;
         this.rainFadeIn = 3;
         this.rainFadeOut = 5;
       }
-      // Schedule next check at a random point in the next cycle
       this.nextRainCheck = timeOfDay < 0.5 ? 0.5 + Math.random() * 0.3 : Math.random() * 0.3;
     }
   }
