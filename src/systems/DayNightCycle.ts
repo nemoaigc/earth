@@ -71,21 +71,21 @@ const KEY_FRAMES: KeyFrame[] = [
     oceanShallow: c('#4ab8e0'), oceanDeep: c('#2268b0'), oceanFoam: c('#ddf8ff'),
     cloudOpacity: 0.2, starVisibility: 0, auroraVisibility: 0, rainIntensity: 0,
   },
-  { // SUNSET (0.45) — navy top → warm orange horizon, NO purple
+  { // SUNSET (0.45) — deep blue sky, warm sun only
     time: 0.45,
     sunColor: c('#ffbb55'), sunIntensity: 3.0,
     sun2Color: c('#cc8830'), sun2Intensity: 1.0,
-    fillColor: c('#887766'), fillIntensity: 0.8,
-    backColor: c('#556688'), backIntensity: 0.6,
-    hemiSkyColor: c('#ddaa66'), hemiGroundColor: c('#554433'), hemiIntensity: 0.9,
+    fillColor: c('#668899'), fillIntensity: 0.8,
+    backColor: c('#445566'), backIntensity: 0.6,
+    hemiSkyColor: c('#5577aa'), hemiGroundColor: c('#443322'), hemiIntensity: 0.9,
     skyGradient: stops(
-      [0,'#081828'],[0.15,'#0c2238'],[0.3,'#143050'],[0.45,'#2a4466'],
-      [0.55,'#885530'],[0.65,'#cc7733'],[0.75,'#ee9940'],[0.85,'#f8c060'],
-      [1,'#ffe0a0']
+      [0,'#061020'],[0.1,'#0a1830'],[0.2,'#102040'],[0.3,'#182850'],
+      [0.4,'#203060'],[0.5,'#284070'],[0.6,'#305080'],[0.7,'#406090'],
+      [0.85,'#cc8840'],[1,'#ffcc77']
     ),
-    fogColor: c('#aa8855'), fogNear: 12, fogFar: 35,
-    atmosphereColor: c('#ddaa55'),
-    oceanShallow: c('#306888'), oceanDeep: c('#1a3855'), oceanFoam: c('#bbaa77'),
+    fogColor: c('#304868'), fogNear: 12, fogFar: 35,
+    atmosphereColor: c('#5588bb'),
+    oceanShallow: c('#285878'), oceanDeep: c('#183050'), oceanFoam: c('#889988'),
     cloudOpacity: 0.2, starVisibility: 0.1, auroraVisibility: 0, rainIntensity: 0,
   },
   { // NIGHT (0.70) — boosted so planet stays visible at distance
@@ -105,21 +105,21 @@ const KEY_FRAMES: KeyFrame[] = [
     oceanShallow: c('#15304a'), oceanDeep: c('#0a1828'), oceanFoam: c('#2a4466'),
     cloudOpacity: 0.06, starVisibility: 1.0, auroraVisibility: 0.8, rainIntensity: 0,
   },
-  { // DAWN (0.92) — same warm tones as sunset, no purple
+  { // DAWN (0.92) — deep blue dominant, warm only at horizon
     time: 0.92,
     sunColor: c('#ffbb55'), sunIntensity: 2.5,
     sun2Color: c('#cc8830'), sun2Intensity: 0.8,
-    fillColor: c('#887766'), fillIntensity: 0.8,
-    backColor: c('#556688'), backIntensity: 0.5,
-    hemiSkyColor: c('#ddaa66'), hemiGroundColor: c('#554433'), hemiIntensity: 0.8,
+    fillColor: c('#668899'), fillIntensity: 0.8,
+    backColor: c('#445566'), backIntensity: 0.5,
+    hemiSkyColor: c('#5577aa'), hemiGroundColor: c('#443322'), hemiIntensity: 0.8,
     skyGradient: stops(
-      [0,'#081828'],[0.15,'#0c2238'],[0.3,'#143050'],[0.45,'#2a4466'],
-      [0.55,'#885530'],[0.65,'#cc7733'],[0.75,'#ee9940'],[0.85,'#f8c060'],
-      [1,'#ffe0a0']
+      [0,'#061020'],[0.1,'#0a1830'],[0.2,'#102040'],[0.3,'#182850'],
+      [0.4,'#203060'],[0.5,'#284070'],[0.6,'#305080'],[0.7,'#406090'],
+      [0.85,'#cc8840'],[1,'#ffcc77']
     ),
-    fogColor: c('#aa8855'), fogNear: 12, fogFar: 35,
-    atmosphereColor: c('#ddaa55'),
-    oceanShallow: c('#306888'), oceanDeep: c('#1a3855'), oceanFoam: c('#bbaa77'),
+    fogColor: c('#304868'), fogNear: 12, fogFar: 35,
+    atmosphereColor: c('#5588bb'),
+    oceanShallow: c('#285878'), oceanDeep: c('#183050'), oceanFoam: c('#889988'),
     cloudOpacity: 0.15, starVisibility: 0.2, auroraVisibility: 0, rainIntensity: 0,
   },
 ];
