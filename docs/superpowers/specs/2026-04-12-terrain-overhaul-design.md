@@ -151,6 +151,31 @@
 | `src/features/Reefs.ts` | 新建 |
 | `src/features/Trees.ts` | 增加金合欢、仙人掌 |
 
+## 六、大陆名称标注
+
+### 效果
+- 每个大陆/大洋的中心位置浮一个名称标签
+- 标签**贴在球面上**，跟随球体旋转
+- 当标签朝向背面（dot product < 0）时自动隐藏——只展示当前视角看得到的
+- 字体白色，带轻微阴影，不遮挡地形
+
+### 实现
+- 用 CSS2DRenderer（Three.js 的 CSS2D 标签系统）
+- 每个大陆一个 CSS2DObject，挂在球面对应经纬度的 3D 位置
+- 每帧检测标签法线方向与相机方向的点积：
+  - `dot(labelNormal, cameraDir) > 0` → 显示（朝向相机）
+  - `dot(labelNormal, cameraDir) <= 0` → 隐藏（背面）
+- 标签内容：`Africa`、`Europe`、`Asia`、`North America`、`South America`、`Australia`、`Antarctica`
+- 大洋：`Pacific Ocean`、`Atlantic Ocean`、`Indian Ocean`
+
+### 新增文件
+- `src/features/Labels.ts` — 大陆/大洋名称标签系统
+
+### 修改文件
+- `src/main.ts` — 添加 CSS2DRenderer + Labels
+
+---
+
 ## 验证
 - 从侧面看：山脉轮廓明显突出
 - 海岸线：缓坡渐低入水
@@ -158,3 +183,4 @@
 - 地表密布树木/花/草，像原版那样茂密
 - 水面有浪花线、极地有冰山、热带有小岛
 - 无村庄/风车/灯塔
+- 当前视角的大陆/大洋名称可见，转到背面自动隐藏
