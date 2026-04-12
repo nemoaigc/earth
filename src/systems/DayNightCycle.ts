@@ -68,7 +68,7 @@ const KEY_FRAMES: KeyFrame[] = [
     ),
     fogColor: c('#60ccde'), fogNear: 15, fogFar: 40,
     atmosphereColor: c('#bbddcc'),
-    oceanShallow: c('#2a8ca0'), oceanDeep: c('#1560a0'), oceanFoam: c('#b3ffff'),
+    oceanShallow: c('#4ab8e0'), oceanDeep: c('#2268b0'), oceanFoam: c('#ddf8ff'),
     cloudOpacity: 0.2, starVisibility: 0, auroraVisibility: 0, rainIntensity: 0,
   },
   { // SUNSET (0.45)
@@ -85,7 +85,7 @@ const KEY_FRAMES: KeyFrame[] = [
     ),
     fogColor: c('#c07848'), fogNear: 12, fogFar: 35,
     atmosphereColor: c('#ffcc44'),
-    oceanShallow: c('#5a4a98'), oceanDeep: c('#302868'), oceanFoam: c('#ff9944'),
+    oceanShallow: c('#3a7088'), oceanDeep: c('#1a4060'), oceanFoam: c('#ccbb88'),
     cloudOpacity: 0.2, starVisibility: 0.1, auroraVisibility: 0, rainIntensity: 0,
   },
   { // NIGHT (0.70) — boosted so planet stays visible at distance
@@ -102,7 +102,7 @@ const KEY_FRAMES: KeyFrame[] = [
     ),
     fogColor: c('#08142c'), fogNear: 10, fogFar: 30,
     atmosphereColor: c('#2850aa'),
-    oceanShallow: c('#081838'), oceanDeep: c('#040c20'), oceanFoam: c('#2050aa'),
+    oceanShallow: c('#15304a'), oceanDeep: c('#0a1828'), oceanFoam: c('#2a4466'),
     cloudOpacity: 0.06, starVisibility: 1.0, auroraVisibility: 0.8, rainIntensity: 0,
   },
   { // DAWN (0.92)
@@ -119,7 +119,7 @@ const KEY_FRAMES: KeyFrame[] = [
     ),
     fogColor: c('#c07848'), fogNear: 12, fogFar: 35,
     atmosphereColor: c('#ffcc44'),
-    oceanShallow: c('#5a4a98'), oceanDeep: c('#302868'), oceanFoam: c('#ff9944'),
+    oceanShallow: c('#3a7088'), oceanDeep: c('#1a4060'), oceanFoam: c('#ccbb88'),
     cloudOpacity: 0.15, starVisibility: 0.2, auroraVisibility: 0.1, rainIntensity: 0,
   },
 ];
