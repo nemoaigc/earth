@@ -95,13 +95,13 @@ const KEY_FRAMES: KeyFrame[] = [
     '#cc9966', '#1a4488'),
   // Night — dark, desaturated
   makeKeyFrame(0.7,
-    '#334466', 0.15,
-    '#112244', 0.15,
+    '#445577', 0.2,
+    '#1a2a4a', 0.2,
     '#050510', '#0a0a20',
     '#0a0a1a', 5, 30,
     '#2244aa',
     0.2, 1.0, 0.8, 0,
-    '#1a2233', '#0a1a33'),
+    '#223344', '#152a55'),
   // Dawn — cool blue-pink tint
   makeKeyFrame(0.95,
     '#ffcc88', 0.6,
