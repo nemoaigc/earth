@@ -3,10 +3,7 @@ import { Globe } from './globe/Globe';
 import { Trees } from './features/Trees';
 import { PalmTrees } from './features/PalmTrees';
 import { Rocks } from './features/Rocks';
-import { Villages } from './features/Villages';
-import { Windmills } from './features/Windmills';
 import { Mountains } from './features/Mountains';
-import { Lighthouses } from './features/Lighthouses';
 import { Balloons } from './features/Balloons';
 import { SkyDome } from './sky/SkyDome';
 import { Clouds } from './sky/Clouds';
@@ -52,14 +49,8 @@ const palmTrees = new PalmTrees(globe.terrainData);
 scene.add(palmTrees.group);
 const rocks = new Rocks(globe.terrainData);
 scene.add(rocks.group);
-const villages = new Villages(globe.terrainData);
-scene.add(villages.group);
-const windmills = new Windmills(globe.terrainData);
-scene.add(windmills.group);
 const mountains = new Mountains(globe.terrainData);
 scene.add(mountains.group);
-const lighthouses = new Lighthouses(globe.terrainData);
-scene.add(lighthouses.group);
 const balloons = new Balloons(globe.terrainData);
 scene.add(balloons.group);
 
@@ -127,10 +118,7 @@ function animate(): void {
   trees.update(elapsed);
   palmTrees.update(elapsed);
   rocks.update(elapsed);
-  villages.update(elapsed);
-  windmills.update(elapsed);
   mountains.update(elapsed);
-  lighthouses.update(elapsed);
   balloons.update(elapsed);
 
   cameraController.update(deltaTime);

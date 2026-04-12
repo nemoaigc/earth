@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { sampleNoise } from '../utils/noise';
 import { createWorldMask, type BiomeWeights } from './worldmap';
 
-export const GLOBE_RADIUS = 5;
+export const GLOBE_RADIUS = 7;
 
 export interface TerrainData {
   geometry: THREE.BufferGeometry;
@@ -11,7 +11,7 @@ export interface TerrainData {
   oceanRatio: number;
 }
 
-const LAND_HEIGHT_SCALE = 0.5;
+const LAND_HEIGHT_SCALE = 0.8;
 
 // Biome color palettes
 const BIOME_COLORS: Record<string, { low: THREE.Color; mid: THREE.Color; high: THREE.Color; snow: THREE.Color }> = {
@@ -52,7 +52,7 @@ const COLOR_OCEAN_DEEP = new THREE.Color('#22aadd');
 const COLOR_OCEAN_SHALLOW = new THREE.Color('#55ccee');
 
 export function generateTerrain(): TerrainData {
-  const geometry = new THREE.IcosahedronGeometry(GLOBE_RADIUS, 120);
+  const geometry = new THREE.IcosahedronGeometry(GLOBE_RADIUS, 140);
   const posAttr = geometry.getAttribute('position');
   const vertexCount = posAttr.count;
 
@@ -83,22 +83,23 @@ export function generateTerrain(): TerrainData {
     if (biome !== 'ocean') {
       // Check distance to coast: sample nearby points for ocean
       let coastDist = 1.0; // 1.0 = far from coast
-      for (let step = 1; step <= 5; step++) {
-        const d = step * 2; // check 2°, 4°, 6°, 8°, 10° away
+      for (let step = 1; step <= 7; step++) {
+        const d = step * 2.1;
         const nearOcean =
           !mask.isLand(lat + d, lng) || !mask.isLand(lat - d, lng) ||
           !mask.isLand(lat, lng + d) || !mask.isLand(lat, lng - d) ||
           !mask.isLand(lat + d, lng + d) || !mask.isLand(lat - d, lng - d);
         if (nearOcean) {
-          coastDist = step / 5; // 0.2 = very close, 1.0 = far
+          coastDist = step / 7;
           break;
         }
       }
       // Smooth ramp: height scales with distance from coast
       const coastFactor = coastDist * coastDist; // quadratic ramp — gentle near coast
 
-      const noise = Math.abs(sampleNoise(nx, ny, nz, 5, 2.0, 0.5, 1.2));
-      const heightNorm = noise * coastFactor;
+      const noise = Math.abs(sampleNoise(nx, ny, nz, 6, 2.0, 0.55, 0.8));
+      const centralBoost = 1.0 + coastDist * 0.5;
+      const heightNorm = noise * coastFactor * centralBoost;
       const height = heightNorm * LAND_HEIGHT_SCALE;
       const newRadius = GLOBE_RADIUS + height;
 
