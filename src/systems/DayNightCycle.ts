@@ -95,10 +95,10 @@ const KEY_FRAMES: KeyFrame[] = [
     '#885544', 10, 40,
     '#ff6633',
     0.4, 0.15, 0, 0),
-  // Night — moonlight blue, planet still visible
+  // Night — moonlight blue, planet clearly visible
   makeKeyFrame(0.70,
-    '#aabbdd', 0.3,
-    '#334466', 0.3,
+    '#aabbdd', 0.5,
+    '#445577', 0.45,
     '#080c1a', '#101830',
     '#101828', 8, 35,
     '#3355aa',
@@ -251,7 +251,7 @@ export class DayNightCycle {
 
     // === AUTO-DERIVE terrain & ocean from sun state ===
     // brightness: 30% floor — planet is NEVER fully dark
-    const brightness = Math.min(1.0, Math.max(0.4, this.state.sunIntensity * 0.45 + 0.35));
+    const brightness = Math.min(1.0, Math.max(0.55, this.state.sunIntensity * 0.35 + 0.45));
 
     // terrainTint: sunColor diluted toward white, then scaled by brightness
     _tmpColor.copy(this.state.sunColor).lerp(_white, 0.6);
