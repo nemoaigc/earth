@@ -1,8 +1,8 @@
 import * as THREE from 'three';
 import { sampleNoise } from '../utils/noise';
-import { createWorldMask as createMask, createWorldMaskSync, type BiomeWeights, type WorldMask } from './worldmap';
+import { createWorldMask, type BiomeWeights } from './worldmap';
 
-export const GLOBE_RADIUS = 7;
+export const GLOBE_RADIUS = 5;
 
 export interface TerrainData {
   geometry: THREE.BufferGeometry;
@@ -11,20 +11,20 @@ export interface TerrainData {
   oceanRatio: number;
 }
 
-const LAND_HEIGHT_SCALE = 0.45;
+const LAND_HEIGHT_SCALE = 0.5;
 
-// Stylized biome color palettes (used when image colors are too realistic)
+// Biome color palettes
 const BIOME_COLORS: Record<string, { low: THREE.Color; mid: THREE.Color; high: THREE.Color; snow: THREE.Color }> = {
   tropical: {
     low: new THREE.Color('#33aa44'),
     mid: new THREE.Color('#228833'),
-    high: new THREE.Color('#557744'),
+    high: new THREE.Color('#667744'),
     snow: new THREE.Color('#889966'),
   },
   temperate: {
     low: new THREE.Color('#55cc33'),
     mid: new THREE.Color('#44bb44'),
-    high: new THREE.Color('#88aa55'),
+    high: new THREE.Color('#99aa55'),
     snow: new THREE.Color('#ddddcc'),
   },
   boreal: {
@@ -47,21 +47,12 @@ const BIOME_COLORS: Record<string, { low: THREE.Color; mid: THREE.Color; high: T
   },
 };
 
-const COLOR_OCEAN_DEEP = new THREE.Color('#1a60aa');
-const COLOR_OCEAN_SHALLOW = new THREE.Color('#3399cc');
+// Ocean colors
+const COLOR_OCEAN_DEEP = new THREE.Color('#22aadd');
+const COLOR_OCEAN_SHALLOW = new THREE.Color('#55ccee');
 
-export async function generateTerrainAsync(): Promise<TerrainData> {
-  const mask = await createWorldMaskSync();
-  return buildTerrain(mask);
-}
-
-// Sync version (image may not be loaded yet — uses default ocean color)
 export function generateTerrain(): TerrainData {
-  return buildTerrain(createMask());
-}
-
-function buildTerrain(mask: WorldMask): TerrainData {
-  const geometry = new THREE.IcosahedronGeometry(GLOBE_RADIUS, 128);
+  const geometry = new THREE.IcosahedronGeometry(GLOBE_RADIUS, 120);
   const posAttr = geometry.getAttribute('position');
   const vertexCount = posAttr.count;
 
@@ -70,8 +61,8 @@ function buildTerrain(mask: WorldMask): TerrainData {
   const coastPoints: TerrainData['coastPoints'] = [];
   let oceanCount = 0;
 
+  const mask = createWorldMask();
   const color = new THREE.Color();
-  const tmpC = new THREE.Color();
 
   for (let i = 0; i < vertexCount; i++) {
     const x = posAttr.getX(i);
@@ -83,25 +74,28 @@ function buildTerrain(mask: WorldMask): TerrainData {
     const ny = y / len;
     const nz = z / len;
 
+    // Convert to lat/lng
     const lat = Math.asin(Math.max(-1, Math.min(1, ny))) * 180 / Math.PI;
     const lng = Math.atan2(nz, nx) * 180 / Math.PI;
 
     const biome = mask.getBiome(lat, lng);
 
     if (biome !== 'ocean') {
-      // Coast distance for height ramp
-      let coastDist = 1.0;
+      // Check distance to coast: sample nearby points for ocean
+      let coastDist = 1.0; // 1.0 = far from coast
       for (let step = 1; step <= 5; step++) {
-        const d = step * 2;
+        const d = step * 2; // check 2°, 4°, 6°, 8°, 10° away
         const nearOcean =
           !mask.isLand(lat + d, lng) || !mask.isLand(lat - d, lng) ||
-          !mask.isLand(lat, lng + d) || !mask.isLand(lat, lng - d);
+          !mask.isLand(lat, lng + d) || !mask.isLand(lat, lng - d) ||
+          !mask.isLand(lat + d, lng + d) || !mask.isLand(lat - d, lng - d);
         if (nearOcean) {
-          coastDist = step / 5;
+          coastDist = step / 5; // 0.2 = very close, 1.0 = far
           break;
         }
       }
-      const coastFactor = coastDist * coastDist;
+      // Smooth ramp: height scales with distance from coast
+      const coastFactor = coastDist * coastDist; // quadratic ramp — gentle near coast
 
       const noise = Math.abs(sampleNoise(nx, ny, nz, 5, 2.0, 0.5, 1.2));
       const heightNorm = noise * coastFactor;
@@ -110,19 +104,20 @@ function buildTerrain(mask: WorldMask): TerrainData {
 
       posAttr.setXYZ(i, nx * newRadius, ny * newRadius, nz * newRadius);
 
-      // Color by biome palette
+      // Blend colors across biomes using weights (smooth transitions)
       const weights = mask.getBiomeWeights(lat, lng);
       color.setRGB(0, 0, 0);
+      const tmpC = new THREE.Color();
       for (const [biomeName, weight] of Object.entries(weights) as [keyof BiomeWeights, number][]) {
         if (weight < 0.01) continue;
         const palette = BIOME_COLORS[biomeName];
         if (!palette) continue;
-        if (heightNorm < 0.15) {
-          tmpC.lerpColors(palette.low, palette.mid, heightNorm / 0.15);
-        } else if (heightNorm < 0.4) {
-          tmpC.lerpColors(palette.mid, palette.high, (heightNorm - 0.15) / 0.25);
+        if (heightNorm < 0.2) {
+          tmpC.lerpColors(palette.low, palette.mid, heightNorm / 0.2);
+        } else if (heightNorm < 0.5) {
+          tmpC.lerpColors(palette.mid, palette.high, (heightNorm - 0.2) / 0.3);
         } else {
-          tmpC.lerpColors(palette.high, palette.snow, (heightNorm - 0.4) / 0.6);
+          tmpC.lerpColors(palette.high, palette.snow, (heightNorm - 0.5) / 0.5);
         }
         color.r += tmpC.r * weight;
         color.g += tmpC.g * weight;
@@ -133,7 +128,8 @@ function buildTerrain(mask: WorldMask): TerrainData {
       colors[i * 3 + 1] = color.g;
       colors[i * 3 + 2] = color.b;
 
-      if (i % 12 === 0) {
+      // Collect land points
+      if (i % 15 === 0) {
         landPoints.push({
           position: new THREE.Vector3(nx * newRadius, ny * newRadius, nz * newRadius),
           normal: new THREE.Vector3(nx, ny, nz),
@@ -142,16 +138,19 @@ function buildTerrain(mask: WorldMask): TerrainData {
         });
       }
 
-      if (heightNorm < 0.08) {
+      // Coast points
+      if (heightNorm < 0.1) {
         coastPoints.push({
           position: new THREE.Vector3(nx * newRadius, ny * newRadius, nz * newRadius),
           normal: new THREE.Vector3(nx, ny, nz),
         });
       }
     } else {
+      // OCEAN
       const newRadius = GLOBE_RADIUS - 0.06;
       posAttr.setXYZ(i, nx * newRadius, ny * newRadius, nz * newRadius);
 
+      // Check proximity to land for shallow color
       const nearLand = mask.isLand(lat + 3, lng) || mask.isLand(lat - 3, lng) ||
                        mask.isLand(lat, lng + 3) || mask.isLand(lat, lng - 3);
       if (nearLand) {
@@ -163,6 +162,7 @@ function buildTerrain(mask: WorldMask): TerrainData {
       colors[i * 3] = color.r;
       colors[i * 3 + 1] = color.g;
       colors[i * 3 + 2] = color.b;
+
       oceanCount++;
     }
   }
@@ -170,5 +170,10 @@ function buildTerrain(mask: WorldMask): TerrainData {
   geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
   geometry.computeVertexNormals();
 
-  return { geometry, landPoints, coastPoints, oceanRatio: oceanCount / vertexCount };
+  return {
+    geometry,
+    landPoints,
+    coastPoints,
+    oceanRatio: oceanCount / vertexCount,
+  };
 }
