@@ -5,6 +5,8 @@ import { PalmTrees } from './features/PalmTrees';
 import { Rocks } from './features/Rocks';
 import { Mountains } from './features/Mountains';
 import { Balloons } from './features/Balloons';
+import { Icebergs } from './features/Icebergs';
+import { Reefs } from './features/Reefs';
 import { SkyDome } from './sky/SkyDome';
 import { Clouds } from './sky/Clouds';
 import { Stars } from './sky/Stars';
@@ -53,6 +55,10 @@ const mountains = new Mountains(globe.terrainData);
 scene.add(mountains.group);
 const balloons = new Balloons(globe.terrainData);
 scene.add(balloons.group);
+const icebergs = new Icebergs(globe.terrainData);
+scene.add(icebergs.group);
+const reefs = new Reefs(globe.terrainData);
+scene.add(reefs.group);
 
 // --- Sky elements ---
 const skyDome = new SkyDome();
@@ -120,6 +126,8 @@ function animate(): void {
   rocks.update(elapsed);
   mountains.update(elapsed);
   balloons.update(elapsed);
+  icebergs.update(elapsed);
+  reefs.update(elapsed);
 
   cameraController.update(deltaTime);
   renderer.render(scene, cameraController.camera);
