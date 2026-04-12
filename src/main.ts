@@ -20,8 +20,7 @@ import { CameraController } from './systems/Camera';
 const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 renderer.setSize(window.innerWidth, window.innerHeight);
-renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 1.0;
+renderer.toneMapping = THREE.NoToneMapping;
 
 const appEl = document.getElementById('app');
 if (appEl) {
@@ -87,12 +86,12 @@ const rain = new Rain();
 scene.add(rain.group);
 
 // --- Lights ---
-const sunLight = new THREE.DirectionalLight('#fffae6', 1.2);
+const sunLight = new THREE.DirectionalLight('#fffae6', 1.5);
 sunLight.position.copy(dayNight.state.sunDirection).multiplyScalar(20);
 sunLight.castShadow = false;
 scene.add(sunLight);
 
-const ambientLight = new THREE.AmbientLight('#8899bb', 0.4);
+const ambientLight = new THREE.AmbientLight('#aabbdd', 0.6);
 scene.add(ambientLight);
 
 // --- Animation loop ---
@@ -125,6 +124,10 @@ function animate(): void {
 
   // Apply sky
   skyDome.update(state.skyTopColor, state.skyBottomColor);
+
+  // Apply terrain & ocean tinting from day/night
+  globe.terrainMaterial.color.copy(state.terrainTint);
+  globe.ocean.material.color.copy(state.oceanColor);
 
   // Apply atmosphere, ocean
   globe.update(elapsed, state.sunDirection, state.atmosphereColor);

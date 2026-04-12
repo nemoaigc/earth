@@ -13,21 +13,21 @@ export interface TerrainData {
 
 const TERRAIN_THRESHOLD = 0.05;
 const LAND_HEIGHT_SCALE = 0.35;
-const OCEAN_INDENT = 0.02;
+const OCEAN_INDENT = 0.15;
 const NOISE_SCALE = 0.8;
 const NOISE_OCTAVES = 6;
 const NOISE_LACUNARITY = 2.0;
 const NOISE_PERSISTENCE = 0.5;
 
 // Land colors by elevation
-const COLOR_GRASS_LOW = new THREE.Color('#4a7c3f');
-const COLOR_GRASS_MID = new THREE.Color('#5a8c4a');
-const COLOR_ROCKY = new THREE.Color('#8b7355');
-const COLOR_SNOW = new THREE.Color('#c8c0b0');
+const COLOR_GRASS_LOW = new THREE.Color('#5aad45');
+const COLOR_GRASS_MID = new THREE.Color('#6ec455');
+const COLOR_ROCKY = new THREE.Color('#a08860');
+const COLOR_SNOW = new THREE.Color('#e0d8c8');
 
 // Ocean colors
-const COLOR_OCEAN_DEEP = new THREE.Color('#1a3a5c');
-const COLOR_OCEAN_SHALLOW = new THREE.Color('#2a6a8a');
+const COLOR_OCEAN_DEEP = new THREE.Color('#0e3d7a');
+const COLOR_OCEAN_SHALLOW = new THREE.Color('#1a6aaa');
 
 export function generateTerrain(seed?: number): TerrainData {
   const geometry = new THREE.IcosahedronGeometry(GLOBE_RADIUS, 80);

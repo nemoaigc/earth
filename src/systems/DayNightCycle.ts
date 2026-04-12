@@ -17,6 +17,8 @@ export interface DayNightState {
   auroraVisibility: number;
   rainIntensity: number;
   timeOfDay: number;
+  terrainTint: THREE.Color;
+  oceanColor: THREE.Color;
 }
 
 interface KeyFrame {
@@ -35,6 +37,8 @@ interface KeyFrame {
   starVisibility: number;
   auroraVisibility: number;
   rainIntensity: number;
+  terrainTint: THREE.Color;
+  oceanColor: THREE.Color;
 }
 
 const CYCLE_DURATION = 120; // seconds
@@ -46,7 +50,8 @@ function makeKeyFrame(
   skyTop: string, skyBottom: string,
   fogColor: string, fogNear: number, fogFar: number,
   atmosphereColor: string,
-  cloudOpacity: number, starVisibility: number, auroraVisibility: number, rainIntensity: number
+  cloudOpacity: number, starVisibility: number, auroraVisibility: number, rainIntensity: number,
+  terrainTint: string, oceanColor: string
 ): KeyFrame {
   return {
     time,
@@ -64,42 +69,48 @@ function makeKeyFrame(
     starVisibility,
     auroraVisibility,
     rainIntensity,
+    terrainTint: new THREE.Color(terrainTint),
+    oceanColor: new THREE.Color(oceanColor),
   };
 }
 
 const KEY_FRAMES: KeyFrame[] = [
-  // Day
+  // Day — bright, full color
   makeKeyFrame(0.25,
-    '#fffae6', 1.2,
-    '#8899bb', 0.4,
+    '#fffae6', 1.5,
+    '#aabbdd', 0.6,
     '#2266cc', '#88bbee',
     '#99bbdd', 10, 50,
     '#4488ff',
-    0.6, 0, 0, 0),
-  // Sunset
+    0.6, 0, 0, 0,
+    '#ffffff', '#1a6acc'),
+  // Sunset — warm orange tint
   makeKeyFrame(0.45,
     '#ffaa44', 0.8,
     '#aa6644', 0.3,
     '#1a2a5a', '#dd6633',
     '#886644', 8, 40,
     '#ff8844',
-    0.5, 0.2, 0, 0),
-  // Night
+    0.5, 0.2, 0, 0,
+    '#cc9966', '#1a4488'),
+  // Night — dark, desaturated
   makeKeyFrame(0.7,
-    '#334466', 0.1,
+    '#334466', 0.15,
     '#112244', 0.15,
     '#050510', '#0a0a20',
     '#0a0a1a', 5, 30,
     '#2244aa',
-    0.2, 1.0, 0.8, 0),
-  // Dawn
+    0.2, 1.0, 0.8, 0,
+    '#1a2233', '#0a1a33'),
+  // Dawn — cool blue-pink tint
   makeKeyFrame(0.95,
     '#ffcc88', 0.6,
     '#7766aa', 0.3,
     '#223366', '#cc8855',
     '#776655', 8, 40,
     '#6688cc',
-    0.4, 0.3, 0.1, 0),
+    0.4, 0.3, 0.1, 0,
+    '#8888aa', '#112255'),
 ];
 
 function lerpScalar(a: number, b: number, t: number): number {
@@ -151,6 +162,8 @@ export class DayNightCycle {
       auroraVisibility: 0,
       rainIntensity: 0,
       timeOfDay: 0,
+      terrainTint: new THREE.Color('#ffffff'),
+      oceanColor: new THREE.Color('#1a6acc'),
     };
   }
 
@@ -225,6 +238,8 @@ export class DayNightCycle {
     this.state.cloudOpacity = lerpScalar(before.cloudOpacity, after.cloudOpacity, t);
     this.state.starVisibility = lerpScalar(before.starVisibility, after.starVisibility, t);
     this.state.auroraVisibility = lerpScalar(before.auroraVisibility, after.auroraVisibility, t);
+    this.state.terrainTint.lerpColors(before.terrainTint, after.terrainTint, t);
+    this.state.oceanColor.lerpColors(before.oceanColor, after.oceanColor, t);
 
     // Base rain from keyframes
     let baseRain = lerpScalar(before.rainIntensity, after.rainIntensity, t);

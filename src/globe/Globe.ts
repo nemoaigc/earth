@@ -7,6 +7,7 @@ import { Atmosphere } from './Atmosphere';
 export class Globe {
   group: THREE.Group;
   terrain: THREE.Mesh;
+  terrainMaterial: THREE.MeshPhongMaterial;
   ocean: Ocean;
   atmosphere: Atmosphere;
   terrainData: TerrainData;
@@ -16,14 +17,14 @@ export class Globe {
 
     // Generate terrain
     this.terrainData = generateTerrain();
+    this.terrainMaterial = new THREE.MeshPhongMaterial({
+      vertexColors: true,
+      shininess: 5,
+      flatShading: false,
+    });
     this.terrain = new THREE.Mesh(
       this.terrainData.geometry,
-      new THREE.MeshStandardMaterial({
-        vertexColors: true,
-        roughness: 0.85,
-        metalness: 0.05,
-        flatShading: false,
-      })
+      this.terrainMaterial
     );
 
     // Create ocean and atmosphere

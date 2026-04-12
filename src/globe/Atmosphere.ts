@@ -39,7 +39,7 @@ export class Atmosphere {
       fragmentShader,
       uniforms: {
         uColor: { value: new THREE.Color('#4488ff') },
-        uIntensity: { value: 0.6 },
+        uIntensity: { value: 0.35 },
       },
       transparent: true,
       side: THREE.BackSide,

@@ -3,6 +3,7 @@ import { GLOBE_RADIUS } from './terrain';
 
 export class Ocean {
   mesh: THREE.Mesh;
+  material: THREE.MeshPhongMaterial;
   private uniforms: { oceanTime: { value: number } };
 
   constructor() {
@@ -13,11 +14,10 @@ export class Ocean {
     };
 
     const material = new THREE.MeshPhongMaterial({
-      color: new THREE.Color('#1e5799'),
-      transparent: true,
-      opacity: 0.85,
-      shininess: 80,
-      specular: new THREE.Color('#88bbff'),
+      color: new THREE.Color('#1a6acc'),
+      transparent: false,
+      shininess: 100,
+      specular: new THREE.Color('#aaddff'),
     });
 
     const uniforms = this.uniforms;
@@ -91,11 +91,12 @@ export class Ocean {
         finalColor += rimColor * rim * rimIntensity * 0.3;
 
         #include <output_fragment>
-        gl_FragColor = vec4(finalColor, diffuseColor.a);
+        gl_FragColor = vec4(finalColor, 1.0);
         `
       );
     };
 
+    this.material = material;
     this.mesh = new THREE.Mesh(geometry, material);
   }
 
