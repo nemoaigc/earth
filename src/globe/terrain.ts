@@ -13,13 +13,14 @@ export interface TerrainData {
 
 const TERRAIN_THRESHOLD = 0.05;
 const LAND_HEIGHT_SCALE = 0.35;
-const OCEAN_INDENT = 0.15;
+const OCEAN_INDENT_MAX = 0.08;
 const NOISE_SCALE = 0.8;
 const NOISE_OCTAVES = 6;
 const NOISE_LACUNARITY = 2.0;
 const NOISE_PERSISTENCE = 0.5;
 
 // Land colors by elevation
+const COLOR_BEACH = new THREE.Color('#c8b878');
 const COLOR_GRASS_LOW = new THREE.Color('#55cc33');
 const COLOR_GRASS_MID = new THREE.Color('#44bb44');
 const COLOR_ROCKY = new THREE.Color('#99aa55');
@@ -28,6 +29,7 @@ const COLOR_SNOW = new THREE.Color('#ddddcc');
 // Ocean colors - bright turquoise
 const COLOR_OCEAN_DEEP = new THREE.Color('#22aadd');
 const COLOR_OCEAN_SHALLOW = new THREE.Color('#55ccee');
+const COLOR_OCEAN_COAST = new THREE.Color('#77ddcc');
 
 export function generateTerrain(seed?: number): TerrainData {
   const geometry = new THREE.IcosahedronGeometry(GLOBE_RADIUS, 80);
@@ -90,9 +92,12 @@ export function generateTerrain(seed?: number): TerrainData {
 
       posAttr.setXYZ(i, nx * newRadius, ny * newRadius, nz * newRadius);
 
-      // Color based on elevation
-      if (heightNorm < 0.3) {
-        color.lerpColors(COLOR_GRASS_LOW, COLOR_GRASS_MID, heightNorm / 0.3);
+      // Color based on elevation - with beach at coast
+      if (heightNorm < 0.06) {
+        // Beach/sand at very low elevation
+        color.lerpColors(COLOR_BEACH, COLOR_GRASS_LOW, heightNorm / 0.06);
+      } else if (heightNorm < 0.3) {
+        color.lerpColors(COLOR_GRASS_LOW, COLOR_GRASS_MID, (heightNorm - 0.06) / 0.24);
       } else if (heightNorm < 0.6) {
         color.lerpColors(COLOR_GRASS_MID, COLOR_ROCKY, (heightNorm - 0.3) / 0.3);
       } else {
@@ -122,12 +127,18 @@ export function generateTerrain(seed?: number): TerrainData {
     } else {
       // Ocean: slightly indent
       const depthNorm = smoothstep(-0.3, TERRAIN_THRESHOLD, noise);
-      const newRadius = GLOBE_RADIUS - OCEAN_INDENT;
+      // Shallow water near coast: less indent. Deep water: more indent
+      const indent = OCEAN_INDENT_MAX * (1.0 - depthNorm * 0.8);
+      const newRadius = GLOBE_RADIUS - indent;
 
       posAttr.setXYZ(i, nx * newRadius, ny * newRadius, nz * newRadius);
 
-      // Color: deep to shallow based on how close to land threshold
-      color.lerpColors(COLOR_OCEAN_DEEP, COLOR_OCEAN_SHALLOW, depthNorm);
+      // Color: coast → shallow → deep
+      if (depthNorm > 0.7) {
+        color.lerpColors(COLOR_OCEAN_SHALLOW, COLOR_OCEAN_COAST, (depthNorm - 0.7) / 0.3);
+      } else {
+        color.lerpColors(COLOR_OCEAN_DEEP, COLOR_OCEAN_SHALLOW, depthNorm / 0.7);
+      }
 
       colors[i * 3] = color.r;
       colors[i * 3 + 1] = color.g;

@@ -84,15 +84,15 @@ const KEY_FRAMES: KeyFrame[] = [
     '#44aaff',
     0.6, 0, 0, 0,
     '#ffffff', '#55ccee'),
-  // Sunset — warm golden
+  // Sunset — dramatic purple/orange
   makeKeyFrame(0.45,
-    '#ffbb55', 1.0,
-    '#cc8855', 0.4,
-    '#1a3366', '#ee7744',
-    '#aa7755', 10, 45,
-    '#ff9944',
+    '#ffaa44', 1.0,
+    '#cc7755', 0.35,
+    '#442266', '#ff6633',
+    '#995544', 10, 45,
+    '#ff7744',
     0.5, 0.1, 0, 0,
-    '#ddaa77', '#3388aa'),
+    '#cc9966', '#226688'),
   // Night — deep blue, not black
   makeKeyFrame(0.7,
     '#556688', 0.25,
