@@ -1,13 +1,21 @@
 import * as THREE from 'three';
 
+export interface SkyStop { stop: number; color: THREE.Color }
+
 export interface DayNightState {
   sunDirection: THREE.Vector3;
   sunColor: THREE.Color;
   sunIntensity: number;
-  ambientColor: THREE.Color;
-  ambientIntensity: number;
-  skyTopColor: THREE.Color;
-  skyBottomColor: THREE.Color;
+  sun2Color: THREE.Color;
+  sun2Intensity: number;
+  fillColor: THREE.Color;
+  fillIntensity: number;
+  backColor: THREE.Color;
+  backIntensity: number;
+  hemiSkyColor: THREE.Color;
+  hemiGroundColor: THREE.Color;
+  hemiIntensity: number;
+  skyGradient: SkyStop[];
   fogColor: THREE.Color;
   fogNear: number;
   fogFar: number;
@@ -17,150 +25,159 @@ export interface DayNightState {
   auroraVisibility: number;
   rainIntensity: number;
   timeOfDay: number;
-  // Auto-derived from sun state — not in keyframes
   terrainTint: THREE.Color;
-  oceanColor: THREE.Color;
+  oceanShallow: THREE.Color;
+  oceanDeep: THREE.Color;
+  oceanFoam: THREE.Color;
 }
 
 interface KeyFrame {
   time: number;
-  sunColor: THREE.Color;
-  sunIntensity: number;
-  ambientColor: THREE.Color;
-  ambientIntensity: number;
-  skyTopColor: THREE.Color;
-  skyBottomColor: THREE.Color;
-  fogColor: THREE.Color;
-  fogNear: number;
-  fogFar: number;
+  sunColor: THREE.Color; sunIntensity: number;
+  sun2Color: THREE.Color; sun2Intensity: number;
+  fillColor: THREE.Color; fillIntensity: number;
+  backColor: THREE.Color; backIntensity: number;
+  hemiSkyColor: THREE.Color; hemiGroundColor: THREE.Color; hemiIntensity: number;
+  skyGradient: SkyStop[];
+  fogColor: THREE.Color; fogNear: number; fogFar: number;
   atmosphereColor: THREE.Color;
-  cloudOpacity: number;
-  starVisibility: number;
-  auroraVisibility: number;
-  rainIntensity: number;
+  oceanShallow: THREE.Color; oceanDeep: THREE.Color; oceanFoam: THREE.Color;
+  cloudOpacity: number; starVisibility: number; auroraVisibility: number; rainIntensity: number;
 }
 
 const CYCLE_DURATION = 120;
 
-function makeKeyFrame(
-  time: number,
-  sunColor: string, sunIntensity: number,
-  ambientColor: string, ambientIntensity: number,
-  skyTop: string, skyBottom: string,
-  fogColor: string, fogNear: number, fogFar: number,
-  atmosphereColor: string,
-  cloudOpacity: number, starVisibility: number, auroraVisibility: number, rainIntensity: number
-): KeyFrame {
-  return {
-    time,
-    sunColor: new THREE.Color(sunColor),
-    sunIntensity,
-    ambientColor: new THREE.Color(ambientColor),
-    ambientIntensity,
-    skyTopColor: new THREE.Color(skyTop),
-    skyBottomColor: new THREE.Color(skyBottom),
-    fogColor: new THREE.Color(fogColor),
-    fogNear,
-    fogFar,
-    atmosphereColor: new THREE.Color(atmosphereColor),
-    cloudOpacity,
-    starVisibility,
-    auroraVisibility,
-    rainIntensity,
-  };
+function c(hex: string): THREE.Color { return new THREE.Color(hex); }
+function stops(...pairs: [number, string][]): SkyStop[] {
+  return pairs.map(([s, col]) => ({ stop: s, color: new THREE.Color(col) }));
 }
 
+// Original Tiny Skies presets (extracted from source)
 const KEY_FRAMES: KeyFrame[] = [
-  // Day — original Tiny Skies colors
-  makeKeyFrame(0.25,
-    '#fff0d0', 1.8,
-    '#80ccdd', 0.75,
-    '#1a4a82', '#50e4f4',
-    '#60ccde', 15, 40,
-    '#bbddcc',
-    0.2, 0, 0, 0),
-  // Sunset — original warm orange/purple
-  makeKeyFrame(0.45,
-    '#ffaa40', 1.2,
-    '#ff9944', 0.5,
-    '#4a2078', '#f0a030',
-    '#c07848', 12, 35,
-    '#ffcc44',
-    0.2, 0.1, 0, 0),
-  // Night — original deep blue, planet visible
-  makeKeyFrame(0.70,
-    '#102060', 0.6,
-    '#283c80', 0.5,
-    '#050a1e', '#203c94',
-    '#08142c', 10, 30,
-    '#2850aa',
-    0.06, 1.0, 0.8, 0),
-  // Dawn — warming up
-  makeKeyFrame(0.92,
-    '#ffaa40', 0.8,
-    '#ff9944', 0.45,
-    '#1a1050', '#f8c858',
-    '#c07848', 12, 35,
-    '#ffcc44',
-    0.15, 0.2, 0.1, 0),
+  { // DAY (0.25)
+    time: 0.25,
+    sunColor: c('#fff0d0'), sunIntensity: 3.75,
+    sun2Color: c('#fff0d0'), sun2Intensity: 2.5,
+    fillColor: c('#90bfcc'), fillIntensity: 1.25,
+    backColor: c('#aacc6e'), backIntensity: 1.0,
+    hemiSkyColor: c('#80ccdd'), hemiGroundColor: c('#66aa44'), hemiIntensity: 1.25,
+    skyGradient: stops(
+      [0,'#04102e'],[0.1,'#081e4a'],[0.2,'#103268'],[0.3,'#1a4a82'],
+      [0.4,'#266498'],[0.5,'#2080b0'],[0.6,'#209cc8'],[0.7,'#28b8dc'],
+      [0.8,'#38d0ea'],[0.9,'#50e4f4'],[1,'#70f2fc']
+    ),
+    fogColor: c('#60ccde'), fogNear: 15, fogFar: 40,
+    atmosphereColor: c('#bbddcc'),
+    oceanShallow: c('#2a8ca0'), oceanDeep: c('#1560a0'), oceanFoam: c('#b3ffff'),
+    cloudOpacity: 0.2, starVisibility: 0, auroraVisibility: 0, rainIntensity: 0,
+  },
+  { // SUNSET (0.45)
+    time: 0.45,
+    sunColor: c('#ffaa40'), sunIntensity: 3.5,
+    sun2Color: c('#aa6600'), sun2Intensity: 1.0,
+    fillColor: c('#cc8855'), fillIntensity: 0.875,
+    backColor: c('#aa8866'), backIntensity: 0.625,
+    hemiSkyColor: c('#ff9944'), hemiGroundColor: c('#554422'), hemiIntensity: 0.94,
+    skyGradient: stops(
+      [0,'#0e0a2a'],[0.15,'#1a1050'],[0.3,'#4a2078'],[0.45,'#a03060'],
+      [0.55,'#cc4840'],[0.65,'#e07828'],[0.75,'#f0a030'],[0.85,'#f8c858'],
+      [1,'#fce0a0']
+    ),
+    fogColor: c('#c07848'), fogNear: 12, fogFar: 35,
+    atmosphereColor: c('#ffcc44'),
+    oceanShallow: c('#5a4a98'), oceanDeep: c('#302868'), oceanFoam: c('#ff9944'),
+    cloudOpacity: 0.2, starVisibility: 0.1, auroraVisibility: 0, rainIntensity: 0,
+  },
+  { // NIGHT (0.70)
+    time: 0.70,
+    sunColor: c('#102060'), sunIntensity: 1.25,
+    sun2Color: c('#0c1848'), sun2Intensity: 0.625,
+    fillColor: c('#304080'), fillIntensity: 0.625,
+    backColor: c('#303860'), backIntensity: 0.5,
+    hemiSkyColor: c('#283c80'), hemiGroundColor: c('#10202c'), hemiIntensity: 0.625,
+    skyGradient: stops(
+      [0,'#02030c'],[0.15,'#050a1e'],[0.3,'#081032'],[0.45,'#0c1846'],
+      [0.55,'#101e58'],[0.65,'#142668'],[0.75,'#182e74'],[0.85,'#1c3684'],
+      [1,'#203c94']
+    ),
+    fogColor: c('#08142c'), fogNear: 10, fogFar: 30,
+    atmosphereColor: c('#2850aa'),
+    oceanShallow: c('#081838'), oceanDeep: c('#040c20'), oceanFoam: c('#2050aa'),
+    cloudOpacity: 0.06, starVisibility: 1.0, auroraVisibility: 0.8, rainIntensity: 0,
+  },
+  { // DAWN (0.92)
+    time: 0.92,
+    sunColor: c('#ffaa40'), sunIntensity: 2.5,
+    sun2Color: c('#aa6600'), sun2Intensity: 0.8,
+    fillColor: c('#cc8855'), fillIntensity: 0.8,
+    backColor: c('#aa8866'), backIntensity: 0.5,
+    hemiSkyColor: c('#ff9944'), hemiGroundColor: c('#554422'), hemiIntensity: 0.8,
+    skyGradient: stops(
+      [0,'#0e0a2a'],[0.15,'#1a1050'],[0.3,'#4a2078'],[0.45,'#a03060'],
+      [0.55,'#cc4840'],[0.65,'#e07828'],[0.75,'#f0a030'],[0.85,'#f8c858'],
+      [1,'#fce0a0']
+    ),
+    fogColor: c('#c07848'), fogNear: 12, fogFar: 35,
+    atmosphereColor: c('#ffcc44'),
+    oceanShallow: c('#5a4a98'), oceanDeep: c('#302868'), oceanFoam: c('#ff9944'),
+    cloudOpacity: 0.15, starVisibility: 0.2, auroraVisibility: 0.1, rainIntensity: 0,
+  },
 ];
 
 function lerpScalar(a: number, b: number, t: number): number {
   return a + (b - a) * t;
 }
 
-// Reusable temp colors to avoid GC
+function lerpSkyGradient(a: SkyStop[], b: SkyStop[], t: number): SkyStop[] {
+  const result: SkyStop[] = [];
+  const len = Math.min(a.length, b.length);
+  for (let i = 0; i < len; i++) {
+    result.push({
+      stop: lerpScalar(a[i].stop, b[i].stop, t),
+      color: new THREE.Color().lerpColors(a[i].color, b[i].color, t),
+    });
+  }
+  return result;
+}
+
 const _white = new THREE.Color('#ffffff');
-const _baseCyan = new THREE.Color('#55ccee');
 const _tmpColor = new THREE.Color();
 
 export class DayNightCycle {
   state: DayNightState;
   private cycleDuration: number;
   private elapsed: number;
-
-  // Rain system
-  private isRaining: boolean;
-  private rainTimer: number;
-  private rainDuration: number;
-  private rainFadeIn: number;
-  private rainFadeOut: number;
-  private rainPeak: number;
-  private nextRainCheck: number;
-  private cycleCount: number;
+  private isRaining = false;
+  private rainTimer = 0;
+  private rainDuration = 0;
+  private rainFadeIn = 3;
+  private rainFadeOut = 5;
+  private rainPeak = 0;
+  private nextRainCheck = 0.5;
+  private cycleCount = 0;
 
   constructor() {
     this.cycleDuration = CYCLE_DURATION;
-    this.elapsed = CYCLE_DURATION * 0.25; // Start at daytime
+    this.elapsed = CYCLE_DURATION * 0.25;
 
-    this.isRaining = false;
-    this.rainTimer = 0;
-    this.rainDuration = 0;
-    this.rainFadeIn = 3;
-    this.rainFadeOut = 5;
-    this.rainPeak = 0;
-    this.nextRainCheck = 0.5;
-    this.cycleCount = 0;
-
+    const day = KEY_FRAMES[0];
     this.state = {
       sunDirection: new THREE.Vector3(1, 0.3, 0),
-      sunColor: new THREE.Color('#ffffff'),
-      sunIntensity: 1.8,
-      ambientColor: new THREE.Color('#aaccee'),
-      ambientIntensity: 0.7,
-      skyTopColor: new THREE.Color('#2288dd'),
-      skyBottomColor: new THREE.Color('#66ccff'),
-      fogColor: new THREE.Color('#88ccee'),
-      fogNear: 15,
-      fogFar: 60,
-      atmosphereColor: new THREE.Color('#44aaff'),
-      cloudOpacity: 0.6,
-      starVisibility: 0,
-      auroraVisibility: 0,
-      rainIntensity: 0,
+      sunColor: day.sunColor.clone(), sunIntensity: day.sunIntensity,
+      sun2Color: day.sun2Color.clone(), sun2Intensity: day.sun2Intensity,
+      fillColor: day.fillColor.clone(), fillIntensity: day.fillIntensity,
+      backColor: day.backColor.clone(), backIntensity: day.backIntensity,
+      hemiSkyColor: day.hemiSkyColor.clone(), hemiGroundColor: day.hemiGroundColor.clone(), hemiIntensity: day.hemiIntensity,
+      skyGradient: day.skyGradient.map(s => ({ stop: s.stop, color: s.color.clone() })),
+      fogColor: day.fogColor.clone(), fogNear: day.fogNear, fogFar: day.fogFar,
+      atmosphereColor: day.atmosphereColor.clone(),
+      cloudOpacity: day.cloudOpacity,
+      starVisibility: 0, auroraVisibility: 0, rainIntensity: 0,
       timeOfDay: 0.25,
       terrainTint: new THREE.Color('#ffffff'),
-      oceanColor: new THREE.Color('#55ccee'),
+      oceanShallow: day.oceanShallow.clone(),
+      oceanDeep: day.oceanDeep.clone(),
+      oceanFoam: day.oceanFoam.clone(),
     };
   }
 
@@ -169,62 +186,53 @@ export class DayNightCycle {
     const prevTimeOfDay = this.state.timeOfDay;
     const timeOfDay = (this.elapsed / this.cycleDuration) % 1;
     this.state.timeOfDay = timeOfDay;
+    if (timeOfDay < prevTimeOfDay) this.cycleCount++;
 
-    if (timeOfDay < prevTimeOfDay) {
-      this.cycleCount++;
-    }
-
-    // Sun direction
     const angle = timeOfDay * Math.PI * 2;
-    this.state.sunDirection.set(
-      Math.cos(angle),
-      Math.sin(angle) * 0.3,
-      Math.sin(angle)
-    ).normalize();
+    this.state.sunDirection.set(Math.cos(angle), Math.sin(angle) * 0.3, Math.sin(angle)).normalize();
 
     // Find surrounding keyframes
     const frames = KEY_FRAMES;
     let beforeIdx = frames.length - 1;
     let afterIdx = 0;
-
     for (let i = 0; i < frames.length; i++) {
       if (frames[i].time > timeOfDay) {
         afterIdx = i;
         beforeIdx = (i - 1 + frames.length) % frames.length;
         break;
       }
-      if (i === frames.length - 1) {
-        beforeIdx = i;
-        afterIdx = 0;
-      }
+      if (i === frames.length - 1) { beforeIdx = i; afterIdx = 0; }
     }
 
     const before = frames[beforeIdx];
     const after = frames[afterIdx];
 
-    // Calculate interpolation factor
-    let range: number;
-    let progress: number;
+    let range: number, progress: number;
     if (after.time > before.time) {
       range = after.time - before.time;
       progress = (timeOfDay - before.time) / range;
     } else {
       range = (1 - before.time) + after.time;
-      if (timeOfDay >= before.time) {
-        progress = (timeOfDay - before.time) / range;
-      } else {
-        progress = (1 - before.time + timeOfDay) / range;
-      }
+      progress = timeOfDay >= before.time
+        ? (timeOfDay - before.time) / range
+        : (1 - before.time + timeOfDay) / range;
     }
     const t = progress * progress * (3 - 2 * progress);
 
-    // Interpolate keyframe properties
+    // Interpolate all
     this.state.sunColor.lerpColors(before.sunColor, after.sunColor, t);
     this.state.sunIntensity = lerpScalar(before.sunIntensity, after.sunIntensity, t);
-    this.state.ambientColor.lerpColors(before.ambientColor, after.ambientColor, t);
-    this.state.ambientIntensity = lerpScalar(before.ambientIntensity, after.ambientIntensity, t);
-    this.state.skyTopColor.lerpColors(before.skyTopColor, after.skyTopColor, t);
-    this.state.skyBottomColor.lerpColors(before.skyBottomColor, after.skyBottomColor, t);
+    this.state.sun2Color.lerpColors(before.sun2Color, after.sun2Color, t);
+    this.state.sun2Intensity = lerpScalar(before.sun2Intensity, after.sun2Intensity, t);
+    this.state.fillColor.lerpColors(before.fillColor, after.fillColor, t);
+    this.state.fillIntensity = lerpScalar(before.fillIntensity, after.fillIntensity, t);
+    this.state.backColor.lerpColors(before.backColor, after.backColor, t);
+    this.state.backIntensity = lerpScalar(before.backIntensity, after.backIntensity, t);
+    this.state.hemiSkyColor.lerpColors(before.hemiSkyColor, after.hemiSkyColor, t);
+    this.state.hemiGroundColor.lerpColors(before.hemiGroundColor, after.hemiGroundColor, t);
+    this.state.hemiIntensity = lerpScalar(before.hemiIntensity, after.hemiIntensity, t);
+
+    this.state.skyGradient = lerpSkyGradient(before.skyGradient, after.skyGradient, t);
     this.state.fogColor.lerpColors(before.fogColor, after.fogColor, t);
     this.state.fogNear = lerpScalar(before.fogNear, after.fogNear, t);
     this.state.fogFar = lerpScalar(before.fogFar, after.fogFar, t);
@@ -233,20 +241,17 @@ export class DayNightCycle {
     this.state.starVisibility = lerpScalar(before.starVisibility, after.starVisibility, t);
     this.state.auroraVisibility = lerpScalar(before.auroraVisibility, after.auroraVisibility, t);
 
-    // === AUTO-DERIVE terrain & ocean from sun state ===
-    // brightness: 30% floor — planet is NEVER fully dark
-    const brightness = Math.min(1.0, Math.max(0.55, this.state.sunIntensity * 0.35 + 0.45));
+    this.state.oceanShallow.lerpColors(before.oceanShallow, after.oceanShallow, t);
+    this.state.oceanDeep.lerpColors(before.oceanDeep, after.oceanDeep, t);
+    this.state.oceanFoam.lerpColors(before.oceanFoam, after.oceanFoam, t);
 
-    // terrainTint: sunColor diluted toward white, then scaled by brightness
+    // Terrain tint from sun
+    const brightness = Math.min(1.0, Math.max(0.55, this.state.sunIntensity * 0.15 + 0.45));
     _tmpColor.copy(this.state.sunColor).lerp(_white, 0.6);
     this.state.terrainTint.copy(_tmpColor).multiplyScalar(brightness);
 
-    // oceanColor: blend sky bottom with cyan, matching original's sky-ocean unity
-    _tmpColor.copy(this.state.skyBottomColor).lerp(_baseCyan, 0.4);
-    this.state.oceanColor.copy(_tmpColor).multiplyScalar(Math.max(0.5, brightness));
-
     // Rain
-    let baseRain = lerpScalar(before.rainIntensity, after.rainIntensity, t);
+    const baseRain = lerpScalar(before.rainIntensity, after.rainIntensity, t);
     this.updateRain(deltaTime, timeOfDay);
     this.state.rainIntensity = Math.max(baseRain, this.getRainOverlay());
   }
@@ -254,22 +259,17 @@ export class DayNightCycle {
   private updateRain(deltaTime: number, timeOfDay: number): void {
     if (this.isRaining) {
       this.rainTimer += deltaTime;
-      const totalDuration = this.rainFadeIn + this.rainDuration + this.rainFadeOut;
-      if (this.rainTimer >= totalDuration) {
+      if (this.rainTimer >= this.rainFadeIn + this.rainDuration + this.rainFadeOut) {
         this.isRaining = false;
         this.rainTimer = 0;
       }
     }
-
-    const checkPoint = this.nextRainCheck;
-    if (!this.isRaining && timeOfDay >= checkPoint && timeOfDay < checkPoint + 0.02) {
+    const cp = this.nextRainCheck;
+    if (!this.isRaining && timeOfDay >= cp && timeOfDay < cp + 0.02) {
       if (Math.random() < 0.1) {
-        this.isRaining = true;
-        this.rainTimer = 0;
+        this.isRaining = true; this.rainTimer = 0;
         this.rainDuration = 8 + Math.random() * 12;
         this.rainPeak = 0.5 + Math.random() * 0.5;
-        this.rainFadeIn = 3;
-        this.rainFadeOut = 5;
       }
       this.nextRainCheck = timeOfDay < 0.5 ? 0.5 + Math.random() * 0.3 : Math.random() * 0.3;
     }
@@ -278,13 +278,9 @@ export class DayNightCycle {
   private getRainOverlay(): number {
     if (!this.isRaining) return 0;
     const t = this.rainTimer;
-    if (t < this.rainFadeIn) {
-      return this.rainPeak * (t / this.rainFadeIn);
-    } else if (t < this.rainFadeIn + this.rainDuration) {
-      return this.rainPeak;
-    } else {
-      const fadeElapsed = t - this.rainFadeIn - this.rainDuration;
-      return this.rainPeak * Math.max(0, 1 - fadeElapsed / this.rainFadeOut);
-    }
+    if (t < this.rainFadeIn) return this.rainPeak * (t / this.rainFadeIn);
+    if (t < this.rainFadeIn + this.rainDuration) return this.rainPeak;
+    const f = t - this.rainFadeIn - this.rainDuration;
+    return this.rainPeak * Math.max(0, 1 - f / this.rainFadeOut);
   }
 }

@@ -24,7 +24,10 @@ export class Ocean {
 
     material.onBeforeCompile = (shader) => {
       shader.uniforms.oceanTime = uniforms.oceanTime;
-      shader.uniforms.foamColor = { value: new THREE.Color('#b3ffff') };
+      const foamColorUniform = { value: new THREE.Color('#b3ffff') };
+      shader.uniforms.foamColor = foamColorUniform;
+      // Expose for dynamic updates
+      (material as any)._foamColorUniform = foamColorUniform;
       shader.uniforms.rimColor = { value: new THREE.Color('#ffee55') };
       shader.uniforms.rimIntensity = { value: 0.8 };
       shader.uniforms.rimPower = { value: 8.5 };

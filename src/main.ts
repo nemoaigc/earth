@@ -31,7 +31,7 @@ if (appEl) {
 
 // --- Scene ---
 const scene = new THREE.Scene();
-scene.fog = new THREE.Fog('#88ccee', 15, 60);
+scene.fog = new THREE.Fog('#60ccde', 15, 40);
 
 // --- Day/Night Cycle ---
 const dayNight = new DayNightCycle();
@@ -90,14 +90,30 @@ scene.add(lensFlare.group);
 const rain = new Rain();
 scene.add(rain.group);
 
-// --- Lights ---
-const sunLight = new THREE.DirectionalLight('#ffffff', 1.8);
-sunLight.position.copy(dayNight.state.sunDirection).multiplyScalar(20);
-sunLight.castShadow = false;
+// --- Multi-light system (matching original Tiny Skies) ---
+// Main sun
+const sunLight = new THREE.DirectionalLight('#fff0d0', 3.75);
+sunLight.position.set(20, 6, 0);
 scene.add(sunLight);
 
-const ambientLight = new THREE.AmbientLight('#aaccee', 0.7);
-scene.add(ambientLight);
+// Secondary sun (slightly offset)
+const sun2Light = new THREE.DirectionalLight('#fff0d0', 2.5);
+sun2Light.position.set(18, 10, 5);
+scene.add(sun2Light);
+
+// Fill light (from side, prevents dark faces)
+const fillLight = new THREE.DirectionalLight('#90bfcc', 1.25);
+fillLight.position.set(-10, 5, 15);
+scene.add(fillLight);
+
+// Back light (subtle rim/silhouette light)
+const backLight = new THREE.DirectionalLight('#aacc6e', 1.0);
+backLight.position.set(-15, -5, -10);
+scene.add(backLight);
+
+// Hemisphere light (sky + ground colors)
+const hemiLight = new THREE.HemisphereLight('#80ccdd', '#66aa44', 1.25);
+scene.add(hemiLight);
 
 // --- Animation loop ---
 const clock = new THREE.Clock();
@@ -108,43 +124,61 @@ function animate(): void {
   const deltaTime = clock.getDelta();
   const elapsed = clock.getElapsedTime();
 
-  // Update day/night cycle
   dayNight.update(deltaTime);
   const state = dayNight.state;
 
-  // Apply lighting
+  // --- Update lights ---
+  const sunDir = state.sunDirection;
   sunLight.color.copy(state.sunColor);
   sunLight.intensity = state.sunIntensity;
-  sunLight.position.copy(state.sunDirection).multiplyScalar(20);
+  sunLight.position.copy(sunDir).multiplyScalar(20);
 
-  ambientLight.color.copy(state.ambientColor);
-  ambientLight.intensity = state.ambientIntensity;
+  sun2Light.color.copy(state.sun2Color);
+  sun2Light.intensity = state.sun2Intensity;
+  sun2Light.position.copy(sunDir).multiplyScalar(18).add(new THREE.Vector3(0, 4, 5));
 
-  // Apply fog
+  fillLight.color.copy(state.fillColor);
+  fillLight.intensity = state.fillIntensity;
+  // Fill from opposite side of sun
+  fillLight.position.copy(sunDir).multiplyScalar(-12).add(new THREE.Vector3(0, 5, 0));
+
+  backLight.color.copy(state.backColor);
+  backLight.intensity = state.backIntensity;
+  backLight.position.copy(sunDir).multiplyScalar(-15).add(new THREE.Vector3(0, -5, 0));
+
+  hemiLight.color.copy(state.hemiSkyColor);
+  hemiLight.groundColor.copy(state.hemiGroundColor);
+  hemiLight.intensity = state.hemiIntensity;
+
+  // --- Fog ---
   if (scene.fog instanceof THREE.Fog) {
     scene.fog.color.copy(state.fogColor);
     scene.fog.near = state.fogNear;
     scene.fog.far = state.fogFar;
   }
 
-  // Apply sky
-  skyDome.update(state.skyTopColor, state.skyBottomColor);
+  // --- Sky (multi-stop gradient) ---
+  skyDome.updateGradient(state.skyGradient);
 
-  // Apply terrain & ocean tinting from day/night
+  // --- Terrain & ocean ---
   globe.terrainMaterial.color.copy(state.terrainTint);
-  globe.ocean.material.color.copy(state.oceanColor);
+  globe.ocean.material.color.copy(state.oceanShallow);
+  globe.ocean.material.emissive.copy(state.oceanDeep);
+  // Update foam color uniform
+  if ((globe.ocean.material as any)._foamColorUniform) {
+    (globe.ocean.material as any)._foamColorUniform.value.copy(state.oceanFoam);
+  }
 
-  // Apply atmosphere, ocean
   globe.update(elapsed, state.sunDirection, state.atmosphereColor);
 
-  // Update sky elements
+  // --- Sky elements ---
   clouds.update(elapsed, state.cloudOpacity);
   stars.update(state.starVisibility);
   aurora.update(elapsed, state.auroraVisibility);
-  lensFlare.update(cameraController.camera, state.sunDirection.clone().multiplyScalar(20), state.starVisibility < 0.5 ? 1.0 : 0.0);
+  lensFlare.update(cameraController.camera, sunDir.clone().multiplyScalar(20), state.starVisibility < 0.5 ? 1.0 : 0.0);
   rain.update(elapsed, state.rainIntensity);
 
-  // Update terrain features
+  // --- Terrain features ---
   trees.update(elapsed);
   palmTrees.update(elapsed);
   rocks.update(elapsed);
@@ -154,16 +188,12 @@ function animate(): void {
   lighthouses.update(elapsed);
   balloons.update(elapsed);
 
-  // Update camera
   cameraController.update(deltaTime);
-
-  // Render
   renderer.render(scene, cameraController.camera);
 }
 
 animate();
 
-// --- Resize handling ---
 window.addEventListener('resize', () => {
   const width = window.innerWidth;
   const height = window.innerHeight;

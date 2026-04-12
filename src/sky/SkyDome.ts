@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import type { SkyStop } from '../systems/DayNightCycle';
 
 export class SkyDome {
   mesh: THREE.Mesh;
@@ -25,23 +26,41 @@ export class SkyDome {
     });
 
     this.mesh = new THREE.Mesh(geometry, material);
-
-    const defaultTop = new THREE.Color('#2266cc');
-    const defaultBottom = new THREE.Color('#88bbee');
-    this.update(defaultTop, defaultBottom);
   }
 
-  update(topColor: THREE.Color, bottomColor: THREE.Color): void {
+  updateGradient(skyStops: SkyStop[]): void {
     const { ctx, canvas } = this;
 
+    // Top half: stop 0 (zenith) → stop 1 (horizon) at canvas middle
+    // Bottom half: mirror
+    const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+
+    // Map sky stops to canvas: stop 0 = top, stop 1 = middle
+    for (const s of skyStops) {
+      const pos = s.stop * 0.5; // 0→0, 1→0.5 (middle)
+      gradient.addColorStop(pos, `#${s.color.getHexString()}`);
+    }
+    // Mirror for bottom half
+    for (let i = skyStops.length - 1; i >= 0; i--) {
+      const s = skyStops[i];
+      const pos = 1.0 - s.stop * 0.5; // 1→0.5, 0→1.0
+      gradient.addColorStop(Math.min(pos, 1), `#${s.color.getHexString()}`);
+    }
+
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    this.texture.needsUpdate = true;
+  }
+
+  // Legacy 2-color update (fallback)
+  update(topColor: THREE.Color, bottomColor: THREE.Color): void {
+    const { ctx, canvas } = this;
     const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
     gradient.addColorStop(0, `#${topColor.getHexString()}`);
     gradient.addColorStop(0.5, `#${bottomColor.getHexString()}`);
     gradient.addColorStop(1, `#${topColor.getHexString()}`);
-
     ctx.fillStyle = gradient;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
-
     this.texture.needsUpdate = true;
   }
 }
