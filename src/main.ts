@@ -7,10 +7,12 @@ import { Mountains } from './features/Mountains';
 import { Balloons } from './features/Balloons';
 import { Icebergs } from './features/Icebergs';
 import { Reefs } from './features/Reefs';
+import { Flowers } from './features/Flowers';
+import { Grass } from './features/Grass';
 import { SkyDome } from './sky/SkyDome';
 import { Clouds } from './sky/Clouds';
 import { Stars } from './sky/Stars';
-import { LensFlare } from './sky/LensFlare';
+// LensFlare removed
 import { Rain } from './sky/Rain';
 import { DayNightCycle } from './systems/DayNightCycle';
 import { CameraController } from './systems/Camera';
@@ -59,6 +61,10 @@ const icebergs = new Icebergs(globe.terrainData);
 scene.add(icebergs.group);
 const reefs = new Reefs(globe.terrainData);
 scene.add(reefs.group);
+const flowers = new Flowers(globe.terrainData);
+scene.add(flowers.group);
+const grass = new Grass(globe.terrainData);
+scene.add(grass.group);
 
 // --- Sky elements ---
 const skyDome = new SkyDome();
@@ -67,8 +73,8 @@ const clouds = new Clouds();
 scene.add(clouds.group);
 const stars = new Stars();
 scene.add(stars.points);
-const lensFlare = new LensFlare();
-scene.add(lensFlare.group);
+// lensFlare removed
+// lensFlare removed
 const rain = new Rain();
 scene.add(rain.group);
 
@@ -117,7 +123,7 @@ function animate(): void {
   // --- Sky elements ---
   clouds.update(elapsed, state.cloudOpacity);
   stars.update(state.starVisibility);
-  lensFlare.update(cameraController.camera, new THREE.Vector3(20, 10, 0), state.starVisibility < 0.5 ? 1.0 : 0.0);
+  // lensFlare removed
   rain.update(elapsed, state.rainIntensity);
 
   // --- Terrain features ---
@@ -126,6 +132,10 @@ function animate(): void {
   rocks.update(elapsed);
   mountains.update(elapsed);
   balloons.update(elapsed);
+  icebergs.update(elapsed);
+  reefs.update(elapsed);
+  flowers.update(elapsed);
+  grass.update(elapsed);
   icebergs.update(elapsed);
   reefs.update(elapsed);
 

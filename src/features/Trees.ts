@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import type { TerrainData } from '../globe/terrain';
+import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 
 interface BiomeConfig {
   biome: string;
@@ -8,6 +9,7 @@ interface BiomeConfig {
   heightRange: [number, number];
   widthRange: [number, number];
   useCone: boolean;
+  geoType?: 'teardrop' | 'cone' | 'acacia' | 'cactus';
 }
 
 const BIOME_CONFIGS: BiomeConfig[] = [
@@ -42,6 +44,24 @@ const BIOME_CONFIGS: BiomeConfig[] = [
     heightRange: [0.15, 0.25],
     widthRange: [0.04, 0.06],
     useCone: false,
+  },
+  {
+    biome: 'desert',
+    count: 60,
+    colors: ['#557733'],
+    heightRange: [0.25, 0.35],
+    widthRange: [0.10, 0.14],
+    useCone: false,
+    geoType: 'acacia',
+  },
+  {
+    biome: 'desert',
+    count: 40,
+    colors: ['#558833'],
+    heightRange: [0.10, 0.15],
+    widthRange: [0.03, 0.05],
+    useCone: false,
+    geoType: 'cactus',
   },
 ];
 
@@ -100,6 +120,46 @@ function createConeTreeGeometry(height: number, width: number): THREE.BufferGeom
 
   geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
   return geometry;
+}
+
+function createAcaciaGeometry(height: number, width: number): THREE.BufferGeometry {
+  const trunk = new THREE.CylinderGeometry(0.008, 0.012, height, 6);
+  trunk.translate(0, height / 2, 0);
+  const tc = new THREE.Color('#8B6914');
+  const tColors = new Float32Array(trunk.getAttribute('position').count * 3);
+  for (let i = 0; i < tColors.length; i += 3) { tColors[i] = tc.r; tColors[i+1] = tc.g; tColors[i+2] = tc.b; }
+  trunk.setAttribute('color', new THREE.BufferAttribute(tColors, 3));
+
+  const canopy = new THREE.CylinderGeometry(width / 2, width / 2 * 0.85, 0.025, 8);
+  canopy.translate(0, height, 0);
+  const cc = new THREE.Color('#557733');
+  const cColors = new Float32Array(canopy.getAttribute('position').count * 3);
+  for (let i = 0; i < cColors.length; i += 3) { cColors[i] = cc.r; cColors[i+1] = cc.g; cColors[i+2] = cc.b; }
+  canopy.setAttribute('color', new THREE.BufferAttribute(cColors, 3));
+
+  return mergeGeometries([trunk, canopy], false)!;
+}
+
+function createCactusGeometry(height: number, _width: number): THREE.BufferGeometry {
+  const gc = new THREE.Color('#558833');
+  function colorGeo(g: THREE.BufferGeometry) {
+    const c = new Float32Array(g.getAttribute('position').count * 3);
+    for (let i = 0; i < c.length; i += 3) { c[i] = gc.r; c[i+1] = gc.g; c[i+2] = gc.b; }
+    g.setAttribute('color', new THREE.BufferAttribute(c, 3));
+    return g;
+  }
+  const trunk = colorGeo(new THREE.CylinderGeometry(0.02, 0.025, height, 6));
+  trunk.translate(0, height / 2, 0);
+
+  const armL = colorGeo(new THREE.CylinderGeometry(0.012, 0.015, height * 0.4, 5));
+  armL.rotateZ(Math.PI / 4);
+  armL.translate(-0.03, height * 0.6, 0);
+
+  const armR = colorGeo(new THREE.CylinderGeometry(0.012, 0.015, height * 0.4, 5));
+  armR.rotateZ(-Math.PI / 4);
+  armR.translate(0.03, height * 0.55, 0);
+
+  return mergeGeometries([trunk, armL, armR], false)!;
 }
 
 function createWindSwayMaterial(
@@ -199,9 +259,11 @@ export class Trees {
           config.widthRange[0] +
           Math.random() * (config.widthRange[1] - config.widthRange[0]);
 
-        const geometry = config.useCone
-          ? createConeTreeGeometry(height, width)
-          : createTeardropGeometry(height, width);
+        let geometry: THREE.BufferGeometry;
+        if (config.geoType === 'acacia') geometry = createAcaciaGeometry(height, width);
+        else if (config.geoType === 'cactus') geometry = createCactusGeometry(height, width);
+        else if (config.useCone) geometry = createConeTreeGeometry(height, width);
+        else geometry = createTeardropGeometry(height, width);
 
         const tintColor = new THREE.Color(config.colors[c]);
         const material = createWindSwayMaterial(tintColor, this.timeUniform);
