@@ -88,13 +88,13 @@ const KEY_FRAMES: KeyFrame[] = [
     oceanShallow: c('#5a4a98'), oceanDeep: c('#302868'), oceanFoam: c('#ff9944'),
     cloudOpacity: 0.2, starVisibility: 0.1, auroraVisibility: 0, rainIntensity: 0,
   },
-  { // NIGHT (0.70)
+  { // NIGHT (0.70) — boosted so planet stays visible at distance
     time: 0.70,
-    sunColor: c('#102060'), sunIntensity: 1.25,
-    sun2Color: c('#0c1848'), sun2Intensity: 0.625,
-    fillColor: c('#304080'), fillIntensity: 0.625,
-    backColor: c('#303860'), backIntensity: 0.5,
-    hemiSkyColor: c('#283c80'), hemiGroundColor: c('#10202c'), hemiIntensity: 0.625,
+    sunColor: c('#2040aa'), sunIntensity: 2.0,
+    sun2Color: c('#1830880'), sun2Intensity: 1.0,
+    fillColor: c('#4060aa'), fillIntensity: 1.2,
+    backColor: c('#405080'), backIntensity: 0.8,
+    hemiSkyColor: c('#3050aa'), hemiGroundColor: c('#182838'), hemiIntensity: 1.0,
     skyGradient: stops(
       [0,'#02030c'],[0.15,'#050a1e'],[0.3,'#081032'],[0.45,'#0c1846'],
       [0.55,'#101e58'],[0.65,'#142668'],[0.75,'#182e74'],[0.85,'#1c3684'],

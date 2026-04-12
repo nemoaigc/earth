@@ -11,7 +11,7 @@ import { Balloons } from './features/Balloons';
 import { SkyDome } from './sky/SkyDome';
 import { Clouds } from './sky/Clouds';
 import { Stars } from './sky/Stars';
-import { Aurora } from './sky/Aurora';
+// Aurora removed
 import { LensFlare } from './sky/LensFlare';
 import { Rain } from './sky/Rain';
 import { DayNightCycle } from './systems/DayNightCycle';
@@ -81,8 +81,7 @@ scene.add(clouds.group);
 const stars = new Stars();
 scene.add(stars.points);
 
-const aurora = new Aurora();
-scene.add(aurora.group);
+// Aurora removed per user request
 
 const lensFlare = new LensFlare();
 scene.add(lensFlare.group);
@@ -174,7 +173,7 @@ function animate(): void {
   // --- Sky elements ---
   clouds.update(elapsed, state.cloudOpacity);
   stars.update(state.starVisibility);
-  aurora.update(elapsed, state.auroraVisibility);
+  // aurora removed
   lensFlare.update(cameraController.camera, sunDir.clone().multiplyScalar(20), state.starVisibility < 0.5 ? 1.0 : 0.0);
   rain.update(elapsed, state.rainIntensity);
 
