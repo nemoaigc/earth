@@ -73,6 +73,7 @@ export class Globe {
   }
 
   update(time: number, atmosphereColor: THREE.Color): void {
+    this.timeUniform.value = time;
     this.ocean.update(time);
     this.atmosphere.updateColor(atmosphereColor);
   }
