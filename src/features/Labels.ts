@@ -22,12 +22,12 @@ const LABELS: LabelDef[] = [
 ];
 
 function latLngToPosition(lat: number, lng: number, radius: number): THREE.Vector3 {
-  const phi = (90 - lat) * Math.PI / 180;
-  const theta = (lng + 180) * Math.PI / 180;
+  const phi = (lat * Math.PI) / 180;
+  const theta = (lng * Math.PI) / 180;
   return new THREE.Vector3(
-    -radius * Math.sin(phi) * Math.cos(theta),
-    radius * Math.cos(phi),
-    radius * Math.sin(phi) * Math.sin(theta)
+    Math.cos(phi) * Math.cos(theta) * radius,
+    Math.sin(phi) * radius,
+    Math.cos(phi) * Math.sin(theta) * radius
   );
 }
 
@@ -45,7 +45,7 @@ export class Labels {
 
       const div = document.createElement('div');
       div.textContent = def.name;
-      div.style.cssText = 'color: white; font-size: 11px; font-family: Inter, system-ui, sans-serif; font-weight: 600; text-shadow: 0 1px 4px rgba(0,0,0,0.6); pointer-events: none; white-space: nowrap; opacity: 0; transition: opacity 0.3s;';
+      div.style.cssText = 'color: white; font-size: 16px; font-family: Inter, system-ui, sans-serif; font-weight: 700; text-shadow: 0 2px 6px rgba(0,0,0,0.7); pointer-events: none; white-space: nowrap; opacity: 0; transition: opacity 0.3s; letter-spacing: 2px;';
 
       const label = new CSS2DObject(div);
       label.position.copy(pos);
