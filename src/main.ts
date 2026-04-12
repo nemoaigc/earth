@@ -75,64 +75,9 @@ scene.add(lensFlare.group);
 const rain = new Rain();
 scene.add(rain.group);
 
-// ==========================================
-// THREE LIGHTING MODES - Press 1/2/3 to switch
-// ==========================================
-
-let lightingMode = 1; // default: pure ambient
-
-// --- Mode 1: Pure Ambient (no directional sun) ---
-const ambientLight1 = new THREE.AmbientLight('#ffffff', 2.5);
-const hemiLight1 = new THREE.HemisphereLight('#88bbdd', '#556644', 2.0);
-
-// --- Mode 2: Soft directional + ambient (subtle 3D feel) ---
-const ambientLight2 = new THREE.AmbientLight('#ffffff', 1.8);
-const hemiLight2 = new THREE.HemisphereLight('#88bbdd', '#556644', 1.5);
-const softDir2 = new THREE.DirectionalLight('#ffffff', 1.0);
-softDir2.position.set(5, 10, 5);
-
-// --- Mode 3: Self-illuminating (emissive globe) ---
-const ambientLight3 = new THREE.AmbientLight('#ffffff', 3.5);
-
-// All lights start hidden
-const allLights = [ambientLight1, hemiLight1, ambientLight2, hemiLight2, softDir2, ambientLight3];
-allLights.forEach(l => { l.visible = false; scene.add(l); });
-
-function setLightingMode(mode: number) {
-  lightingMode = mode;
-  allLights.forEach(l => l.visible = false);
-  if (mode === 1) {
-    ambientLight1.visible = true;
-    hemiLight1.visible = true;
-  } else if (mode === 2) {
-    ambientLight2.visible = true;
-    hemiLight2.visible = true;
-    softDir2.visible = true;
-  } else {
-    ambientLight3.visible = true;
-  }
-  updateModeLabel();
-}
-
-// --- Mode label UI ---
-const modeLabel = document.createElement('div');
-modeLabel.style.cssText = 'position:fixed;top:16px;left:16px;color:white;font-size:14px;font-family:Inter,system-ui,sans-serif;background:rgba(0,0,0,0.5);padding:8px 14px;border-radius:8px;z-index:100;pointer-events:none;';
-document.body.appendChild(modeLabel);
-
-function updateModeLabel() {
-  const names = ['', '1: Pure Ambient (均匀光)', '2: Soft Directional (微弱方向光)', '3: Self-Illuminating (自发光)'];
-  modeLabel.textContent = `Lighting: ${names[lightingMode]}  |  Press 1/2/3 to switch`;
-}
-
-// Keyboard listener
-window.addEventListener('keydown', (e) => {
-  if (e.key === '1') setLightingMode(1);
-  if (e.key === '2') setLightingMode(2);
-  if (e.key === '3') setLightingMode(3);
-});
-
-// Start with mode 1
-setLightingMode(1);
+// --- Lighting: Self-illuminating (no sun, sky-driven) ---
+const ambientLight = new THREE.AmbientLight('#ffffff', 3.5);
+scene.add(ambientLight);
 
 // --- Animation loop ---
 const clock = new THREE.Clock();
@@ -146,29 +91,11 @@ function animate(): void {
   dayNight.update(deltaTime);
   const state = dayNight.state;
 
-  // --- Update lights based on sky state (no sun direction) ---
-  // All modes: tint lights by sky color
+  // --- Light driven by sky brightness ---
   const skyBrightness = (state.hemiSkyColor.r + state.hemiSkyColor.g + state.hemiSkyColor.b) / 3;
   const brightnessFactor = Math.max(0.4, skyBrightness * 2);
-
-  if (lightingMode === 1) {
-    ambientLight1.color.copy(state.hemiSkyColor).lerp(new THREE.Color('#ffffff'), 0.5);
-    ambientLight1.intensity = 1.5 * brightnessFactor;
-    hemiLight1.color.copy(state.hemiSkyColor);
-    hemiLight1.groundColor.copy(state.hemiGroundColor);
-    hemiLight1.intensity = 1.2 * brightnessFactor;
-  } else if (lightingMode === 2) {
-    ambientLight2.color.copy(state.hemiSkyColor).lerp(new THREE.Color('#ffffff'), 0.5);
-    ambientLight2.intensity = 1.2 * brightnessFactor;
-    hemiLight2.color.copy(state.hemiSkyColor);
-    hemiLight2.groundColor.copy(state.hemiGroundColor);
-    hemiLight2.intensity = 1.0 * brightnessFactor;
-    softDir2.color.copy(state.hemiSkyColor).lerp(new THREE.Color('#ffffff'), 0.7);
-    softDir2.intensity = 0.8 * brightnessFactor;
-  } else {
-    ambientLight3.color.copy(state.hemiSkyColor).lerp(new THREE.Color('#ffffff'), 0.6);
-    ambientLight3.intensity = 2.5 * brightnessFactor;
-  }
+  ambientLight.color.copy(state.hemiSkyColor).lerp(new THREE.Color('#ffffff'), 0.6);
+  ambientLight.intensity = 2.5 * brightnessFactor;
 
   // --- Fog ---
   if (scene.fog instanceof THREE.Fog) {
