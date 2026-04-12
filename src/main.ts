@@ -11,103 +11,90 @@ import { Balloons } from './features/Balloons';
 import { SkyDome } from './sky/SkyDome';
 import { Clouds } from './sky/Clouds';
 import { Stars } from './sky/Stars';
-import { LensFlare } from './sky/LensFlare';
 import { Rain } from './sky/Rain';
 import { DayNightCycle } from './systems/DayNightCycle';
 import { CameraController } from './systems/Camera';
 
-// --- Renderer ---
 const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.toneMapping = THREE.NoToneMapping;
 
 const appEl = document.getElementById('app');
-if (appEl) {
-  appEl.innerHTML = '';
-  appEl.appendChild(renderer.domElement);
-}
+if (appEl) { appEl.innerHTML = ''; appEl.appendChild(renderer.domElement); }
 
-// --- Scene ---
 const scene = new THREE.Scene();
-scene.fog = new THREE.Fog('#60ccde', 15, 40);
+scene.fog = new THREE.Fog('#60ccde', 20, 55);
 
-// --- Day/Night Cycle ---
 const dayNight = new DayNightCycle();
+const cameraController = new CameraController(window.innerWidth / window.innerHeight, renderer.domElement);
 
-// --- Camera ---
-const cameraController = new CameraController(
-  window.innerWidth / window.innerHeight,
-  renderer.domElement
-);
-
-// --- Globe ---
+// Globe (loads terrain async)
 const globe = new Globe();
 scene.add(globe.group);
 
-// --- Terrain features ---
-const trees = new Trees(globe.terrainData);
-scene.add(trees.group);
-const palmTrees = new PalmTrees(globe.terrainData);
-scene.add(palmTrees.group);
-const rocks = new Rocks(globe.terrainData);
-scene.add(rocks.group);
-const villages = new Villages(globe.terrainData);
-scene.add(villages.group);
-const windmills = new Windmills(globe.terrainData);
-scene.add(windmills.group);
-const mountains = new Mountains(globe.terrainData);
-scene.add(mountains.group);
-const lighthouses = new Lighthouses(globe.terrainData);
-scene.add(lighthouses.group);
-const balloons = new Balloons(globe.terrainData);
-scene.add(balloons.group);
+// Features added when terrain is ready
+const featureGroups: THREE.Group[] = [];
+const featureUpdaters: ((t: number) => void)[] = [];
 
-// --- Sky elements ---
+function addFeatures() {
+  const td = globe.terrainData;
+  const features = [
+    new Trees(td), new PalmTrees(td), new Rocks(td),
+    new Villages(td), new Windmills(td), new Mountains(td),
+    new Lighthouses(td), new Balloons(td),
+  ];
+  for (const f of features) {
+    scene.add(f.group);
+    featureGroups.push(f.group);
+    featureUpdaters.push((t) => f.update(t));
+  }
+}
+
+globe.onReady = addFeatures;
+// If already ready (sync fallback)
+if (globe.ready) addFeatures();
+
+// Sky
 const skyDome = new SkyDome();
 scene.add(skyDome.mesh);
 const clouds = new Clouds();
 scene.add(clouds.group);
 const stars = new Stars();
 scene.add(stars.points);
-const lensFlare = new LensFlare();
-scene.add(lensFlare.group);
 const rain = new Rain();
 scene.add(rain.group);
 
-// --- Lighting: Self-illuminating (no sun, sky-driven) ---
+// Lighting: self-illuminating
 const ambientLight = new THREE.AmbientLight('#ffffff', 3.5);
 scene.add(ambientLight);
 
-// --- Animation loop ---
+// Animation
 const clock = new THREE.Clock();
 
 function animate(): void {
   requestAnimationFrame(animate);
-
   const deltaTime = clock.getDelta();
   const elapsed = clock.getElapsedTime();
 
   dayNight.update(deltaTime);
   const state = dayNight.state;
 
-  // --- Light driven by sky brightness ---
+  // Light driven by sky
   const skyBrightness = (state.hemiSkyColor.r + state.hemiSkyColor.g + state.hemiSkyColor.b) / 3;
-  const brightnessFactor = Math.max(0.4, skyBrightness * 2);
+  const bf = Math.max(0.4, skyBrightness * 2);
   ambientLight.color.copy(state.hemiSkyColor).lerp(new THREE.Color('#ffffff'), 0.6);
-  ambientLight.intensity = 2.5 * brightnessFactor;
+  ambientLight.intensity = 2.5 * bf;
 
-  // --- Fog ---
+  // Fog
   if (scene.fog instanceof THREE.Fog) {
     scene.fog.color.copy(state.fogColor);
     scene.fog.near = state.fogNear;
     scene.fog.far = state.fogFar;
   }
 
-  // --- Sky ---
   skyDome.updateGradient(state.skyGradient);
 
-  // --- Terrain & ocean ---
   globe.terrainMaterial.color.copy(state.terrainTint);
   globe.ocean.material.color.copy(state.oceanShallow);
   globe.ocean.material.emissive.copy(state.oceanDeep);
@@ -116,22 +103,11 @@ function animate(): void {
   }
 
   globe.update(elapsed, state.atmosphereColor);
-
-  // --- Sky elements ---
   clouds.update(elapsed, state.cloudOpacity);
   stars.update(state.starVisibility);
-  lensFlare.update(cameraController.camera, new THREE.Vector3(20, 10, 0), state.starVisibility < 0.5 ? 1.0 : 0.0);
   rain.update(elapsed, state.rainIntensity);
 
-  // --- Terrain features ---
-  trees.update(elapsed);
-  palmTrees.update(elapsed);
-  rocks.update(elapsed);
-  villages.update(elapsed);
-  windmills.update(elapsed);
-  mountains.update(elapsed);
-  lighthouses.update(elapsed);
-  balloons.update(elapsed);
+  for (const updater of featureUpdaters) updater(elapsed);
 
   cameraController.update(deltaTime);
   renderer.render(scene, cameraController.camera);

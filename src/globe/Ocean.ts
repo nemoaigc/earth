@@ -7,7 +7,7 @@ export class Ocean {
   private uniforms: { oceanTime: { value: number } };
 
   constructor() {
-    const geometry = new THREE.IcosahedronGeometry(GLOBE_RADIUS - 0.005, 64);
+    const geometry = new THREE.IcosahedronGeometry(GLOBE_RADIUS - 0.005, 80);
 
     this.uniforms = {
       oceanTime: { value: 0 },
