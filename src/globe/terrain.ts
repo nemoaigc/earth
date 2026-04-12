@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { sampleNoise } from '../utils/noise';
-import { createWorldMask } from './worldmap';
+import { createWorldMask, type BiomeWeights } from './worldmap';
 
 export const GLOBE_RADIUS = 5;
 
@@ -81,7 +81,6 @@ export function generateTerrain(): TerrainData {
     const biome = mask.getBiome(lat, lng);
 
     if (biome !== 'ocean') {
-      // LAND — use noise for height variation only
       const noise = Math.abs(sampleNoise(nx, ny, nz, 5, 2.0, 0.5, 1.2));
       const heightNorm = noise;
       const height = heightNorm * LAND_HEIGHT_SCALE;
@@ -89,14 +88,24 @@ export function generateTerrain(): TerrainData {
 
       posAttr.setXYZ(i, nx * newRadius, ny * newRadius, nz * newRadius);
 
-      // Color by biome + elevation
-      const palette = BIOME_COLORS[biome] || BIOME_COLORS.temperate;
-      if (heightNorm < 0.2) {
-        color.lerpColors(palette.low, palette.mid, heightNorm / 0.2);
-      } else if (heightNorm < 0.5) {
-        color.lerpColors(palette.mid, palette.high, (heightNorm - 0.2) / 0.3);
-      } else {
-        color.lerpColors(palette.high, palette.snow, (heightNorm - 0.5) / 0.5);
+      // Blend colors across biomes using weights (smooth transitions)
+      const weights = mask.getBiomeWeights(lat, lng);
+      color.setRGB(0, 0, 0);
+      const tmpC = new THREE.Color();
+      for (const [biomeName, weight] of Object.entries(weights) as [keyof BiomeWeights, number][]) {
+        if (weight < 0.01) continue;
+        const palette = BIOME_COLORS[biomeName];
+        if (!palette) continue;
+        if (heightNorm < 0.2) {
+          tmpC.lerpColors(palette.low, palette.mid, heightNorm / 0.2);
+        } else if (heightNorm < 0.5) {
+          tmpC.lerpColors(palette.mid, palette.high, (heightNorm - 0.2) / 0.3);
+        } else {
+          tmpC.lerpColors(palette.high, palette.snow, (heightNorm - 0.5) / 0.5);
+        }
+        color.r += tmpC.r * weight;
+        color.g += tmpC.g * weight;
+        color.b += tmpC.b * weight;
       }
 
       colors[i * 3] = color.r;

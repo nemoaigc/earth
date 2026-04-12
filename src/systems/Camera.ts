@@ -1,36 +1,31 @@
 import * as THREE from 'three';
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 
 const ORBIT_RADIUS = 12;
-const ORBIT_SPEED = 0.05; // rad/s, full rotation ~125s
-const HEIGHT_BASE = 3;
-const HEIGHT_AMPLITUDE = 1.5;
-const HEIGHT_FREQUENCY = 0.15; // oscillation speed
+const AUTO_ROTATE_SPEED = 0.3;
 
 export class CameraController {
   camera: THREE.PerspectiveCamera;
-  private orbitAngle: number;
-  private heightPhase: number;
+  controls: OrbitControls;
 
-  constructor(aspect: number) {
+  constructor(aspect: number, domElement: HTMLElement) {
     this.camera = new THREE.PerspectiveCamera(50, aspect, 0.1, 100);
-    this.orbitAngle = 0;
-    this.heightPhase = 0;
-
-    // Set initial position
-    this.camera.position.set(ORBIT_RADIUS, HEIGHT_BASE, 0);
+    this.camera.position.set(ORBIT_RADIUS, 3, 0);
     this.camera.lookAt(0, 0, 0);
+
+    this.controls = new OrbitControls(this.camera, domElement);
+    this.controls.enableDamping = true;
+    this.controls.dampingFactor = 0.05;
+    this.controls.autoRotate = true;
+    this.controls.autoRotateSpeed = AUTO_ROTATE_SPEED;
+    this.controls.minDistance = 7;
+    this.controls.maxDistance = 25;
+    this.controls.enablePan = false;
+    this.controls.target.set(0, 0, 0);
   }
 
-  update(deltaTime: number): void {
-    this.orbitAngle += ORBIT_SPEED * deltaTime;
-    this.heightPhase += HEIGHT_FREQUENCY * deltaTime;
-
-    const x = Math.cos(this.orbitAngle) * ORBIT_RADIUS;
-    const z = Math.sin(this.orbitAngle) * ORBIT_RADIUS;
-    const y = HEIGHT_BASE + Math.sin(this.heightPhase) * HEIGHT_AMPLITUDE;
-
-    this.camera.position.set(x, y, z);
-    this.camera.lookAt(0, 0, 0);
+  update(_deltaTime: number): void {
+    this.controls.update();
   }
 
   resize(aspect: number): void {

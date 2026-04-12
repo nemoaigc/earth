@@ -1,5 +1,4 @@
 // Simplified world continent outlines for land/ocean mask
-// Each continent is an array of [longitude, latitude] points
 
 const AFRICA: [number, number][] = [
   [-17, 15], [-5, 36], [10, 37], [30, 32], [35, 30], [40, 25],
@@ -49,12 +48,11 @@ const GREENLAND: [number, number][] = [
 
 const CONTINENTS = [AFRICA, EUROPE, ASIA, NORTH_AMERICA, SOUTH_AMERICA, AUSTRALIA, GREENLAND];
 
-// Deserts defined as lat/lng bounding boxes
 const DESERTS: { minLng: number; maxLng: number; minLat: number; maxLat: number }[] = [
-  { minLng: -15, maxLng: 40, minLat: 15, maxLat: 32 },   // Sahara
-  { minLng: 45, maxLng: 65, minLat: 15, maxLat: 35 },     // Arabian
-  { minLng: 115, maxLng: 150, minLat: -30, maxLat: -18 },  // Australian interior
-  { minLng: 60, maxLng: 80, minLat: 25, maxLat: 40 },     // Central Asian
+  { minLng: -15, maxLng: 40, minLat: 15, maxLat: 30 },
+  { minLng: 45, maxLng: 65, minLat: 15, maxLat: 35 },
+  { minLng: 115, maxLng: 150, minLat: -30, maxLat: -18 },
+  { minLng: 60, maxLng: 80, minLat: 25, maxLat: 40 },
 ];
 
 function pointInPolygon(x: number, y: number, polygon: [number, number][]): boolean {
@@ -69,14 +67,45 @@ function pointInPolygon(x: number, y: number, polygon: [number, number][]): bool
   return inside;
 }
 
+// Biome weights for smooth blending (no hard edges)
+export interface BiomeWeights {
+  tropical: number;
+  temperate: number;
+  boreal: number;
+  desert: number;
+  polar: number;
+}
+
 export interface WorldMask {
   isLand: (lat: number, lng: number) => boolean;
   getBiome: (lat: number, lng: number) => string;
+  getBiomeWeights: (lat: number, lng: number) => BiomeWeights;
+}
+
+function smoothTransition(value: number, center: number, width: number): number {
+  return Math.max(0, 1 - Math.abs(value - center) / width);
+}
+
+function inDesert(lat: number, lng: number): number {
+  for (const d of DESERTS) {
+    // Distance inside desert box, with soft edges
+    const insideLng = Math.min(
+      (lng - d.minLng) / 5,
+      (d.maxLng - lng) / 5
+    );
+    const insideLat = Math.min(
+      (lat - d.minLat) / 4,
+      (d.maxLat - lat) / 4
+    );
+    if (insideLng > 0 && insideLat > 0) {
+      return Math.min(1, Math.min(insideLng, insideLat));
+    }
+  }
+  return 0;
 }
 
 export function createWorldMask(): WorldMask {
   function isLand(lat: number, lng: number): boolean {
-    // Antarctica & Arctic
     if (lat < -65) return true;
     if (lat > 75) return true;
     for (const continent of CONTINENTS) {
@@ -87,27 +116,46 @@ export function createWorldMask(): WorldMask {
 
   function getBiome(lat: number, lng: number): string {
     if (!isLand(lat, lng)) return 'ocean';
-    const absLat = Math.abs(lat);
-
-    // Polar
-    if (absLat > 70) return 'polar';
-
-    // Desert check
-    for (const d of DESERTS) {
-      if (lng >= d.minLng && lng <= d.maxLng && lat >= d.minLat && lat <= d.maxLat) {
-        return 'desert';
-      }
+    const w = getBiomeWeights(lat, lng);
+    // Return dominant biome
+    let max = 0;
+    let best = 'temperate';
+    for (const [k, v] of Object.entries(w)) {
+      if (v > max) { max = v; best = k; }
     }
-
-    // Boreal (taiga)
-    if (absLat > 50) return 'boreal';
-
-    // Tropical
-    if (absLat < 23) return 'tropical';
-
-    // Temperate
-    return 'temperate';
+    return best;
   }
 
-  return { isLand, getBiome };
+  function getBiomeWeights(lat: number, lng: number): BiomeWeights {
+    const absLat = Math.abs(lat);
+
+    // Base weights from latitude (smooth transitions with overlap zones)
+    let tropical = smoothTransition(absLat, 10, 18);
+    let temperate = smoothTransition(absLat, 38, 20);
+    let boreal = smoothTransition(absLat, 58, 12);
+    let polar = Math.max(0, (absLat - 62) / 15);
+    let desert = inDesert(lat, lng);
+
+    // Desert takes from tropical/temperate
+    if (desert > 0) {
+      tropical *= (1 - desert);
+      temperate *= (1 - desert);
+    }
+
+    // Normalize
+    const total = tropical + temperate + boreal + polar + desert;
+    if (total > 0) {
+      tropical /= total;
+      temperate /= total;
+      boreal /= total;
+      polar /= total;
+      desert /= total;
+    } else {
+      temperate = 1;
+    }
+
+    return { tropical, temperate, boreal, desert, polar };
+  }
+
+  return { isLand, getBiome, getBiomeWeights };
 }

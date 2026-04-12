@@ -38,7 +38,8 @@ const dayNight = new DayNightCycle();
 
 // --- Camera ---
 const cameraController = new CameraController(
-  window.innerWidth / window.innerHeight
+  window.innerWidth / window.innerHeight,
+  renderer.domElement
 );
 
 // --- Globe ---
