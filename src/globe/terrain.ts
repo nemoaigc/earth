@@ -13,7 +13,7 @@ export interface TerrainData {
 
 const TERRAIN_THRESHOLD = 0.05;
 const LAND_HEIGHT_SCALE = 0.35;
-const OCEAN_INDENT_MAX = 0.08;
+// Ocean vertices pushed below ocean mesh to avoid dark gap
 const NOISE_SCALE = 0.8;
 const NOISE_OCTAVES = 6;
 const NOISE_LACUNARITY = 2.0;
@@ -125,11 +125,9 @@ export function generateTerrain(seed?: number): TerrainData {
         });
       }
     } else {
-      // Ocean: slightly indent
+      // Ocean: push below ocean mesh so ocean covers it cleanly
       const depthNorm = smoothstep(-0.3, TERRAIN_THRESHOLD, noise);
-      // Shallow water near coast: less indent. Deep water: more indent
-      const indent = OCEAN_INDENT_MAX * (1.0 - depthNorm * 0.8);
-      const newRadius = GLOBE_RADIUS - indent;
+      const newRadius = GLOBE_RADIUS - 0.06;
 
       posAttr.setXYZ(i, nx * newRadius, ny * newRadius, nz * newRadius);
 

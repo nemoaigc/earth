@@ -251,7 +251,7 @@ export class DayNightCycle {
 
     // === AUTO-DERIVE terrain & ocean from sun state ===
     // brightness: 30% floor — planet is NEVER fully dark
-    const brightness = Math.min(1.0, Math.max(0.3, this.state.sunIntensity * 0.5 + 0.3));
+    const brightness = Math.min(1.0, Math.max(0.4, this.state.sunIntensity * 0.45 + 0.35));
 
     // terrainTint: sunColor diluted toward white, then scaled by brightness
     _tmpColor.copy(this.state.sunColor).lerp(_white, 0.6);
