@@ -11,7 +11,6 @@ import { Balloons } from './features/Balloons';
 import { SkyDome } from './sky/SkyDome';
 import { Clouds } from './sky/Clouds';
 import { Stars } from './sky/Stars';
-// Aurora removed
 import { LensFlare } from './sky/LensFlare';
 import { Rain } from './sky/Rain';
 import { DayNightCycle } from './systems/DayNightCycle';
@@ -49,70 +48,91 @@ scene.add(globe.group);
 // --- Terrain features ---
 const trees = new Trees(globe.terrainData);
 scene.add(trees.group);
-
 const palmTrees = new PalmTrees(globe.terrainData);
 scene.add(palmTrees.group);
-
 const rocks = new Rocks(globe.terrainData);
 scene.add(rocks.group);
-
 const villages = new Villages(globe.terrainData);
 scene.add(villages.group);
-
 const windmills = new Windmills(globe.terrainData);
 scene.add(windmills.group);
-
 const mountains = new Mountains(globe.terrainData);
 scene.add(mountains.group);
-
 const lighthouses = new Lighthouses(globe.terrainData);
 scene.add(lighthouses.group);
-
 const balloons = new Balloons(globe.terrainData);
 scene.add(balloons.group);
 
 // --- Sky elements ---
 const skyDome = new SkyDome();
 scene.add(skyDome.mesh);
-
 const clouds = new Clouds();
 scene.add(clouds.group);
-
 const stars = new Stars();
 scene.add(stars.points);
-
-// Aurora removed per user request
-
 const lensFlare = new LensFlare();
 scene.add(lensFlare.group);
-
 const rain = new Rain();
 scene.add(rain.group);
 
-// --- Multi-light system (matching original Tiny Skies) ---
-// Main sun
-const sunLight = new THREE.DirectionalLight('#fff0d0', 3.75);
-sunLight.position.set(20, 6, 0);
-scene.add(sunLight);
+// ==========================================
+// THREE LIGHTING MODES - Press 1/2/3 to switch
+// ==========================================
 
-// Secondary sun (slightly offset)
-const sun2Light = new THREE.DirectionalLight('#fff0d0', 2.5);
-sun2Light.position.set(18, 10, 5);
-scene.add(sun2Light);
+let lightingMode = 1; // default: pure ambient
 
-// Fill light (from side, prevents dark faces)
-const fillLight = new THREE.DirectionalLight('#90bfcc', 1.25);
-fillLight.position.set(-10, 5, 15);
-scene.add(fillLight);
+// --- Mode 1: Pure Ambient (no directional sun) ---
+const ambientLight1 = new THREE.AmbientLight('#ffffff', 2.5);
+const hemiLight1 = new THREE.HemisphereLight('#88bbdd', '#556644', 2.0);
 
-// Back light (subtle rim/silhouette light)
-const backLight = new THREE.DirectionalLight('#aacc6e', 1.0);
-backLight.position.set(-15, -5, -10);
-scene.add(backLight);
+// --- Mode 2: Soft directional + ambient (subtle 3D feel) ---
+const ambientLight2 = new THREE.AmbientLight('#ffffff', 1.8);
+const hemiLight2 = new THREE.HemisphereLight('#88bbdd', '#556644', 1.5);
+const softDir2 = new THREE.DirectionalLight('#ffffff', 1.0);
+softDir2.position.set(5, 10, 5);
 
-// Hemisphere light (sky + ground colors)
-const hemiLight = new THREE.HemisphereLight('#80ccdd', '#66aa44', 1.25);
-scene.add(hemiLight);
+// --- Mode 3: Self-illuminating (emissive globe) ---
+const ambientLight3 = new THREE.AmbientLight('#ffffff', 3.5);
+
+// All lights start hidden
+const allLights = [ambientLight1, hemiLight1, ambientLight2, hemiLight2, softDir2, ambientLight3];
+allLights.forEach(l => { l.visible = false; scene.add(l); });
+
+function setLightingMode(mode: number) {
+  lightingMode = mode;
+  allLights.forEach(l => l.visible = false);
+  if (mode === 1) {
+    ambientLight1.visible = true;
+    hemiLight1.visible = true;
+  } else if (mode === 2) {
+    ambientLight2.visible = true;
+    hemiLight2.visible = true;
+    softDir2.visible = true;
+  } else {
+    ambientLight3.visible = true;
+  }
+  updateModeLabel();
+}
+
+// --- Mode label UI ---
+const modeLabel = document.createElement('div');
+modeLabel.style.cssText = 'position:fixed;top:16px;left:16px;color:white;font-size:14px;font-family:Inter,system-ui,sans-serif;background:rgba(0,0,0,0.5);padding:8px 14px;border-radius:8px;z-index:100;pointer-events:none;';
+document.body.appendChild(modeLabel);
+
+function updateModeLabel() {
+  const names = ['', '1: Pure Ambient (均匀光)', '2: Soft Directional (微弱方向光)', '3: Self-Illuminating (自发光)'];
+  modeLabel.textContent = `Lighting: ${names[lightingMode]}  |  Press 1/2/3 to switch`;
+}
+
+// Keyboard listener
+window.addEventListener('keydown', (e) => {
+  if (e.key === '1') setLightingMode(1);
+  if (e.key === '2') setLightingMode(2);
+  if (e.key === '3') setLightingMode(3);
+});
+
+// Start with mode 1
+setLightingMode(1);
 
 // --- Animation loop ---
 const clock = new THREE.Clock();
@@ -126,28 +146,29 @@ function animate(): void {
   dayNight.update(deltaTime);
   const state = dayNight.state;
 
-  // --- Update lights ---
-  const sunDir = state.sunDirection;
-  sunLight.color.copy(state.sunColor);
-  sunLight.intensity = state.sunIntensity;
-  sunLight.position.copy(sunDir).multiplyScalar(20);
+  // --- Update lights based on sky state (no sun direction) ---
+  // All modes: tint lights by sky color
+  const skyBrightness = (state.hemiSkyColor.r + state.hemiSkyColor.g + state.hemiSkyColor.b) / 3;
+  const brightnessFactor = Math.max(0.4, skyBrightness * 2);
 
-  sun2Light.color.copy(state.sun2Color);
-  sun2Light.intensity = state.sun2Intensity;
-  sun2Light.position.copy(sunDir).multiplyScalar(18).add(new THREE.Vector3(0, 4, 5));
-
-  fillLight.color.copy(state.fillColor);
-  fillLight.intensity = state.fillIntensity;
-  // Fill from opposite side of sun
-  fillLight.position.copy(sunDir).multiplyScalar(-12).add(new THREE.Vector3(0, 5, 0));
-
-  backLight.color.copy(state.backColor);
-  backLight.intensity = state.backIntensity;
-  backLight.position.copy(sunDir).multiplyScalar(-15).add(new THREE.Vector3(0, -5, 0));
-
-  hemiLight.color.copy(state.hemiSkyColor);
-  hemiLight.groundColor.copy(state.hemiGroundColor);
-  hemiLight.intensity = state.hemiIntensity;
+  if (lightingMode === 1) {
+    ambientLight1.color.copy(state.hemiSkyColor).lerp(new THREE.Color('#ffffff'), 0.5);
+    ambientLight1.intensity = 1.5 * brightnessFactor;
+    hemiLight1.color.copy(state.hemiSkyColor);
+    hemiLight1.groundColor.copy(state.hemiGroundColor);
+    hemiLight1.intensity = 1.2 * brightnessFactor;
+  } else if (lightingMode === 2) {
+    ambientLight2.color.copy(state.hemiSkyColor).lerp(new THREE.Color('#ffffff'), 0.5);
+    ambientLight2.intensity = 1.2 * brightnessFactor;
+    hemiLight2.color.copy(state.hemiSkyColor);
+    hemiLight2.groundColor.copy(state.hemiGroundColor);
+    hemiLight2.intensity = 1.0 * brightnessFactor;
+    softDir2.color.copy(state.hemiSkyColor).lerp(new THREE.Color('#ffffff'), 0.7);
+    softDir2.intensity = 0.8 * brightnessFactor;
+  } else {
+    ambientLight3.color.copy(state.hemiSkyColor).lerp(new THREE.Color('#ffffff'), 0.6);
+    ambientLight3.intensity = 2.5 * brightnessFactor;
+  }
 
   // --- Fog ---
   if (scene.fog instanceof THREE.Fog) {
@@ -156,14 +177,13 @@ function animate(): void {
     scene.fog.far = state.fogFar;
   }
 
-  // --- Sky (multi-stop gradient) ---
+  // --- Sky ---
   skyDome.updateGradient(state.skyGradient);
 
   // --- Terrain & ocean ---
   globe.terrainMaterial.color.copy(state.terrainTint);
   globe.ocean.material.color.copy(state.oceanShallow);
   globe.ocean.material.emissive.copy(state.oceanDeep);
-  // Update foam color uniform
   if ((globe.ocean.material as any)._foamColorUniform) {
     (globe.ocean.material as any)._foamColorUniform.value.copy(state.oceanFoam);
   }
@@ -173,8 +193,7 @@ function animate(): void {
   // --- Sky elements ---
   clouds.update(elapsed, state.cloudOpacity);
   stars.update(state.starVisibility);
-  // aurora removed
-  lensFlare.update(cameraController.camera, sunDir.clone().multiplyScalar(20), state.starVisibility < 0.5 ? 1.0 : 0.0);
+  lensFlare.update(cameraController.camera, new THREE.Vector3(20, 10, 0), state.starVisibility < 0.5 ? 1.0 : 0.0);
   rain.update(elapsed, state.rainIntensity);
 
   // --- Terrain features ---
@@ -194,8 +213,6 @@ function animate(): void {
 animate();
 
 window.addEventListener('resize', () => {
-  const width = window.innerWidth;
-  const height = window.innerHeight;
-  renderer.setSize(width, height);
-  cameraController.resize(width / height);
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  cameraController.resize(window.innerWidth / window.innerHeight);
 });
