@@ -257,9 +257,10 @@ export class DayNightCycle {
     _tmpColor.copy(this.state.sunColor).lerp(_white, 0.6);
     this.state.terrainTint.copy(_tmpColor).multiplyScalar(brightness);
 
-    // oceanColor: base cyan tinted slightly by sunColor, then scaled by brightness
-    _tmpColor.copy(_baseCyan).lerp(this.state.sunColor, 0.15);
-    this.state.oceanColor.copy(_tmpColor).multiplyScalar(brightness);
+    // oceanColor: mirrors sky bottom color (ocean reflects sky)
+    // Blend sky bottom with a cyan base so it stays ocean-like
+    _tmpColor.copy(this.state.skyBottomColor).lerp(_baseCyan, 0.3);
+    this.state.oceanColor.copy(_tmpColor);
 
     // Rain
     let baseRain = lerpScalar(before.rainIntensity, after.rainIntensity, t);
