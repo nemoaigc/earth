@@ -55,7 +55,7 @@ export class Clouds {
       side: THREE.DoubleSide,
     });
 
-    const clusterCount = Math.floor(randomRange(15, 20));
+    const clusterCount = Math.floor(randomRange(6, 10));
 
     for (let i = 0; i < clusterCount; i++) {
       const cluster = this.createCluster();

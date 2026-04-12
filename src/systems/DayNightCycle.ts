@@ -71,54 +71,38 @@ function makeKeyFrame(
 }
 
 const KEY_FRAMES: KeyFrame[] = [
-  // Day — bright blue sky, full sunlight
+  // Day — original Tiny Skies colors
   makeKeyFrame(0.25,
-    '#ffffff', 1.8,
-    '#aaccee', 0.7,
-    '#2288dd', '#66ccff',
-    '#88ccee', 15, 60,
-    '#44aaff',
-    0.6, 0, 0, 0),
-  // Golden hour — warm orange glow
-  makeKeyFrame(0.42,
-    '#ffcc66', 1.3,
-    '#ddaa77', 0.5,
-    '#3366aa', '#ffbb55',
-    '#ccaa77', 12, 50,
-    '#ffaa55',
-    0.5, 0, 0, 0),
-  // Sunset — deep orange, sky darkening
-  makeKeyFrame(0.50,
-    '#ff8844', 0.7,
-    '#aa7755', 0.35,
-    '#1a2244', '#dd6633',
-    '#885544', 10, 40,
-    '#ff6633',
-    0.4, 0.15, 0, 0),
-  // Night — moonlight blue, planet clearly visible
+    '#fff0d0', 1.8,
+    '#80ccdd', 0.75,
+    '#1a4a82', '#50e4f4',
+    '#60ccde', 15, 40,
+    '#bbddcc',
+    0.2, 0, 0, 0),
+  // Sunset — original warm orange/purple
+  makeKeyFrame(0.45,
+    '#ffaa40', 1.2,
+    '#ff9944', 0.5,
+    '#4a2078', '#f0a030',
+    '#c07848', 12, 35,
+    '#ffcc44',
+    0.2, 0.1, 0, 0),
+  // Night — original deep blue, planet visible
   makeKeyFrame(0.70,
-    '#aabbdd', 0.5,
-    '#445577', 0.45,
-    '#080c1a', '#101830',
-    '#101828', 8, 35,
-    '#3355aa',
-    0.15, 1.0, 0.8, 0),
-  // Pre-dawn — sky starts warming
-  makeKeyFrame(0.90,
-    '#ffbb77', 0.5,
-    '#887766', 0.35,
-    '#112244', '#cc8855',
-    '#776655', 10, 45,
-    '#6688bb',
-    0.35, 0.3, 0.1, 0),
-  // Dawn — brightening quickly
-  makeKeyFrame(0.98,
-    '#ffddaa', 1.0,
-    '#aabb99', 0.5,
-    '#2277bb', '#88bbdd',
-    '#99aabb', 12, 50,
-    '#55aadd',
-    0.5, 0.05, 0, 0),
+    '#102060', 0.6,
+    '#283c80', 0.5,
+    '#050a1e', '#203c94',
+    '#08142c', 10, 30,
+    '#2850aa',
+    0.06, 1.0, 0.8, 0),
+  // Dawn — warming up
+  makeKeyFrame(0.92,
+    '#ffaa40', 0.8,
+    '#ff9944', 0.45,
+    '#1a1050', '#f8c858',
+    '#c07848', 12, 35,
+    '#ffcc44',
+    0.15, 0.2, 0.1, 0),
 ];
 
 function lerpScalar(a: number, b: number, t: number): number {
@@ -257,10 +241,9 @@ export class DayNightCycle {
     _tmpColor.copy(this.state.sunColor).lerp(_white, 0.6);
     this.state.terrainTint.copy(_tmpColor).multiplyScalar(brightness);
 
-    // oceanColor: mirrors sky bottom color (ocean reflects sky)
-    // Blend sky bottom with a cyan base so it stays ocean-like
-    _tmpColor.copy(this.state.skyBottomColor).lerp(_baseCyan, 0.3);
-    this.state.oceanColor.copy(_tmpColor);
+    // oceanColor: blend sky bottom with cyan, matching original's sky-ocean unity
+    _tmpColor.copy(this.state.skyBottomColor).lerp(_baseCyan, 0.4);
+    this.state.oceanColor.copy(_tmpColor).multiplyScalar(Math.max(0.5, brightness));
 
     // Rain
     let baseRain = lerpScalar(before.rainIntensity, after.rainIntensity, t);
