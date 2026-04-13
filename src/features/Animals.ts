@@ -1,7 +1,6 @@
 import * as THREE from 'three';
 import { GLOBE_RADIUS } from '../globe/terrain';
 import type { TerrainData } from '../globe/terrain';
-import { createWorldMask } from '../globe/worldmap';
 import { ANIMALS, type AnimalInfo } from '../data/animals';
 import { AnimalPanel } from '../ui/AnimalPanel';
 
@@ -19,22 +18,6 @@ function latLngToPosition(lat: number, lng: number, radius: number): THREE.Vecto
     Math.sin(phi) * radius,
     Math.cos(phi) * Math.sin(theta) * radius,
   );
-}
-
-function findOceanPositions(count: number, minAbsLat = 0, maxAbsLat = 60): THREE.Vector3[] {
-  const mask = createWorldMask();
-  const results: THREE.Vector3[] = [];
-  let attempts = 0;
-  while (results.length < count && attempts < 3000) {
-    attempts++;
-    const absLat = minAbsLat + Math.random() * (maxAbsLat - minAbsLat);
-    const lat = Math.random() < 0.5 ? absLat : -absLat;
-    const lng = Math.random() * 360 - 180;
-    if (!mask.isLand(lat, lng)) {
-      results.push(latLngToPosition(lat, lng, GLOBE_RADIUS + 0.02));
-    }
-  }
-  return results;
 }
 
 
@@ -117,26 +100,17 @@ export class Animals {
     }
   }
 
-  private getPositions(def: AnimalInfo, terrainData: TerrainData): THREE.Vector3[] {
-    if (def.biome === 'ocean') {
-      return findOceanPositions(def.count);
-    }
-    if (def.biome === 'polar') {
-      const polarPoints = terrainData.landPoints.filter((p) => p.biome === 'polar');
-      if (polarPoints.length === 0) {
-        return findOceanPositions(def.count, 60, 80);
-      }
-      const shuffled = polarPoints.sort(() => Math.random() - 0.5);
-      return shuffled.slice(0, def.count).map((p) =>
-        p.position.clone().multiplyScalar(1 + 0.005)
+  private getPositions(def: AnimalInfo, _terrainData: TerrainData): THREE.Vector3[] {
+    const positions: THREE.Vector3[] = [];
+    for (let i = 0; i < def.count; i++) {
+      // Small random offset so multiple instances don't stack exactly
+      const latOff = (Math.random() - 0.5) * 2;
+      const lngOff = (Math.random() - 0.5) * 2;
+      positions.push(
+        latLngToPosition(def.lat + latOff, def.lng + lngOff, GLOBE_RADIUS + 0.02),
       );
     }
-    const biomePoints = terrainData.landPoints.filter((p) => p.biome === def.biome);
-    if (biomePoints.length === 0) return [];
-    const shuffled = biomePoints.sort(() => Math.random() - 0.5);
-    return shuffled.slice(0, def.count).map((p) =>
-      p.position.clone().multiplyScalar(1 + 0.005)
-    );
+    return positions;
   }
 
   private onMouseMove = (e: MouseEvent) => {
