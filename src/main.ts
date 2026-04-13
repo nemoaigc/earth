@@ -164,6 +164,38 @@ function animate(): void {
 
 animate();
 
+// Shading mode switcher: press 1/2/3
+let shadingMode = 1;
+const modeLabel = document.createElement('div');
+modeLabel.style.cssText = 'position:fixed;bottom:16px;left:16px;color:white;font-size:13px;font-family:Inter,system-ui,sans-serif;background:rgba(0,0,0,0.5);padding:6px 12px;border-radius:6px;z-index:100;pointer-events:none;';
+document.body.appendChild(modeLabel);
+
+function setShadingMode(mode: number) {
+  shadingMode = mode;
+  const names = ['','1: Flat Shading (低多边形)','2: Smooth (平滑)','3: Mixed (地形平滑+海洋flat)'];
+  modeLabel.textContent = names[mode] + '  |  Press 1/2/3';
+
+  if (mode === 1) {
+    globe.terrainMaterial.flatShading = true;
+    globe.ocean.material.flatShading = true;
+  } else if (mode === 2) {
+    globe.terrainMaterial.flatShading = false;
+    globe.ocean.material.flatShading = false;
+  } else {
+    globe.terrainMaterial.flatShading = false;
+    globe.ocean.material.flatShading = true;
+  }
+  globe.terrainMaterial.needsUpdate = true;
+  globe.ocean.material.needsUpdate = true;
+}
+setShadingMode(1);
+
+window.addEventListener('keydown', (e) => {
+  if (e.key === '1') setShadingMode(1);
+  if (e.key === '2') setShadingMode(2);
+  if (e.key === '3') setShadingMode(3);
+});
+
 window.addEventListener('resize', () => {
   renderer.setSize(window.innerWidth, window.innerHeight);
   labelRenderer.setSize(window.innerWidth, window.innerHeight);
