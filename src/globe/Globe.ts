@@ -26,8 +26,10 @@ export class Globe {
 
     this.terrainMaterial = new THREE.MeshStandardMaterial({
       map: colorMap,
+      displacementMap: bumpMap,
+      displacementScale: 0.5,
       bumpMap: bumpMap,
-      bumpScale: 0.15,
+      bumpScale: 0.3,
       roughness: 0.8,
       metalness: 0.0,
       flatShading: true,
