@@ -18,6 +18,7 @@ import { DayNightCycle } from './systems/DayNightCycle';
 import { CameraController } from './systems/Camera';
 import { CSS2DRenderer } from 'three/examples/jsm/renderers/CSS2DRenderer.js';
 import { Labels } from './features/Labels';
+import { Animals } from './features/Animals';
 
 // --- Renderer ---
 const renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -78,6 +79,8 @@ scene.add(grass.group);
 
 const labels = new Labels();
 scene.add(labels.group);
+const animals = new Animals(globe.terrainData);
+scene.add(animals.group);
 
 // --- Sky elements ---
 const skyDome = new SkyDome();
@@ -151,6 +154,7 @@ function animate(): void {
   grass.update(elapsed);
   icebergs.update(elapsed);
   reefs.update(elapsed);
+  animals.update(elapsed);
 
   cameraController.update(deltaTime);
   renderer.render(scene, cameraController.camera);
