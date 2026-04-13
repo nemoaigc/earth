@@ -864,7 +864,7 @@ function inDesert(lat: number, lng: number): number {
 }
 
 export function createWorldMask(): WorldMask {
-  const BW = 720, BH = 360;
+  const BW = 360, BH = 180;
   const bitmap = new Uint8Array(BW * BH);
   for (let iy = 0; iy < BH; iy++) {
     const lat = 90 - iy * (180 / BH);
