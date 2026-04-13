@@ -70,28 +70,6 @@ export function generateTerrain(): TerrainData {
 
   const mask = createWorldMask();
 
-  // Coordinate check - printed once at startup
-  console.log('[coord] Beijing(40,-116):', mask.isLand(40, -116));
-  console.log('[coord] Beijing(40,116):', mask.isLand(40, 116));
-  console.log('[coord] London(51,0):', mask.isLand(51, 0));
-  console.log('[coord] Sahara(25,10):', mask.isLand(25, 10));
-  console.log('[coord] Sahara(25,-10):', mask.isLand(25, -10));
-  console.log('[coord] Pacific(0,160):', mask.isLand(0, 160));
-  console.log('[coord] Pacific(0,-160):', mask.isLand(0, -160));
-  // Find Himalaya vertex specifically (lat~30, lng~85)
-  let himCount = 0;
-  for (let ti = 0; ti < vertexCount; ti++) {
-    const vx = posAttr.getX(ti), vy = posAttr.getY(ti), vz = posAttr.getZ(ti);
-    const vl = Math.sqrt(vx*vx+vy*vy+vz*vz);
-    const vlat = Math.asin(vy/vl)*180/Math.PI;
-    const vlng = Math.atan2(vz/vl, vx/vl)*180/Math.PI;
-    if (Math.abs(vlat - 30) < 3 && Math.abs(vlng - 85) < 10 && mask.isLand(vlat, vlng)) {
-      himCount++;
-      if (himCount <= 3) console.log(`[himalaya found] lat=${vlat.toFixed(1)} lng=${vlng.toFixed(1)} isLand=true`);
-    }
-  }
-  console.log(`[himalaya total] ${himCount} vertices in Himalaya zone`);
-
   const color = new THREE.Color();
   const tmpC = new THREE.Color();
 
@@ -136,25 +114,31 @@ export function generateTerrain(): TerrainData {
       const noise = Math.abs(hills) * 0.85 + Math.abs(texture) * 0.15 + 0.05;
       const centralBoost = 1.0 + coastDist * 0.3;
 
-      // Regional mountain boost — lng from atan2 = real-world longitude
-      let regionBoost = 1.0;
-      // Himalayas / Tibet (lat 27-40, lng 70-100)
-      if (lat > 25 && lat < 42 && lng > 68 && lng < 102)
-        regionBoost = 1.0 + 1.5 * Math.max(0, 1 - Math.abs(lat - 33) / 9) * Math.max(0, 1 - Math.abs(lng - 85) / 17);
+      // Regional mountain boost — add FIXED height for mountain ranges
+      let regionAdd = 0;
+      // Himalayas / Tibet (lat 27-40, lng 70-100) — world's highest
+      if (lat > 25 && lat < 42 && lng > 68 && lng < 102) {
+        const f = Math.max(0, 1 - Math.abs(lat - 33) / 9) * Math.max(0, 1 - Math.abs(lng - 85) / 17);
+        regionAdd = f * 0.6;
+      }
       // Andes (lat -55 to 10, lng -80 to -60)
-      if (lat > -55 && lat < 10 && lng > -80 && lng < -60)
-        regionBoost = Math.max(regionBoost, 1.0 + 1.2 * Math.max(0, 1 - Math.abs(lng + 70) / 10));
+      if (lat > -55 && lat < 10 && lng > -80 && lng < -60) {
+        const f = Math.max(0, 1 - Math.abs(lng + 70) / 10);
+        regionAdd = Math.max(regionAdd, f * 0.4);
+      }
       // Rockies (lat 35-60, lng -120 to -105)
-      if (lat > 35 && lat < 60 && lng > -120 && lng < -105)
-        regionBoost = Math.max(regionBoost, 1.0 + 1.0 * Math.max(0, 1 - Math.abs(lng + 112) / 8));
+      if (lat > 35 && lat < 60 && lng > -120 && lng < -105) {
+        const f = Math.max(0, 1 - Math.abs(lng + 112) / 8);
+        regionAdd = Math.max(regionAdd, f * 0.35);
+      }
       // Alps (lat 44-48, lng 5-16)
       if (lat > 43 && lat < 49 && lng > 4 && lng < 17)
-        regionBoost = Math.max(regionBoost, 1.5);
+        regionAdd = Math.max(regionAdd, 0.25);
       // East Africa (lat -5 to 5, lng 30-40)
       if (lat > -6 && lat < 6 && lng > 28 && lng < 42)
-        regionBoost = Math.max(regionBoost, 1.3);
+        regionAdd = Math.max(regionAdd, 0.2);
 
-      const heightNorm = noise * coastFactor * centralBoost * regionBoost;
+      const heightNorm = noise * coastFactor * centralBoost + regionAdd;
       const height = heightNorm * LAND_HEIGHT_SCALE;
       const newRadius = GLOBE_RADIUS + height;
 
