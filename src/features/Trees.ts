@@ -452,7 +452,7 @@ function placeTrees(
     const point = shuffled[i];
     const normal = point.normal.clone().normalize();
 
-    dummy.position.copy(point.position).addScaledVector(normal, 0.003);
+    dummy.position.copy(point.position);
     dummy.quaternion.setFromUnitVectors(_up, normal);
 
     const yRot = new THREE.Quaternion().setFromAxisAngle(normal, Math.random() * Math.PI * 2);
@@ -484,7 +484,7 @@ export class Trees {
 
     for (const config of BIOME_CONFIGS) {
       const biomePoints = terrainData.landPoints.filter(
-        (p) => p.biome === config.biome
+        (p) => p.biome === config.biome && p.height > 0.05
       );
       if (biomePoints.length === 0) continue;
 

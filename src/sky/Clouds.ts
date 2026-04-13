@@ -9,156 +9,106 @@ interface CloudCluster {
   orbitRadius: number;
 }
 
-function buildCumulusGeometry(): THREE.BufferGeometry {
-  const positions: number[] = [];
-  const normals: number[] = [];
+// Shared material — solid white, receives light for 3D shading
+const cloudMat = new THREE.MeshStandardMaterial({
+  color: 0xffffff,
+  roughness: 0.8,
+  metalness: 0,
+  emissive: new THREE.Color(0xddeeff),
+  emissiveIntensity: 0.15,
+});
 
-  const spheres = [
-    { x: 0,     y: 0,    z: 0,    sx: 1.0,  sy: 0.6,  sz: 0.85 },
-    { x: 0.55,  y: 0.08, z: 0.15, sx: 0.8,  sy: 0.55, sz: 0.7  },
-    { x: -0.5,  y: 0.05, z: -0.1, sx: 0.75, sy: 0.5,  sz: 0.65 },
-    { x: 0.2,   y: 0.3,  z: -0.2, sx: 0.65, sy: 0.45, sz: 0.55 },
-    { x: -0.15, y: 0.25, z: 0.3,  sx: 0.7,  sy: 0.45, sz: 0.6  },
-    { x: 0.35,  y: -0.05,z: 0.35, sx: 0.55, sy: 0.35, sz: 0.5  },
-    { x: -0.3,  y: 0.15, z: -0.25,sx: 0.5,  sy: 0.35, sz: 0.45 },
+const _up = new THREE.Vector3(0, 1, 0);
+
+// Cumulus: 7 overlapping spheres forming puffy cotton shape
+function createCumulus(): THREE.Group {
+  const group = new THREE.Group();
+  const defs = [
+    { x: 0,     y: 0,    z: 0,     r: 0.28, sx: 1.0,  sy: 0.55, sz: 0.85 },
+    { x: 0.22,  y: 0.03, z: 0.06,  r: 0.25, sx: 0.85, sy: 0.5,  sz: 0.7  },
+    { x: -0.2,  y: 0.02, z: -0.04, r: 0.24, sx: 0.8,  sy: 0.48, sz: 0.65 },
+    { x: 0.08,  y: 0.1,  z: -0.1,  r: 0.22, sx: 0.65, sy: 0.42, sz: 0.55 },
+    { x: -0.07, y: 0.08, z: 0.12,  r: 0.23, sx: 0.7,  sy: 0.42, sz: 0.6  },
+    { x: 0.14,  y: -0.02,z: 0.14,  r: 0.2,  sx: 0.55, sy: 0.35, sz: 0.5  },
+    { x: -0.13, y: 0.05, z: -0.1,  r: 0.18, sx: 0.5,  sy: 0.32, sz: 0.45 },
   ];
-
-  const tempMatrix = new THREE.Matrix4();
-  for (const s of spheres) {
-    const geo = new THREE.SphereGeometry(randomRange(0.22, 0.35), 6, 5);
-    tempMatrix.compose(
-      new THREE.Vector3(s.x, s.y, s.z),
-      new THREE.Quaternion(),
-      new THREE.Vector3(s.sx, s.sy, s.sz),
-    );
-    geo.applyMatrix4(tempMatrix);
-    extractGeo(geo, positions, normals);
-    geo.dispose();
+  for (const d of defs) {
+    const m = new THREE.Mesh(new THREE.SphereGeometry(d.r, 7, 5), cloudMat);
+    m.position.set(d.x, d.y, d.z);
+    m.scale.set(d.sx, d.sy, d.sz);
+    m.castShadow = true;
+    m.receiveShadow = true;
+    group.add(m);
   }
-  return makeBufferGeo(positions, normals);
+  return group;
 }
 
-function buildStratusGeometry(): THREE.BufferGeometry {
-  const positions: number[] = [];
-  const normals: number[] = [];
-
-  const layers = [
-    { x: 0,    y: 0,    z: 0,    sx: 1.6, sy: 0.14, sz: 0.9  },
-    { x: 0.5,  y: 0.03, z: 0.2,  sx: 1.2, sy: 0.10, sz: 0.7  },
-    { x: -0.6, y: 0.02, z: -0.1, sx: 1.3, sy: 0.09, sz: 0.7  },
-    { x: 0.15, y: 0.05, z: -0.4, sx: 0.9, sy: 0.08, sz: 0.55 },
+// Stratus: flat wide layer
+function createStratus(): THREE.Group {
+  const group = new THREE.Group();
+  const defs = [
+    { x: 0,    y: 0,    z: 0,    r: 0.25, sx: 1.6, sy: 0.12, sz: 0.8  },
+    { x: 0.2,  y: 0.01, z: 0.08, r: 0.22, sx: 1.2, sy: 0.10, sz: 0.65 },
+    { x: -0.22,y: 0.01, z: -0.04,r: 0.23, sx: 1.3, sy: 0.09, sz: 0.65 },
   ];
-
-  const tempMatrix = new THREE.Matrix4();
-  for (const l of layers) {
-    const geo = new THREE.SphereGeometry(0.28, 6, 4);
-    tempMatrix.compose(
-      new THREE.Vector3(l.x, l.y, l.z),
-      new THREE.Quaternion(),
-      new THREE.Vector3(l.sx, l.sy, l.sz),
-    );
-    geo.applyMatrix4(tempMatrix);
-    extractGeo(geo, positions, normals);
-    geo.dispose();
+  for (const d of defs) {
+    const m = new THREE.Mesh(new THREE.SphereGeometry(d.r, 6, 4), cloudMat);
+    m.position.set(d.x, d.y, d.z);
+    m.scale.set(d.sx, d.sy, d.sz);
+    m.castShadow = true;
+    m.receiveShadow = true;
+    group.add(m);
   }
-  return makeBufferGeo(positions, normals);
+  return group;
 }
 
-function buildWispGeometry(): THREE.BufferGeometry {
-  const positions: number[] = [];
-  const normals: number[] = [];
-
-  const parts = [
-    { x: 0,    y: 0,    z: 0,    sx: 0.55, sy: 0.22, sz: 0.35 },
-    { x: 0.25, y: 0.04, z: 0.08, sx: 0.4,  sy: 0.18, sz: 0.3  },
-    { x: -0.2, y: 0.02, z: -0.05,sx: 0.35, sy: 0.15, sz: 0.25 },
+// Wisp: small high cloud
+function createWisp(): THREE.Group {
+  const group = new THREE.Group();
+  const defs = [
+    { x: 0,    y: 0,    z: 0,    r: 0.18, sx: 0.5, sy: 0.2, sz: 0.35 },
+    { x: 0.1,  y: 0.01, z: 0.03, r: 0.15, sx: 0.38,sy: 0.16,sz: 0.28 },
+    { x: -0.08,y: 0.01, z: -0.02,r: 0.14, sx: 0.32,sy: 0.14,sz: 0.24 },
   ];
-
-  const tempMatrix = new THREE.Matrix4();
-  for (const p of parts) {
-    const geo = new THREE.SphereGeometry(0.18, 5, 4);
-    tempMatrix.compose(
-      new THREE.Vector3(p.x, p.y, p.z),
-      new THREE.Quaternion(),
-      new THREE.Vector3(p.sx, p.sy, p.sz),
-    );
-    geo.applyMatrix4(tempMatrix);
-    extractGeo(geo, positions, normals);
-    geo.dispose();
+  for (const d of defs) {
+    const m = new THREE.Mesh(new THREE.SphereGeometry(d.r, 5, 4), cloudMat);
+    m.position.set(d.x, d.y, d.z);
+    m.scale.set(d.sx, d.sy, d.sz);
+    m.castShadow = true;
+    m.receiveShadow = true;
+    group.add(m);
   }
-  return makeBufferGeo(positions, normals);
-}
-
-function extractGeo(geo: THREE.BufferGeometry, positions: number[], normals: number[]): void {
-  const posAttr = geo.getAttribute('position');
-  const normAttr = geo.getAttribute('normal');
-  const index = geo.getIndex();
-  if (index) {
-    for (let i = 0; i < index.count; i++) {
-      const idx = index.getX(i);
-      positions.push(posAttr.getX(idx), posAttr.getY(idx), posAttr.getZ(idx));
-      normals.push(normAttr.getX(idx), normAttr.getY(idx), normAttr.getZ(idx));
-    }
-  } else {
-    for (let i = 0; i < posAttr.count; i++) {
-      positions.push(posAttr.getX(i), posAttr.getY(i), posAttr.getZ(i));
-      normals.push(normAttr.getX(i), normAttr.getY(i), normAttr.getZ(i));
-    }
-  }
-}
-
-function makeBufferGeo(positions: number[], normals: number[]): THREE.BufferGeometry {
-  const geo = new THREE.BufferGeometry();
-  geo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
-  geo.setAttribute('normal', new THREE.Float32BufferAttribute(normals, 3));
-  return geo;
+  return group;
 }
 
 export class Clouds {
   group: THREE.Group;
   private clusters: CloudCluster[] = [];
-  private material: THREE.MeshPhongMaterial;
 
   constructor() {
     this.group = new THREE.Group();
 
-    this.material = new THREE.MeshPhongMaterial({
-      color: 0xffffff,
-      emissive: 0xddeeff,
-      emissiveIntensity: 0.25,
-      transparent: true,
-      opacity: 0.92,
-      depthWrite: false,
-      flatShading: true,
-      shininess: 5,
-    });
+    // GLOBE_RADIUS=5, surface max=5.7, atmosphere=5*1.3=6.5
+    // Clouds between 5.8 and 6.2
 
-    const cumulusCount = Math.floor(randomRange(8, 12));
-    for (let i = 0; i < cumulusCount; i++) {
-      this.clusters.push(this.createCluster(buildCumulusGeometry, randomRange(7.4, 7.7)));
+    for (let i = 0; i < Math.floor(randomRange(10, 14)); i++) {
+      this.clusters.push(this.createCluster(createCumulus, randomRange(5.8, 6.0)));
     }
 
-    const stratusCount = Math.floor(randomRange(4, 6));
-    for (let i = 0; i < stratusCount; i++) {
-      this.clusters.push(this.createCluster(buildStratusGeometry, randomRange(7.3, 7.5)));
+    for (let i = 0; i < Math.floor(randomRange(5, 8)); i++) {
+      this.clusters.push(this.createCluster(createStratus, randomRange(5.85, 5.95)));
     }
 
-    const wispCount = Math.floor(randomRange(6, 8));
-    for (let i = 0; i < wispCount; i++) {
-      this.clusters.push(this.createCluster(buildWispGeometry, randomRange(7.6, 7.9)));
+    for (let i = 0; i < Math.floor(randomRange(6, 10)); i++) {
+      this.clusters.push(this.createCluster(createWisp, randomRange(6.0, 6.2)));
     }
   }
 
   private createCluster(
-    builder: () => THREE.BufferGeometry,
+    builder: () => THREE.Group,
     orbitRadius: number,
   ): CloudCluster {
-    const clusterGroup = new THREE.Group();
-    const geo = builder();
-    const mesh = new THREE.Mesh(geo, this.material);
-    mesh.castShadow = true;
-    mesh.renderOrder = 1; // render above atmosphere
-    clusterGroup.add(mesh);
+    const cloudGroup = builder();
 
     const inclination = randomRange(-Math.PI * 0.45, Math.PI * 0.45);
     const azimuth = randomRange(0, Math.PI * 2);
@@ -168,26 +118,34 @@ export class Clouds {
     const y = orbitRadius * Math.sin(inclination);
     const z = orbitRadius * Math.sin(azimuth) * Math.cos(inclination);
 
-    clusterGroup.position.set(x, y, z);
-    clusterGroup.lookAt(0, 0, 0);
+    cloudGroup.position.set(x, y, z);
 
-    this.group.add(clusterGroup);
+    // Orient cloud to lie on the sphere surface:
+    // cloud geometry is built in XZ plane with Y up
+    // we need local Y to point radially outward from origin
+    const normal = new THREE.Vector3(x, y, z).normalize();
+    cloudGroup.quaternion.setFromUnitVectors(_up, normal);
 
-    return { group: clusterGroup, inclination, azimuth, orbitSpeed, orbitRadius };
+    this.group.add(cloudGroup);
+
+    return { group: cloudGroup, inclination, azimuth, orbitSpeed, orbitRadius };
   }
 
   update(_time: number, opacity: number): void {
-    this.material.opacity = opacity * 0.88;
+    cloudMat.opacity = opacity;
+    cloudMat.transparent = opacity < 1;
 
-    for (const cluster of this.clusters) {
-      cluster.azimuth += cluster.orbitSpeed * 0.01;
+    for (const c of this.clusters) {
+      c.azimuth += c.orbitSpeed * 0.01;
 
-      const x = cluster.orbitRadius * Math.cos(cluster.azimuth) * Math.cos(cluster.inclination);
-      const y = cluster.orbitRadius * Math.sin(cluster.inclination);
-      const z = cluster.orbitRadius * Math.sin(cluster.azimuth) * Math.cos(cluster.inclination);
+      const x = c.orbitRadius * Math.cos(c.azimuth) * Math.cos(c.inclination);
+      const y = c.orbitRadius * Math.sin(c.inclination);
+      const z = c.orbitRadius * Math.sin(c.azimuth) * Math.cos(c.inclination);
 
-      cluster.group.position.set(x, y, z);
-      cluster.group.lookAt(0, 0, 0);
+      c.group.position.set(x, y, z);
+
+      const normal = new THREE.Vector3(x, y, z).normalize();
+      c.group.quaternion.setFromUnitVectors(_up, normal);
     }
   }
 }

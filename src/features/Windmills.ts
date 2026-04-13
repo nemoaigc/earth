@@ -7,48 +7,59 @@ const WINDMILL_COUNT_MAX = 8;
 function buildWindmill(): THREE.Group {
   const windmill = new THREE.Group();
 
+  // --- Base platform (stone foundation) ---
+  const baseGeo = new THREE.CylinderGeometry(0.045, 0.055, 0.025, 8);
+  baseGeo.translate(0, 0.0125, 0);
+  const baseMat = new THREE.MeshPhongMaterial({ color: '#A0988A', shininess: 8, flatShading: true });
+  const base = new THREE.Mesh(baseGeo, baseMat);
+  base.castShadow = true;
+  base.receiveShadow = true;
+  windmill.add(base);
+
   // --- Tower: tapered cylinder ---
   const towerGeo = new THREE.CylinderGeometry(0.02, 0.035, 0.2, 8);
-  towerGeo.translate(0, 0.1, 0);
-  const towerMat = new THREE.MeshPhongMaterial({ color: '#f0e8d8', shininess: 15 });
+  towerGeo.translate(0, 0.025 + 0.1, 0);
+  const towerMat = new THREE.MeshPhongMaterial({ color: '#f0e8d8', shininess: 15, flatShading: true });
   const tower = new THREE.Mesh(towerGeo, towerMat);
   tower.castShadow = true;
+  tower.receiveShadow = true;
   windmill.add(tower);
 
-  // --- Platform/cap on top ---
-  const capGeo = new THREE.CylinderGeometry(0.025, 0.022, 0.02, 8);
-  capGeo.translate(0, 0.21, 0);
-  const capMat = new THREE.MeshPhongMaterial({ color: '#8a7a6a', shininess: 20 });
+  // --- Balcony ring at blade height ---
+  const balconyGeo = new THREE.TorusGeometry(0.025, 0.003, 4, 8);
+  balconyGeo.rotateX(Math.PI / 2);
+  balconyGeo.translate(0, 0.22, 0);
+  const balconyMat = new THREE.MeshPhongMaterial({ color: '#8A7A6A', shininess: 10 });
+  const balcony = new THREE.Mesh(balconyGeo, balconyMat);
+  windmill.add(balcony);
+
+  // --- Cap on top ---
+  const capGeo = new THREE.ConeGeometry(0.025, 0.025, 8);
+  capGeo.translate(0, 0.235, 0);
+  const capMat = new THREE.MeshPhongMaterial({ color: '#8a7a6a', shininess: 20, flatShading: true });
   const cap = new THREE.Mesh(capGeo, capMat);
+  cap.castShadow = true;
   windmill.add(cap);
 
   // --- Blade hub + blades ---
   const bladeHub = new THREE.Group();
-  bladeHub.position.set(0, 0.21, 0.028);
+  bladeHub.position.set(0, 0.225, 0.028);
 
-  // Hub sphere
   const hubGeo = new THREE.SphereGeometry(0.008, 6, 6);
-  const hubMat = new THREE.MeshPhongMaterial({ color: '#666666', shininess: 30 });
-  const hub = new THREE.Mesh(hubGeo, hubMat);
-  bladeHub.add(hub);
+  const hubMat = new THREE.MeshPhongMaterial({ color: '#888888', shininess: 30 });
+  bladeHub.add(new THREE.Mesh(hubGeo, hubMat));
 
-  // 4 blades in cross pattern
-  const bladeMat = new THREE.MeshPhongMaterial({
-    color: '#e8e0d0',
-    side: THREE.DoubleSide,
-    shininess: 10,
-  });
-
+  // 4 blades — thin boxes instead of planes for thickness
+  const bladeMat = new THREE.MeshPhongMaterial({ color: '#f0e8d8', shininess: 10, flatShading: true });
   for (let i = 0; i < 4; i++) {
-    const bladeGeo = new THREE.PlaneGeometry(0.012, 0.1);
-    bladeGeo.translate(0, 0.055, 0); // offset so base is at center
+    const bladeGeo = new THREE.BoxGeometry(0.014, 0.1, 0.003);
+    bladeGeo.translate(0, 0.055, 0);
     const blade = new THREE.Mesh(bladeGeo, bladeMat);
     blade.rotation.z = (i / 4) * Math.PI * 2;
     blade.castShadow = true;
     bladeHub.add(blade);
   }
 
-  // Store reference for rotation
   windmill.userData.bladeHub = bladeHub;
   windmill.add(bladeHub);
 
@@ -57,18 +68,15 @@ function buildWindmill(): THREE.Group {
 
 export class Windmills {
   group: THREE.Group;
-  private windmillGroups: THREE.Group[] = [];
   private bladeHubs: THREE.Group[] = [];
   private rotationSpeeds: number[] = [];
 
   constructor(terrainData: TerrainData) {
     this.group = new THREE.Group();
 
-    // Filter eligible points: moderate height
     const eligible = terrainData.landPoints.filter(
       (p) => p.height > 0.2 && p.height < 0.5
     );
-
     if (eligible.length === 0) return;
 
     const count = WINDMILL_COUNT_MIN + Math.floor(
@@ -89,7 +97,6 @@ export class Windmills {
       const scale = 0.8 + Math.random() * 0.4;
       windmill.scale.set(scale, scale, scale);
 
-      this.windmillGroups.push(windmill);
       this.bladeHubs.push(windmill.userData.bladeHub as THREE.Group);
       this.rotationSpeeds.push(1.5 + Math.random() * 1.5);
 
@@ -99,7 +106,6 @@ export class Windmills {
 
   update(time: number): void {
     for (let i = 0; i < this.bladeHubs.length; i++) {
-      // Rotate blades around the local Z axis (forward-facing axis from hub)
       this.bladeHubs[i].rotation.z = time * this.rotationSpeeds[i];
     }
   }

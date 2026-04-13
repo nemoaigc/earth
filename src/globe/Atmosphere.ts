@@ -32,7 +32,7 @@ export class Atmosphere {
   private material: THREE.ShaderMaterial;
 
   constructor() {
-    const geometry = new THREE.IcosahedronGeometry(GLOBE_RADIUS * 1.15, 32);
+    const geometry = new THREE.IcosahedronGeometry(GLOBE_RADIUS * 1.3, 32);
 
     this.material = new THREE.ShaderMaterial({
       vertexShader,

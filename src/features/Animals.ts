@@ -37,57 +37,6 @@ function findOceanPositions(count: number, minAbsLat = 0, maxAbsLat = 60): THREE
   return results;
 }
 
-function makeTransparent(image: HTMLImageElement): HTMLCanvasElement {
-  const canvas = document.createElement('canvas');
-  canvas.width = image.width;
-  canvas.height = image.height;
-  const ctx = canvas.getContext('2d')!;
-  ctx.drawImage(image, 0, 0);
-
-  const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-  const data = imageData.data;
-  const w = canvas.width, h = canvas.height;
-
-  // Sample corners to detect background color
-  const corners = [
-    0, // top-left
-    (w - 1) * 4, // top-right
-    (h - 1) * w * 4, // bottom-left
-    ((h - 1) * w + (w - 1)) * 4, // bottom-right
-    Math.floor(w / 2) * 4, // top-center
-    ((h - 1) * w + Math.floor(w / 2)) * 4, // bottom-center
-  ];
-
-  let bgR = 0, bgG = 0, bgB = 0, count = 0;
-  for (const idx of corners) {
-    bgR += data[idx]; bgG += data[idx + 1]; bgB += data[idx + 2];
-    count++;
-  }
-  bgR = Math.round(bgR / count);
-  bgG = Math.round(bgG / count);
-  bgB = Math.round(bgB / count);
-
-  // Remove pixels close to the detected background color
-  const threshold = 45;
-  const softEdge = 25;
-
-  for (let i = 0; i < data.length; i += 4) {
-    const r = data[i], g = data[i + 1], b = data[i + 2];
-    const dist = Math.sqrt(
-      (r - bgR) ** 2 + (g - bgG) ** 2 + (b - bgB) ** 2
-    );
-
-    if (dist < threshold) {
-      data[i + 3] = 0;
-    } else if (dist < threshold + softEdge) {
-      const fade = (dist - threshold) / softEdge;
-      data[i + 3] = Math.round(255 * fade);
-    }
-  }
-
-  ctx.putImageData(imageData, 0, 0);
-  return canvas;
-}
 
 export class Animals {
   group: THREE.Group;
@@ -138,9 +87,7 @@ export class Animals {
       const positions = this.getPositions(info, terrainData);
       if (positions.length === 0) continue;
 
-      loader.load(`animals/${info.id}.png`, (rawTexture) => {
-        const canvas = makeTransparent(rawTexture.image as HTMLImageElement);
-        const texture = new THREE.CanvasTexture(canvas);
+      loader.load(`animals/${info.id}.png`, (texture) => {
         texture.minFilter = THREE.LinearFilter;
         texture.magFilter = THREE.LinearFilter;
 

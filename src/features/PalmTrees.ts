@@ -125,7 +125,9 @@ export class PalmTrees {
     this.material = new THREE.MeshPhongMaterial({
       vertexColors: true,
       shininess: 10,
+      flatShading: true,
     });
+    this.material.color.set(0xffffff);
 
     // Wind sway (slower than regular trees)
     const timeUniform = this.timeUniform;
