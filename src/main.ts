@@ -93,8 +93,13 @@ scene.add(stars.points);
 // Rain removed
 
 // --- Lighting: Self-illuminating (no sun, sky-driven) ---
-const ambientLight = new THREE.AmbientLight('#ffffff', 5.0);
+const ambientLight = new THREE.AmbientLight('#ffffff', 1.5);
 scene.add(ambientLight);
+const hemiLight = new THREE.HemisphereLight('#aaccee', '#334422', 1.2);
+scene.add(hemiLight);
+const dirLight = new THREE.DirectionalLight('#ffffff', 2.0);
+dirLight.position.set(8, 6, 4);
+scene.add(dirLight);
 
 // --- Animation loop ---
 const clock = new THREE.Clock();
