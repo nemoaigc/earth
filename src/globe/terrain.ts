@@ -147,8 +147,8 @@ export function generateTerrain(): TerrainData {
         });
       }
     } else {
-      // OCEAN
-      const newRadius = GLOBE_RADIUS - 0.06;
+      // OCEAN — push just below ocean mesh to avoid gap
+      const newRadius = GLOBE_RADIUS - 0.02;
       posAttr.setXYZ(i, nx * newRadius, ny * newRadius, nz * newRadius);
 
       // Check proximity to land for shallow color
@@ -180,16 +180,57 @@ export function generateTerrain(): TerrainData {
   };
 }
 
-// Shallow water transition ring — sits between land and deep ocean
+// Shallow water transition ring — only near coastlines
 export function createShallowWaterMesh(): THREE.Mesh {
-  const geo = new THREE.IcosahedronGeometry(GLOBE_RADIUS - 0.003, 80);
+  const mask = createWorldMask();
+  const geo = new THREE.IcosahedronGeometry(GLOBE_RADIUS - 0.001, 80);
+  const posAttr = geo.getAttribute('position');
+  const count = posAttr.count;
+  const colors = new Float32Array(count * 3);
+  const alphas = new Float32Array(count);
+
+  for (let i = 0; i < count; i++) {
+    const x = posAttr.getX(i);
+    const y = posAttr.getY(i);
+    const z = posAttr.getZ(i);
+    const len = Math.sqrt(x * x + y * y + z * z);
+    const nx = x / len, ny = y / len, nz = z / len;
+    const lat = Math.asin(Math.max(-1, Math.min(1, ny))) * 180 / Math.PI;
+    const lng = Math.atan2(nz, nx) * 180 / Math.PI;
+
+    const onLand = mask.isLand(lat, lng);
+    // Check if near coast (within 5°)
+    const nearLand = !onLand && (
+      mask.isLand(lat + 4, lng) || mask.isLand(lat - 4, lng) ||
+      mask.isLand(lat, lng + 4) || mask.isLand(lat, lng - 4) ||
+      mask.isLand(lat + 3, lng + 3) || mask.isLand(lat - 3, lng - 3)
+    );
+
+    if (nearLand) {
+      // Shallow turquoise water
+      colors[i * 3] = 0.3; colors[i * 3 + 1] = 0.75; colors[i * 3 + 2] = 0.7;
+      alphas[i] = 0.45;
+    } else if (onLand) {
+      // On land — fully transparent (land terrain shows through)
+      colors[i * 3] = 0; colors[i * 3 + 1] = 0; colors[i * 3 + 2] = 0;
+      alphas[i] = 0;
+    } else {
+      // Deep ocean — fully transparent (ocean mesh below handles this)
+      colors[i * 3] = 0; colors[i * 3 + 1] = 0; colors[i * 3 + 2] = 0;
+      alphas[i] = 0;
+    }
+  }
+
+  geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+
   const mat = new THREE.MeshPhongMaterial({
-    color: new THREE.Color('#44bbcc'),
+    vertexColors: true,
     transparent: true,
-    opacity: 0.5,
-    shininess: 30,
+    opacity: 0.45,
+    shininess: 20,
     flatShading: true,
     depthWrite: false,
+    side: THREE.FrontSide,
   });
   return new THREE.Mesh(geo, mat);
 }
