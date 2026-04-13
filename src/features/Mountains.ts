@@ -41,40 +41,31 @@ function colorGradientY(
 function createMountainGeometry(): THREE.BufferGeometry {
   const parts: THREE.BufferGeometry[] = [];
 
-  // Base foothills (flattened cylinder)
-  const base = new THREE.CylinderGeometry(0.14, 0.18, 0.04, 6);
-  base.translate(0, 0.02, 0);
+  // Base foothills
+  const base = new THREE.CylinderGeometry(0.06, 0.08, 0.02, 6);
+  base.translate(0, 0.01, 0);
   colorGradientY(base,
-    new THREE.Color('#8A7E6B'), new THREE.Color('#A09880'),
-    0, 0.04);
+    new THREE.Color('#B8AD9A'), new THREE.Color('#C8BBA8'),
+    0, 0.02);
   parts.push(ensureMergeReady(base));
 
   // Main peak
-  const mainH = 0.32;
-  const main = new THREE.ConeGeometry(0.10, mainH, 5);
-  main.translate(0, 0.04 + mainH / 2, 0);
+  const mainH = 0.14;
+  const main = new THREE.ConeGeometry(0.045, mainH, 5);
+  main.translate(0, 0.02 + mainH / 2, 0);
   colorGradientY(main,
-    new THREE.Color('#9A8E7B'), new THREE.Color('#C8BBA8'),
-    0.04, 0.04 + mainH);
+    new THREE.Color('#B8AD9A'), new THREE.Color('#DDD5C8'),
+    0.02, 0.02 + mainH);
   parts.push(ensureMergeReady(main));
 
-  // Left side peak (smaller, offset)
-  const sideH1 = 0.20;
-  const side1 = new THREE.ConeGeometry(0.065, sideH1, 5);
-  side1.translate(-0.08, 0.04 + sideH1 / 2, 0.03);
-  colorGradientY(side1,
-    new THREE.Color('#9A8E7B'), new THREE.Color('#B8AB98'),
-    0.04, 0.04 + sideH1);
-  parts.push(ensureMergeReady(side1));
-
-  // Right side peak (smaller)
-  const sideH2 = 0.15;
-  const side2 = new THREE.ConeGeometry(0.05, sideH2, 5);
-  side2.translate(0.07, 0.04 + sideH2 / 2, -0.04);
-  colorGradientY(side2,
-    new THREE.Color('#9A8E7B'), new THREE.Color('#B8AB98'),
-    0.04, 0.04 + sideH2);
-  parts.push(ensureMergeReady(side2));
+  // Side peak
+  const sideH = 0.09;
+  const side = new THREE.ConeGeometry(0.03, sideH, 5);
+  side.translate(-0.035, 0.02 + sideH / 2, 0.015);
+  colorGradientY(side,
+    new THREE.Color('#B8AD9A'), new THREE.Color('#D0C8B8'),
+    0.02, 0.02 + sideH);
+  parts.push(ensureMergeReady(side));
 
   return mergeGeometries(parts, false)!;
 }
@@ -85,31 +76,22 @@ function createSnowMountainGeometry(): THREE.BufferGeometry {
   const parts: THREE.BufferGeometry[] = [];
 
   // Rocky base
-  const baseH = 0.20;
-  const baseGeo = new THREE.CylinderGeometry(0.04, 0.10, baseH, 5);
+  const baseH = 0.10;
+  const baseGeo = new THREE.CylinderGeometry(0.02, 0.05, baseH, 5);
   baseGeo.translate(0, baseH / 2, 0);
   colorGradientY(baseGeo,
-    new THREE.Color('#7A6E5B'), new THREE.Color('#A09880'),
+    new THREE.Color('#B0A898'), new THREE.Color('#C8BBA8'),
     0, baseH);
   parts.push(ensureMergeReady(baseGeo));
 
   // Snow tip
-  const tipH = 0.10;
-  const tipGeo = new THREE.ConeGeometry(0.04, tipH, 5);
+  const tipH = 0.06;
+  const tipGeo = new THREE.ConeGeometry(0.02, tipH, 5);
   tipGeo.translate(0, baseH + tipH / 2, 0);
   colorGradientY(tipGeo,
-    new THREE.Color('#DDDDDD'), new THREE.Color('#FFFFFF'),
+    new THREE.Color('#E8E8E8'), new THREE.Color('#FFFFFF'),
     baseH, baseH + tipH);
   parts.push(ensureMergeReady(tipGeo));
-
-  // Side snow ridge
-  const ridgeH = 0.12;
-  const ridge = new THREE.ConeGeometry(0.03, ridgeH, 4);
-  ridge.translate(0.05, baseH * 0.6 + ridgeH / 2, 0.02);
-  colorGradientY(ridge,
-    new THREE.Color('#B0A898'), new THREE.Color('#EEEEEE'),
-    baseH * 0.4, baseH * 0.6 + ridgeH);
-  parts.push(ensureMergeReady(ridge));
 
   return mergeGeometries(parts, false)!;
 }

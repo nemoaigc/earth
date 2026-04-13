@@ -3,16 +3,6 @@ import type { TerrainData } from '../globe/terrain';
 
 const ROCK_COUNT = 120;
 
-function ensureMergeReady(geo: THREE.BufferGeometry): THREE.BufferGeometry {
-  const g = geo.index ? geo.toNonIndexed() : geo;
-  if (!g.getAttribute('normal')) g.computeVertexNormals();
-  if (!g.getAttribute('uv')) {
-    const count = g.getAttribute('position').count;
-    g.setAttribute('uv', new THREE.BufferAttribute(new Float32Array(count * 2), 2));
-  }
-  return g;
-}
-
 // Rounded boulder
 function createBoulderGeometry(): THREE.BufferGeometry {
   const geo = new THREE.DodecahedronGeometry(0.05, 1);

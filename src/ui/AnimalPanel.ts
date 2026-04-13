@@ -20,8 +20,8 @@ export class AnimalPanel {
       opacity: 0;
       pointer-events: none;
       z-index: 200;
-      width: 440px;
-      max-height: calc(100vh - 48px);
+      width: 520px;
+      max-height: calc(100vh - 32px);
       overflow-y: auto;
       overflow-x: hidden;
       border-radius: 20px;
@@ -82,7 +82,7 @@ export class AnimalPanel {
 
       <!-- Hero image -->
       <div style="
-        width: 100%; height: 280px; position: relative;
+        width: 100%; height: 340px; position: relative;
         border-radius: 20px 20px 0 0; overflow: hidden;
         background: linear-gradient(135deg, #f5f5f7, #e8e8ed);
       ">
@@ -115,39 +115,39 @@ export class AnimalPanel {
       </div>
 
       <!-- Content -->
-      <div style="padding: 24px 26px 28px;">
+      <div style="padding: 28px 30px 32px;">
         <!-- Name -->
         <div style="margin-bottom: 6px;">
-          <span style="font-size: 30px; font-weight: 700; letter-spacing: -0.02em;">
+          <span style="font-size: 36px; font-weight: 700; letter-spacing: -0.02em;">
             ${info.nameCn}
           </span>
         </div>
         <div style="
-          font-size: 16px; color: #86868b; margin-bottom: 3px; font-weight: 500;
+          font-size: 18px; color: #86868b; margin-bottom: 4px; font-weight: 500;
         ">${info.name}</div>
         <div style="
-          font-size: 13px; color: #aeaeb2; font-style: italic; margin-bottom: 22px;
+          font-size: 14px; color: #aeaeb2; font-style: italic; margin-bottom: 24px;
         ">${info.scientificName}</div>
 
         <!-- Info grid -->
         <div style="
           display: grid; grid-template-columns: 1fr 1fr;
-          gap: 1px; border-radius: 14px; overflow: hidden;
-          background: rgba(0,0,0,0.04); margin-bottom: 22px;
+          gap: 1px; border-radius: 16px; overflow: hidden;
+          background: rgba(0,0,0,0.04); margin-bottom: 24px;
         ">
           ${fields.map(([label, value]) => {
             const isWide = label === '威胁因素' || label === '分布区域';
             const span = isWide ? 'grid-column: 1 / -1;' : '';
             return `
               <div style="
-                padding: 12px 16px; background: rgba(255,255,255,0.7);
+                padding: 14px 18px; background: rgba(255,255,255,0.7);
                 ${span}
               ">
                 <div style="font-size: 11px; color: #86868b; font-weight: 600;
-                  letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 4px;">
+                  letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 5px;">
                   ${label}
                 </div>
-                <div style="font-size: 14px; font-weight: 500; color: #1d1d1f; line-height: 1.4;">
+                <div style="font-size: 15px; font-weight: 500; color: #1d1d1f; line-height: 1.45;">
                   ${value}
                 </div>
               </div>
@@ -157,7 +157,7 @@ export class AnimalPanel {
 
         <!-- Blurb -->
         <div style="
-          font-size: 15px; line-height: 1.7; color: #424245;
+          font-size: 16px; line-height: 1.75; color: #424245;
           font-weight: 400;
         ">${info.blurb}</div>
 
@@ -165,9 +165,9 @@ export class AnimalPanel {
         <a href="https://zh.wikipedia.org/wiki/${info.wikiTitle}" target="_blank"
           style="
             display: inline-flex; align-items: center; gap: 6px;
-            margin-top: 20px; padding: 10px 20px; border-radius: 22px;
+            margin-top: 24px; padding: 12px 24px; border-radius: 24px;
             background: rgba(0,122,255,0.08);
-            color: #007aff; font-size: 14px; font-weight: 500;
+            color: #007aff; font-size: 15px; font-weight: 500;
             text-decoration: none;
             transition: background 0.15s ease;
           ">

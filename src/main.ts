@@ -95,7 +95,7 @@ const rain = new Rain();
 scene.add(rain.group);
 
 // --- Lighting: Self-illuminating (no sun, sky-driven) ---
-const ambientLight = new THREE.AmbientLight('#ffffff', 3.5);
+const ambientLight = new THREE.AmbientLight('#ffffff', 5.0);
 scene.add(ambientLight);
 
 // --- Animation loop ---
