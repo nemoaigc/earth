@@ -201,15 +201,14 @@ export function createShallowWaterMesh(): THREE.Mesh {
     const onLand = mask.isLand(lat, lng);
     // Check if near coast (within 5°)
     const nearLand = !onLand && (
-      mask.isLand(lat + 4, lng) || mask.isLand(lat - 4, lng) ||
-      mask.isLand(lat, lng + 4) || mask.isLand(lat, lng - 4) ||
-      mask.isLand(lat + 3, lng + 3) || mask.isLand(lat - 3, lng - 3)
+      mask.isLand(lat + 2, lng) || mask.isLand(lat - 2, lng) ||
+      mask.isLand(lat, lng + 2) || mask.isLand(lat, lng - 2)
     );
 
     if (nearLand) {
       // Shallow turquoise water
-      colors[i * 3] = 0.3; colors[i * 3 + 1] = 0.75; colors[i * 3 + 2] = 0.7;
-      alphas[i] = 0.45;
+      colors[i * 3] = 0.25; colors[i * 3 + 1] = 0.7; colors[i * 3 + 2] = 0.65;
+      alphas[i] = 0.3;
     } else if (onLand) {
       // On land — fully transparent (land terrain shows through)
       colors[i * 3] = 0; colors[i * 3 + 1] = 0; colors[i * 3 + 2] = 0;
@@ -226,7 +225,7 @@ export function createShallowWaterMesh(): THREE.Mesh {
   const mat = new THREE.MeshPhongMaterial({
     vertexColors: true,
     transparent: true,
-    opacity: 0.45,
+    opacity: 0.3,
     shininess: 20,
     flatShading: true,
     depthWrite: false,

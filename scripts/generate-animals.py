@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
-"""Batch generate animal sprites via Scenario API"""
-import json, time, os, sys, base64, urllib.request, urllib.error
+"""Batch generate animal sprites via Scenario API - batches of 5"""
+import json, time, os, subprocess, base64
 
 API = "https://api.cloud.scenario.com/v1"
 KEY = "api_WvsRosfALpCZ9Si7qw36iXAF"
 SECRET = "SpsiCSwMURjJLdEgxD1PCF1t"
 AUTH = "Basic " + base64.b64encode(f"{KEY}:{SECRET}".encode()).decode()
 MODEL = "model_4RhbPuYCY43bic4kcYYniDna"
-OUTDIR = os.path.join(os.path.dirname(__file__), "..", "public", "animals")
+OUTDIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "public", "animals")
 os.makedirs(OUTDIR, exist_ok=True)
 
 STYLE = "cute miniature figurine, low poly style, soft pastel shading, simple clean design, full body, centered, solid white background, game asset"
@@ -52,25 +52,31 @@ ANIMALS = [
     ("amurleopard", "golden yellow amur leopard with black rosettes, muscular"),
 ]
 
-def api_request(method, path, data=None):
+def curl_json(method, path, data=None):
+    """Use curl for all API calls to avoid Python SSL issues"""
+    cmd = ["curl", "-s", "--connect-timeout", "30", "--max-time", "60"]
     url = f"{API}{path}"
-    body = json.dumps(data).encode() if data else None
-    req = urllib.request.Request(url, data=body, method=method)
-    req.add_header("Authorization", AUTH)
+    if method == "POST":
+        cmd += ["-X", "POST"]
+    cmd += ["-H", f"Authorization: {AUTH}"]
     if data:
-        req.add_header("Content-Type", "application/json")
-    try:
-        with urllib.request.urlopen(req, timeout=60) as resp:
-            return json.loads(resp.read())
-    except urllib.error.HTTPError as e:
-        err = e.read().decode()
-        print(f"  HTTP {e.code}: {err[:200]}")
-        return None
-    except Exception as e:
-        print(f"  Error: {e}")
-        return None
+        cmd += ["-H", "Content-Type: application/json", "-d", json.dumps(data)]
+    cmd.append(url)
+    result = subprocess.run(cmd, capture_output=True, text=True)
+    if result.stdout.strip():
+        try:
+            return json.loads(result.stdout)
+        except json.JSONDecodeError:
+            print(f"  JSON decode error: {result.stdout[:100]}")
+    return None
 
-def submit_job(filename, desc):
+def curl_download(url, filepath):
+    """Download file using curl"""
+    cmd = ["curl", "-sL", "--connect-timeout", "30", "--max-time", "120", "-o", filepath, url]
+    subprocess.run(cmd, capture_output=True)
+    return os.path.exists(filepath) and os.path.getsize(filepath) > 1000
+
+def submit_job(desc):
     prompt = f"{desc}, {STYLE}"
     data = {
         "modelId": MODEL,
@@ -81,13 +87,15 @@ def submit_job(filename, desc):
         "guidance": 7,
         "numInferenceSteps": 20,
     }
-    resp = api_request("POST", "/generate/txt2img", data)
+    resp = curl_json("POST", "/generate/txt2img", data)
     if resp and "job" in resp:
         return resp["job"]["jobId"]
+    if resp and "reason" in resp:
+        print(f"    API error: {resp['reason'][:80]}")
     return None
 
 def check_job(job_id):
-    resp = api_request("GET", f"/jobs/{job_id}")
+    resp = curl_json("GET", f"/jobs/{job_id}")
     if resp and "job" in resp:
         j = resp["job"]
         assets = j.get("metadata", {}).get("assetIds", [])
@@ -95,76 +103,93 @@ def check_job(job_id):
     return "unknown", None
 
 def download_asset(asset_id, filepath):
-    resp = api_request("POST", f"/assets/{asset_id}/download", {"targetFormat": "png"})
+    resp = curl_json("POST", f"/assets/{asset_id}/download", {"targetFormat": "png"})
     if resp and "url" in resp:
-        urllib.request.urlretrieve(resp["url"], filepath)
-        size = os.path.getsize(filepath)
-        if size > 1000:
-            return True
-        os.remove(filepath)
+        return curl_download(resp["url"], filepath)
     return False
 
-# === SUBMIT ALL JOBS ===
-print(f"=== Submitting {len(ANIMALS)} generation jobs ===")
-jobs = {}  # filename -> jobId
+def process_batch(batch):
+    """Submit a batch of up to 5 animals, wait for all to complete, download results"""
+    jobs = {}
 
-for filename, desc in ANIMALS:
-    outpath = os.path.join(OUTDIR, f"{filename}.png")
-    if os.path.exists(outpath) and os.path.getsize(outpath) > 1000:
-        print(f"  ⏭ {filename}.png already exists, skipping")
-        continue
-
-    job_id = submit_job(filename, desc)
-    if job_id:
-        jobs[filename] = job_id
-        print(f"  ✓ {filename} -> {job_id}")
-    else:
-        print(f"  ✗ {filename} FAILED to submit")
-    time.sleep(0.5)
-
-print(f"\n=== Submitted {len(jobs)} jobs. Polling for completion... ===")
-
-# === POLL AND DOWNLOAD ===
-downloaded = set()
-failed = set()
-max_attempts = 60
-
-for attempt in range(1, max_attempts + 1):
-    if not jobs or len(downloaded) + len(failed) >= len(jobs):
-        break
-
-    time.sleep(10)
-    pending = 0
-
-    for filename, job_id in jobs.items():
-        if filename in downloaded or filename in failed:
+    # Submit all in batch
+    for filename, desc in batch:
+        outpath = os.path.join(OUTDIR, f"{filename}.png")
+        if os.path.exists(outpath) and os.path.getsize(outpath) > 1000:
+            print(f"  ⏭ {filename}.png exists, skip")
             continue
 
-        status, asset_id = check_job(job_id)
+        job_id = submit_job(desc)
+        if job_id:
+            jobs[filename] = job_id
+            print(f"  ✓ {filename} -> {job_id}")
+        else:
+            print(f"  ✗ {filename} submit failed")
+        time.sleep(0.3)
 
-        if status == "success" and asset_id:
-            outpath = os.path.join(OUTDIR, f"{filename}.png")
-            if download_asset(asset_id, outpath):
-                size = os.path.getsize(outpath)
-                print(f"  ⬇ {filename}.png ({size}B)")
-                downloaded.add(filename)
+    if not jobs:
+        return
+
+    # Poll until all done
+    downloaded = set()
+    failed = set()
+
+    for attempt in range(1, 40):
+        if len(downloaded) + len(failed) >= len(jobs):
+            break
+        time.sleep(8)
+        pending = 0
+
+        for filename, job_id in jobs.items():
+            if filename in downloaded or filename in failed:
+                continue
+
+            status, asset_id = check_job(job_id)
+
+            if status == "success" and asset_id:
+                outpath = os.path.join(OUTDIR, f"{filename}.png")
+                if download_asset(asset_id, outpath):
+                    size = os.path.getsize(outpath)
+                    print(f"  ⬇ {filename}.png ({size}B)")
+                    downloaded.add(filename)
+                else:
+                    print(f"  ⚠ {filename} download failed, retry")
+                    pending += 1
+            elif status == "failed":
+                print(f"  ✗ {filename} generation failed")
+                failed.add(filename)
             else:
                 pending += 1
-        elif status == "failed":
-            print(f"  ✗ {filename} generation FAILED")
-            failed.add(filename)
-        else:
-            pending += 1
 
-    total = len(jobs)
-    print(f"  [Poll #{attempt}] Done: {len(downloaded)}/{total}, Pending: {pending}, Failed: {len(failed)}")
+        if pending > 0:
+            print(f"    [poll #{attempt}] waiting for {pending}...")
 
-# === SUMMARY ===
-print(f"\n=== Complete ===")
-print(f"Downloaded: {len(downloaded)}")
-print(f"Failed: {len(failed)}")
-if failed:
-    print(f"Failed animals: {', '.join(sorted(failed))}")
+    return downloaded, failed
 
+# === MAIN ===
+BATCH_SIZE = 5
+total_downloaded = 0
+total_failed = 0
+
+for i in range(0, len(ANIMALS), BATCH_SIZE):
+    batch = ANIMALS[i:i + BATCH_SIZE]
+    batch_num = i // BATCH_SIZE + 1
+    total_batches = (len(ANIMALS) + BATCH_SIZE - 1) // BATCH_SIZE
+    names = [b[0] for b in batch]
+    print(f"\n=== Batch {batch_num}/{total_batches}: {', '.join(names)} ===")
+
+    result = process_batch(batch)
+    if result:
+        d, f = result
+        total_downloaded += len(d)
+        total_failed += len(f)
+
+    # Wait a moment before next batch
+    if i + BATCH_SIZE < len(ANIMALS):
+        time.sleep(2)
+
+print(f"\n=== DONE === Downloaded: {total_downloaded}, Failed: {total_failed}")
 pngs = [f for f in os.listdir(OUTDIR) if f.endswith('.png')]
-print(f"Total PNGs in {OUTDIR}: {len(pngs)}")
+print(f"Total PNGs: {len(pngs)}")
+for p in sorted(pngs):
+    print(f"  {p}")

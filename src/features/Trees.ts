@@ -16,32 +16,32 @@ const BIOME_CONFIGS: BiomeConfig[] = [
     biome: 'tropical',
     count: 400,
     colors: ['#228833', '#33aa44', '#2d9922'],
-    heightRange: [0.6, 1.0],
-    widthRange: [0.16, 0.24],
+    heightRange: [0.5, 0.7],
+    widthRange: [0.20, 0.28],
     geoType: 'tropical',
   },
   {
     biome: 'temperate',
     count: 400,
     colors: ['#55cc33', '#44bb44', '#66cc55', '#cc8833'],
-    heightRange: [0.5, 0.8],
-    widthRange: [0.12, 0.18],
+    heightRange: [0.45, 0.65],
+    widthRange: [0.18, 0.25],
     geoType: 'temperate',
   },
   {
     biome: 'boreal',
     count: 400,
     colors: ['#225533', '#336644', '#2a5533'],
-    heightRange: [0.6, 0.9],
-    widthRange: [0.08, 0.12],
+    heightRange: [0.55, 0.75],
+    widthRange: [0.12, 0.18],
     geoType: 'boreal',
   },
   {
     biome: 'desert',
     count: 30,
     colors: ['#889944'],
-    heightRange: [0.21, 0.35],
-    widthRange: [0.06, 0.08],
+    heightRange: [0.30, 0.45],
+    widthRange: [0.12, 0.18],
     geoType: 'temperate',
   },
   {
@@ -123,26 +123,23 @@ function createTrunk(
 /* ---------- tree geometry builders ---------- */
 
 function createTropicalTreeGeometry(height: number, width: number): THREE.BufferGeometry {
-  const trunkH = height * 0.38;
-  const trunkRadBot = width * 0.12;
-  const trunkRadTop = width * 0.08;
-  const trunk = createTrunk(trunkH, trunkRadBot, trunkRadTop);
+  const trunkH = height * 0.45;
+  const trunk = createTrunk(trunkH, 0.025, 0.018);
 
   const parts: THREE.BufferGeometry[] = [trunk];
 
-  // 3 stacked spheres for bushy canopy
-  const layerCount = 3;
-  const baseRadius = width * 0.5;
-  for (let i = 0; i < layerCount; i++) {
-    const t = i / (layerCount - 1); // 0 = bottom, 1 = top
-    const r = baseRadius * (1 - t * 0.35); // shrink toward top
-    const sphere = new THREE.DodecahedronGeometry(r, 1);
-    const yPos = trunkH + baseRadius * 0.4 + i * baseRadius * 0.55;
-    sphere.translate(0, yPos, 0);
-
-    const darkGreen = new THREE.Color(0.1, 0.3 + t * 0.1, 0.08);
-    const lightGreen = new THREE.Color(0.25, 0.55 + t * 0.1, 0.15);
-    colorGeometry(sphere, darkGreen, lightGreen, yPos - r, yPos + r);
+  // 2 stacked spheres for bushy round canopy
+  const baseRadius = width * 0.45;
+  const layers = [
+    { r: baseRadius, y: trunkH + baseRadius * 0.7 },
+    { r: baseRadius * 0.75, y: trunkH + baseRadius * 1.5 },
+  ];
+  for (const layer of layers) {
+    const sphere = new THREE.DodecahedronGeometry(layer.r, 1);
+    sphere.translate(0, layer.y, 0);
+    const darkGreen = new THREE.Color(0.08, 0.28, 0.06);
+    const lightGreen = new THREE.Color(0.2, 0.5, 0.12);
+    colorGeometry(sphere, darkGreen, lightGreen, layer.y - layer.r, layer.y + layer.r);
     parts.push(ensureMergeReady(sphere));
   }
 
@@ -150,24 +147,22 @@ function createTropicalTreeGeometry(height: number, width: number): THREE.Buffer
 }
 
 function createTemperateTreeGeometry(height: number, width: number): THREE.BufferGeometry {
-  const trunkH = height * 0.4;
-  const trunkRadBot = width * 0.1;
-  const trunkRadTop = width * 0.06;
-  const trunk = createTrunk(trunkH, trunkRadBot, trunkRadTop);
+  const trunkH = height * 0.45;
+  const trunk = createTrunk(trunkH, 0.022, 0.015);
 
   // Ellipsoid canopy — icosahedron stretched on Y
-  const canopyRadius = width * 0.5;
+  const canopyRadius = width * 0.45;
   const canopy = new THREE.IcosahedronGeometry(canopyRadius, 1);
   const pos = canopy.getAttribute('position');
   for (let i = 0; i < pos.count; i++) {
-    pos.setY(i, pos.getY(i) * 1.4);
+    pos.setY(i, pos.getY(i) * 1.5);
   }
-  const canopyCenter = trunkH + canopyRadius * 1.1;
+  const canopyCenter = trunkH + canopyRadius * 1.2;
   canopy.translate(0, canopyCenter, 0);
 
-  const darkGreen = new THREE.Color(0.15, 0.35, 0.1);
-  const lightGreen = new THREE.Color(0.35, 0.65, 0.2);
-  colorGeometry(canopy, darkGreen, lightGreen, canopyCenter - canopyRadius * 1.4, canopyCenter + canopyRadius * 1.4);
+  const darkGreen = new THREE.Color(0.12, 0.32, 0.08);
+  const lightGreen = new THREE.Color(0.3, 0.6, 0.18);
+  colorGeometry(canopy, darkGreen, lightGreen, canopyCenter - canopyRadius * 1.5, canopyCenter + canopyRadius * 1.5);
 
   return mergeGeometries([trunk, ensureMergeReady(canopy)], false)!;
 }
