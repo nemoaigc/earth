@@ -152,10 +152,18 @@ export function generateTerrain(): TerrainData {
       colors[i * 3 + 1] = color.g;
       colors[i * 3 + 2] = color.b;
 
-      // Collect land points
-      if (i % 15 === 0) {
+      // Collect land points with random jitter to avoid grid patterns
+      const sampleChance = (Math.sin(i * 7.13) * 0.5 + 0.5) > 0.85;
+      if (i % 12 === 0 || sampleChance) {
+        // Jitter position slightly along surface tangent
+        const jx = (Math.sin(i * 3.17) * 2 - 1) * 0.03;
+        const jz = (Math.cos(i * 5.31) * 2 - 1) * 0.03;
         landPoints.push({
-          position: new THREE.Vector3(nx * newRadius, ny * newRadius, nz * newRadius),
+          position: new THREE.Vector3(
+            nx * newRadius + jx,
+            ny * newRadius,
+            nz * newRadius + jz
+          ),
           normal: new THREE.Vector3(nx, ny, nz),
           height: heightNorm,
           biome,
