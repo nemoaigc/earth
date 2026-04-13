@@ -3,7 +3,6 @@ import { createShallowWaterMesh, generateTerrain, GLOBE_RADIUS } from './terrain
 import type { TerrainData } from './terrain';
 import { Ocean } from './Ocean';
 import { Atmosphere } from './Atmosphere';
-import { loadHeightmap } from './heightmap';
 
 export class Globe {
   group: THREE.Group;
@@ -13,23 +12,21 @@ export class Globe {
   atmosphere: Atmosphere;
   terrainData: TerrainData;
   timeUniform = { value: 0 };
-  onReady: (() => void) | null = null;
-  private _ready = false;
 
   constructor() {
     this.group = new THREE.Group();
 
-    // Placeholder — will be replaced when heightmap loads
+    this.terrainData = generateTerrain();
     this.terrainMaterial = new THREE.MeshPhongMaterial({
       vertexColors: true,
       shininess: 8,
       flatShading: true,
     });
-
     const timeUniform = this.timeUniform;
     this.terrainMaterial.onBeforeCompile = (shader) => {
       shader.uniforms.uTime = timeUniform;
       shader.uniforms.uGlobeRadius = { value: GLOBE_RADIUS };
+
       shader.vertexShader = shader.vertexShader.replace('#include <common>',
         `#include <common>
     uniform float uTime;
@@ -48,6 +45,7 @@ export class Globe {
       transformed.z += cos(uTime * 1.3 + wp.z * 2.5) * sw;
     }`
       );
+
       shader.fragmentShader = shader.fragmentShader.replace('#include <common>',
         `#include <common>
     varying float vAltitude;
@@ -55,41 +53,21 @@ export class Globe {
       );
     };
 
-    // Temp empty terrain
-    this.terrainData = { geometry: new THREE.SphereGeometry(GLOBE_RADIUS, 16, 16), landPoints: [], coastPoints: [], oceanRatio: 0.7 };
-    this.terrain = new THREE.Mesh(this.terrainData.geometry, this.terrainMaterial);
+    this.terrain = new THREE.Mesh(
+      this.terrainData.geometry,
+      this.terrainMaterial
+    );
 
     this.ocean = new Ocean();
+    const shallows = createShallowWaterMesh();
     this.atmosphere = new Atmosphere();
 
-    this.group.add(this.ocean.mesh);
-    this.group.add(this.terrain);
-    this.group.add(this.atmosphere.mesh);
-
-    // Load heightmap then generate real terrain
-    this.init();
-  }
-
-  private async init() {
-    await loadHeightmap();
-    this.terrainData = generateTerrain();
-
-    this.group.remove(this.terrain);
-    this.terrain = new THREE.Mesh(this.terrainData.geometry, this.terrainMaterial);
-
-    const shallows = createShallowWaterMesh();
-    // Re-add in correct order
-    this.group.clear();
+    // Order: ocean first, then shallows, then terrain on top, atmosphere last
     this.group.add(this.ocean.mesh);
     this.group.add(shallows);
     this.group.add(this.terrain);
     this.group.add(this.atmosphere.mesh);
-
-    this._ready = true;
-    if (this.onReady) this.onReady();
   }
-
-  get ready() { return this._ready; }
 
   update(time: number, atmosphereColor: THREE.Color): void {
     this.timeUniform.value = time;

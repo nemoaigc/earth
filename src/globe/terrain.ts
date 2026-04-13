@@ -1,7 +1,6 @@
 import * as THREE from 'three';
-import { noise3D } from '../utils/noise';
+import { sampleNoise, noise3D } from '../utils/noise';
 import { createWorldMask, type BiomeWeights } from './worldmap';
-import { sampleElevation } from './heightmap';
 
 export const GLOBE_RADIUS = 5;
 
@@ -12,7 +11,7 @@ export interface TerrainData {
   oceanRatio: number;
 }
 
-const LAND_HEIGHT_SCALE = 2.5;
+const LAND_HEIGHT_SCALE = 0.7;
 
 // Vibrant colors matching reference screenshots
 const BIOME_COLORS: Record<string, { low: THREE.Color; mid: THREE.Color; high: THREE.Color; snow: THREE.Color }> = {
@@ -93,25 +92,53 @@ export function generateTerrain(): TerrainData {
     if (biome !== 'ocean') {
       // Check distance to coast: sample nearby points for ocean
       let coastDist = 1.0; // 1.0 = far from coast
-      for (let step = 1; step <= 4; step++) {
-        const d = step * 3;
+      for (let step = 1; step <= 7; step++) {
+        const d = step * 2.1;
         const nearOcean =
           !mask.isLand(lat + d, lng) || !mask.isLand(lat - d, lng) ||
           !mask.isLand(lat, lng + d) || !mask.isLand(lat, lng - d) ||
           !mask.isLand(lat + d, lng + d) || !mask.isLand(lat - d, lng - d);
         if (nearOcean) {
-          coastDist = step / 4;
+          coastDist = step / 7;
           break;
         }
       }
       // Smooth ramp: height scales with distance from coast
       const coastFactor = coastDist; // linear ramp — visible mountains inland
 
-      // Use real NASA elevation data — pow(0.4) boosts low values for visible terrain
-      const rawElev = sampleElevation(lat, lng);
-      const elevation = Math.pow(rawElev, 0.4); // 0.129 → 0.33, 0.9 → 0.96
-      const softCoast = Math.sqrt(coastFactor);
-      const heightNorm = elevation * (0.4 + softCoast * 0.6);
+      // Very low frequency noise — smooth rolling hills, no spikes
+      // scale 0.2 = extremely slow variation across the sphere
+      const hills = sampleNoise(nx, ny, nz, 2, 1.8, 0.5, 0.2);
+      // Slight medium frequency for texture
+      const texture = sampleNoise(nx, ny, nz, 2, 2.0, 0.4, 0.5);
+      const noise = Math.abs(hills) * 0.85 + Math.abs(texture) * 0.15 + 0.05;
+      const centralBoost = 1.0 + coastDist * 0.3;
+
+      // Regional mountain boost — add FIXED height for mountain ranges
+      let regionAdd = 0;
+      // Himalayas / Tibet (lat 27-40, lng 70-100) — world's highest
+      if (lat > 25 && lat < 42 && lng > 68 && lng < 102) {
+        const f = Math.max(0, 1 - Math.abs(lat - 33) / 9) * Math.max(0, 1 - Math.abs(lng - 85) / 17);
+        regionAdd = f * 0.6;
+      }
+      // Andes (lat -55 to 10, lng -80 to -60)
+      if (lat > -55 && lat < 10 && lng > -80 && lng < -60) {
+        const f = Math.max(0, 1 - Math.abs(lng + 70) / 10);
+        regionAdd = Math.max(regionAdd, f * 0.4);
+      }
+      // Rockies (lat 35-60, lng -120 to -105)
+      if (lat > 35 && lat < 60 && lng > -120 && lng < -105) {
+        const f = Math.max(0, 1 - Math.abs(lng + 112) / 8);
+        regionAdd = Math.max(regionAdd, f * 0.35);
+      }
+      // Alps (lat 44-48, lng 5-16)
+      if (lat > 43 && lat < 49 && lng > 4 && lng < 17)
+        regionAdd = Math.max(regionAdd, 0.25);
+      // East Africa (lat -5 to 5, lng 30-40)
+      if (lat > -6 && lat < 6 && lng > 28 && lng < 42)
+        regionAdd = Math.max(regionAdd, 0.2);
+
+      const heightNorm = noise * coastFactor * centralBoost + regionAdd;
       const height = heightNorm * LAND_HEIGHT_SCALE;
       const newRadius = GLOBE_RADIUS + height;
 

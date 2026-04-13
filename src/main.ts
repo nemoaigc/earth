@@ -21,7 +21,7 @@ import { Labels } from './features/Labels';
 import { Animals } from './features/Animals';
 
 // --- Renderer ---
-const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
+const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.toneMapping = THREE.NoToneMapping;
@@ -53,34 +53,33 @@ const cameraController = new CameraController(
   renderer.domElement
 );
 
-// --- Globe (async — heightmap loads first) ---
+// --- Globe ---
 const globe = new Globe();
 scene.add(globe.group);
 
+// --- Terrain features ---
+const trees = new Trees(globe.terrainData);
+scene.add(trees.group);
+const palmTrees = new PalmTrees(globe.terrainData);
+scene.add(palmTrees.group);
+const rocks = new Rocks(globe.terrainData);
+scene.add(rocks.group);
+const mountains = new Mountains(globe.terrainData);
+scene.add(mountains.group);
+// Balloons removed
+const icebergs = new Icebergs(globe.terrainData);
+scene.add(icebergs.group);
+const reefs = new Reefs(globe.terrainData);
+scene.add(reefs.group);
+const flowers = new Flowers(globe.terrainData);
+scene.add(flowers.group);
+const grass = new Grass(globe.terrainData);
+scene.add(grass.group);
+
 const labels = new Labels();
 scene.add(labels.group);
-
-// Features added when heightmap + terrain ready
-const featureUpdaters: ((t: number, cam?: THREE.PerspectiveCamera) => void)[] = [];
-
-function addFeatures() {
-  const td = globe.terrainData;
-  const features = [
-    new Trees(td), new PalmTrees(td), new Rocks(td),
-    new Mountains(td), new Icebergs(td), new Reefs(td),
-    new Flowers(td), new Grass(td),
-  ];
-  for (const f of features) {
-    scene.add(f.group);
-    featureUpdaters.push((t) => f.update(t));
-  }
-  const animals = new Animals(td, renderer.domElement);
-  scene.add(animals.group);
-  featureUpdaters.push((t, cam) => animals.update(t, cam!));
-}
-
-globe.onReady = addFeatures;
-if (globe.ready) addFeatures();
+const animals = new Animals(globe.terrainData, renderer.domElement);
+scene.add(animals.group);
 
 // --- Sky elements ---
 const skyDome = new SkyDome();
@@ -138,8 +137,17 @@ function animate(): void {
   // lensFlare removed
   // rain removed
 
-  // --- Terrain features (added async when heightmap ready) ---
-  for (const updater of featureUpdaters) updater(elapsed, cameraController.camera);
+  // --- Terrain features ---
+  trees.update(elapsed);
+  palmTrees.update(elapsed);
+  rocks.update(elapsed);
+  mountains.update(elapsed);
+  // Balloons removed
+  icebergs.update(elapsed);
+  reefs.update(elapsed);
+  flowers.update(elapsed);
+  grass.update(elapsed);
+  animals.update(elapsed, cameraController.camera);
 
   cameraController.update(deltaTime);
   renderer.render(scene, cameraController.camera);
