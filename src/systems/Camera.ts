@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 
-const ORBIT_RADIUS = 13;
+const ORBIT_RADIUS = 18;
 const AUTO_ROTATE_SPEED = 0.3;
 
 export class CameraController {
@@ -18,8 +18,8 @@ export class CameraController {
     this.controls.dampingFactor = 0.05;
     this.controls.autoRotate = true;
     this.controls.autoRotateSpeed = AUTO_ROTATE_SPEED;
-    this.controls.minDistance = 10;
-    this.controls.maxDistance = 35;
+    this.controls.minDistance = 12;
+    this.controls.maxDistance = 50;
     this.controls.enablePan = false;
     this.controls.target.set(0, 0, 0);
   }

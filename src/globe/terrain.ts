@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { sampleNoise } from '../utils/noise';
 import { createWorldMask, type BiomeWeights } from './worldmap';
 
-export const GLOBE_RADIUS = 7;
+export const GLOBE_RADIUS = 10;
 
 export interface TerrainData {
   geometry: THREE.BufferGeometry;
