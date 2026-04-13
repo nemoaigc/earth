@@ -48,6 +48,7 @@ export class Atmosphere {
     });
 
     this.mesh = new THREE.Mesh(geometry, this.material);
+    this.mesh.renderOrder = -1;
   }
 
   updateColor(color: THREE.Color): void {

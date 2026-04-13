@@ -4,7 +4,7 @@ import { Trees } from './features/Trees';
 import { PalmTrees } from './features/PalmTrees';
 import { Rocks } from './features/Rocks';
 import { Mountains } from './features/Mountains';
-import { Balloons } from './features/Balloons';
+// Balloons removed
 import { Icebergs } from './features/Icebergs';
 import { Reefs } from './features/Reefs';
 import { Flowers } from './features/Flowers';
@@ -66,8 +66,7 @@ const rocks = new Rocks(globe.terrainData);
 scene.add(rocks.group);
 const mountains = new Mountains(globe.terrainData);
 scene.add(mountains.group);
-const balloons = new Balloons(globe.terrainData);
-scene.add(balloons.group);
+// Balloons removed
 const icebergs = new Icebergs(globe.terrainData);
 scene.add(icebergs.group);
 const reefs = new Reefs(globe.terrainData);
@@ -144,7 +143,7 @@ function animate(): void {
   palmTrees.update(elapsed);
   rocks.update(elapsed);
   mountains.update(elapsed);
-  balloons.update(elapsed);
+  // Balloons removed
   icebergs.update(elapsed);
   reefs.update(elapsed);
   flowers.update(elapsed);

@@ -62,9 +62,8 @@ const KEY_FRAMES: KeyFrame[] = [
     backColor: c('#aacc6e'), backIntensity: 1.0,
     hemiSkyColor: c('#80ccdd'), hemiGroundColor: c('#66aa44'), hemiIntensity: 1.25,
     skyGradient: stops(
-      [0,'#04102e'],[0.1,'#081e4a'],[0.2,'#103268'],[0.3,'#1a4a82'],
-      [0.4,'#266498'],[0.5,'#2080b0'],[0.6,'#209cc8'],[0.7,'#28b8dc'],
-      [0.8,'#38d0ea'],[0.9,'#50e4f4'],[1,'#70f2fc']
+      [0,'#0a1840'],[0.15,'#0e2255'],[0.3,'#143068'],[0.45,'#1a3d7a'],
+      [0.6,'#204a8a'],[0.75,'#285898'],[0.85,'#3066a8'],[1,'#3872b5']
     ),
     fogColor: c('#60ccde'), fogNear: 15, fogFar: 40,
     atmosphereColor: c('#bbddcc'),
