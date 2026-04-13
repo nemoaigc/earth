@@ -94,7 +94,7 @@ export class Rocks {
 
     for (let t = 0; t < ROCK_GEOMETRIES.length; t++) {
       const geo = ROCK_GEOMETRIES[t]();
-      const shuffled = eligible.sort(() => Math.random() - 0.5);
+      const shuffled = [...eligible].sort(() => Math.random() - 0.5);
       const count = Math.min(perType, shuffled.length);
       const mesh = new THREE.InstancedMesh(geo, material, count);
       mesh.castShadow = true;

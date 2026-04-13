@@ -19,6 +19,7 @@ export class Ocean {
     const mid = new THREE.Color('#2899cc');      // medium blue
     const deep = new THREE.Color('#1a6699');      // deep blue
 
+    const c = new THREE.Color();
     for (let i = 0; i < count; i++) {
       const x = posAttr.getX(i), y = posAttr.getY(i), z = posAttr.getZ(i);
       const len = Math.sqrt(x*x + y*y + z*z);
@@ -37,7 +38,6 @@ export class Ocean {
         nearCoast = true;
       }
 
-      const c = new THREE.Color();
       if (veryNearCoast) c.copy(shallow);
       else if (nearCoast) c.copy(mid);
       else c.copy(deep);

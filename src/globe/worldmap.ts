@@ -1335,7 +1335,9 @@ function inDesert(lat: number, lng: number): number {
   return 0;
 }
 
+let _cachedMask: WorldMask | null = null;
 export function createWorldMask(): WorldMask {
+  if (_cachedMask) return _cachedMask;
   const BW = 360, BH = 180;
   const bitmap = new Uint8Array(BW * BH);
   for (let iy = 0; iy < BH; iy++) {
@@ -1378,5 +1380,6 @@ export function createWorldMask(): WorldMask {
     return { tropical, temperate, boreal, desert, polar };
   }
 
-  return { isLand, getBiome, getBiomeWeights };
+  _cachedMask = { isLand, getBiome, getBiomeWeights };
+  return _cachedMask;
 }

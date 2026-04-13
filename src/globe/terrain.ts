@@ -70,6 +70,7 @@ export function generateTerrain(): TerrainData {
 
   const mask = createWorldMask();
   const color = new THREE.Color();
+  const tmpC = new THREE.Color();
 
   for (let i = 0; i < vertexCount; i++) {
     const x = posAttr.getX(i);
@@ -140,7 +141,6 @@ export function generateTerrain(): TerrainData {
       // Blend colors across biomes using weights (smooth transitions)
       const weights = mask.getBiomeWeights(lat, lng);
       color.setRGB(0, 0, 0);
-      const tmpC = new THREE.Color();
       for (const [biomeName, weight] of Object.entries(weights) as [keyof BiomeWeights, number][]) {
         if (weight < 0.01) continue;
         const palette = BIOME_COLORS[biomeName];
@@ -238,7 +238,6 @@ export function createShallowWaterMesh(): THREE.Mesh {
   const posAttr = geo.getAttribute('position');
   const count = posAttr.count;
   const colors = new Float32Array(count * 3);
-  const alphas = new Float32Array(count);
 
   for (let i = 0; i < count; i++) {
     const x = posAttr.getX(i);
@@ -259,15 +258,12 @@ export function createShallowWaterMesh(): THREE.Mesh {
     if (nearLand) {
       // Shallow turquoise water
       colors[i * 3] = 0.25; colors[i * 3 + 1] = 0.7; colors[i * 3 + 2] = 0.65;
-      alphas[i] = 0.3;
     } else if (onLand) {
       // On land — fully transparent (land terrain shows through)
       colors[i * 3] = 0; colors[i * 3 + 1] = 0; colors[i * 3 + 2] = 0;
-      alphas[i] = 0;
     } else {
       // Deep ocean — fully transparent (ocean mesh below handles this)
       colors[i * 3] = 0; colors[i * 3 + 1] = 0; colors[i * 3 + 2] = 0;
-      alphas[i] = 0;
     }
   }
 
