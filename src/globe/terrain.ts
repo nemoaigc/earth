@@ -11,7 +11,7 @@ export interface TerrainData {
   oceanRatio: number;
 }
 
-const LAND_HEIGHT_SCALE = 0.7;
+const LAND_HEIGHT_SCALE = 1.0;
 
 // Vibrant colors matching reference screenshots
 const BIOME_COLORS: Record<string, { low: THREE.Color; mid: THREE.Color; high: THREE.Color; snow: THREE.Color }> = {
@@ -119,17 +119,17 @@ export function generateTerrain(): TerrainData {
       // Himalayas / Tibet (lat 27-40, lng 70-100) — world's highest
       if (lat > 25 && lat < 42 && lng > 68 && lng < 102) {
         const f = Math.max(0, 1 - Math.abs(lat - 33) / 9) * Math.max(0, 1 - Math.abs(lng - 85) / 17);
-        regionAdd = f * 0.6;
+        regionAdd = f * 0.9;
       }
       // Andes (lat -55 to 10, lng -80 to -60)
       if (lat > -55 && lat < 10 && lng > -80 && lng < -60) {
         const f = Math.max(0, 1 - Math.abs(lng + 70) / 10);
-        regionAdd = Math.max(regionAdd, f * 0.4);
+        regionAdd = Math.max(regionAdd, f * 0.6);
       }
       // Rockies (lat 35-60, lng -120 to -105)
       if (lat > 35 && lat < 60 && lng > -120 && lng < -105) {
         const f = Math.max(0, 1 - Math.abs(lng + 112) / 8);
-        regionAdd = Math.max(regionAdd, f * 0.35);
+        regionAdd = Math.max(regionAdd, f * 0.5);
       }
       // Alps (lat 44-48, lng 5-16)
       if (lat > 43 && lat < 49 && lng > 4 && lng < 17)
@@ -161,6 +161,13 @@ export function generateTerrain(): TerrainData {
         color.r += tmpC.r * weight;
         color.g += tmpC.g * weight;
         color.b += tmpC.b * weight;
+      }
+
+      // Coast color blending: near coast, mix in shallow water color for smooth transition
+      if (coastDist < 0.4) {
+        const coastBlend = 1.0 - coastDist / 0.4; // 1.0 at shore, 0.0 inland
+        const shallowColor = new THREE.Color('#55bbaa');
+        color.lerp(shallowColor, coastBlend * 0.5);
       }
 
       // Secondary noise: add color patches (like original Tiny Skies)
