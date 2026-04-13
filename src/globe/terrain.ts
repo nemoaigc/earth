@@ -86,6 +86,14 @@ export function generateTerrain(): TerrainData {
     const lat = Math.asin(Math.max(-1, Math.min(1, ny))) * 180 / Math.PI;
     const lng = Math.atan2(nz, nx) * 180 / Math.PI;
 
+    // Debug: log one vertex near Beijing (lat~40, real lng~116)
+    if (i === 1000) {
+      console.log(`[terrain debug] vertex 1000: lat=${lat.toFixed(1)}, lng=${lng.toFixed(1)}, isLand=${mask.isLand(lat, lng)}`);
+    }
+    // Debug: find a land vertex near lat=30 to check Himalaya region
+    if (Math.abs(lat - 30) < 0.5 && mask.isLand(lat, lng) && i % 500 === 0) {
+      console.log(`[himalaya check] lat=${lat.toFixed(1)}, lng=${lng.toFixed(1)}, isLand=true`);
+    }
     const biome = mask.getBiome(lat, lng);
 
     if (biome !== 'ocean') {
