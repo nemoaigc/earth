@@ -79,7 +79,7 @@ scene.add(grass.group);
 
 const labels = new Labels();
 scene.add(labels.group);
-const animals = new Animals(globe.terrainData);
+const animals = new Animals(globe.terrainData, renderer.domElement);
 scene.add(animals.group);
 
 // --- Sky elements ---
@@ -154,7 +154,7 @@ function animate(): void {
   grass.update(elapsed);
   icebergs.update(elapsed);
   reefs.update(elapsed);
-  animals.update(elapsed);
+  animals.update(elapsed, cameraController.camera);
 
   cameraController.update(deltaTime);
   renderer.render(scene, cameraController.camera);

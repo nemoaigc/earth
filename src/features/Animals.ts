@@ -2,57 +2,14 @@ import * as THREE from 'three';
 import { GLOBE_RADIUS } from '../globe/terrain';
 import type { TerrainData } from '../globe/terrain';
 import { createWorldMask } from '../globe/worldmap';
+import { ANIMALS, type AnimalInfo } from '../data/animals';
+import { AnimalPanel } from '../ui/AnimalPanel';
 
-type AnimalCategory = 'extinct' | 'endangered';
-
-interface AnimalDef {
-  name: string;
-  file: string;
-  biome: string; // 'tropical' | 'temperate' | 'boreal' | 'desert' | 'polar' | 'ocean'
-  category: AnimalCategory;
-  count: number;
-  scale: number;
+interface PlacedAnimal {
+  sprite: THREE.Sprite;
+  info: AnimalInfo;
+  baseScale: number;
 }
-
-const ANIMAL_DEFS: AnimalDef[] = [
-  // === EXTINCT / PREHISTORIC ===
-  { name: 'T-Rex',           file: 'trex',           biome: 'tropical',  category: 'extinct', count: 2, scale: 0.35 },
-  { name: 'Triceratops',     file: 'triceratops',    biome: 'temperate', category: 'extinct', count: 2, scale: 0.30 },
-  { name: 'Pteranodon',      file: 'pteranodon',      biome: 'tropical',  category: 'extinct', count: 2, scale: 0.30 },
-  { name: 'Brachiosaurus',   file: 'brachiosaurus',   biome: 'tropical',  category: 'extinct', count: 1, scale: 0.45 },
-  { name: 'Stegosaurus',     file: 'stegosaurus',     biome: 'temperate', category: 'extinct', count: 2, scale: 0.30 },
-  { name: 'Mammoth',         file: 'mammoth',         biome: 'boreal',    category: 'extinct', count: 2, scale: 0.35 },
-  { name: 'Saber-tooth',     file: 'sabertooth',      biome: 'temperate', category: 'extinct', count: 2, scale: 0.28 },
-  { name: 'Dodo',            file: 'dodo',            biome: 'tropical',  category: 'extinct', count: 2, scale: 0.20 },
-  { name: 'Velociraptor',    file: 'velociraptor',    biome: 'desert',    category: 'extinct', count: 2, scale: 0.22 },
-  { name: 'Spinosaurus',     file: 'spinosaurus',     biome: 'tropical',  category: 'extinct', count: 1, scale: 0.40 },
-  { name: 'Megalodon',       file: 'megalodon',       biome: 'ocean',     category: 'extinct', count: 2, scale: 0.40 },
-  { name: 'Plesiosaur',      file: 'plesiosaur',      biome: 'ocean',     category: 'extinct', count: 2, scale: 0.30 },
-  { name: 'Woolly Rhino',    file: 'woollyrhino',     biome: 'boreal',    category: 'extinct', count: 2, scale: 0.30 },
-  { name: 'Ankylosaurus',    file: 'ankylosaurus',    biome: 'temperate', category: 'extinct', count: 2, scale: 0.28 },
-  { name: 'Parasaurolophus', file: 'parasaurolophus', biome: 'tropical',  category: 'extinct', count: 2, scale: 0.32 },
-  { name: 'Archaeopteryx',   file: 'archaeopteryx',   biome: 'temperate', category: 'extinct', count: 2, scale: 0.18 },
-  { name: 'Thylacine',       file: 'thylacine',       biome: 'temperate', category: 'extinct', count: 2, scale: 0.22 },
-  { name: 'Ammonite',        file: 'ammonite',        biome: 'ocean',     category: 'extinct', count: 3, scale: 0.18 },
-  { name: 'Ground Sloth',    file: 'groundsloth',     biome: 'tropical',  category: 'extinct', count: 1, scale: 0.35 },
-  { name: 'Moa',             file: 'moa',             biome: 'temperate', category: 'extinct', count: 2, scale: 0.30 },
-  // === ENDANGERED ===
-  { name: 'Giant Panda',     file: 'panda',           biome: 'boreal',    category: 'endangered', count: 2, scale: 0.28 },
-  { name: 'Snow Leopard',    file: 'snowleopard',     biome: 'boreal',    category: 'endangered', count: 2, scale: 0.25 },
-  { name: 'Orangutan',       file: 'orangutan',       biome: 'tropical',  category: 'endangered', count: 2, scale: 0.28 },
-  { name: 'Mountain Gorilla',file: 'gorilla',         biome: 'tropical',  category: 'endangered', count: 2, scale: 0.32 },
-  { name: 'Tiger',           file: 'tiger',           biome: 'tropical',  category: 'endangered', count: 2, scale: 0.28 },
-  { name: 'Polar Bear',      file: 'polarbear',       biome: 'polar',     category: 'endangered', count: 2, scale: 0.30 },
-  { name: 'Blue Whale',      file: 'bluewhale',       biome: 'ocean',     category: 'endangered', count: 2, scale: 0.50 },
-  { name: 'Sea Turtle',      file: 'seaturtle',       biome: 'ocean',     category: 'endangered', count: 3, scale: 0.20 },
-  { name: 'Red Panda',       file: 'redpanda',        biome: 'boreal',    category: 'endangered', count: 2, scale: 0.20 },
-  { name: 'Rhinoceros',      file: 'rhinoceros',      biome: 'tropical',  category: 'endangered', count: 2, scale: 0.30 },
-  { name: 'Pangolin',        file: 'pangolin',        biome: 'tropical',  category: 'endangered', count: 2, scale: 0.20 },
-  { name: 'Snowy Owl',       file: 'snowyowl',        biome: 'polar',     category: 'endangered', count: 2, scale: 0.18 },
-  { name: 'Crested Ibis',    file: 'crestedibis',     biome: 'temperate', category: 'endangered', count: 2, scale: 0.20 },
-  { name: 'Baiji Dolphin',   file: 'baijidolphin',    biome: 'ocean',     category: 'endangered', count: 2, scale: 0.25 },
-  { name: 'Amur Leopard',    file: 'amurleopard',     biome: 'boreal',    category: 'endangered', count: 2, scale: 0.25 },
-];
 
 function latLngToPosition(lat: number, lng: number, radius: number): THREE.Vector3 {
   const phi = (lat * Math.PI) / 180;
@@ -64,27 +21,22 @@ function latLngToPosition(lat: number, lng: number, radius: number): THREE.Vecto
   );
 }
 
-function findOceanPositions(count: number, minAbsLat = 0, maxAbsLat = 60): { lat: number; lng: number }[] {
+function findOceanPositions(count: number, minAbsLat = 0, maxAbsLat = 60): THREE.Vector3[] {
   const mask = createWorldMask();
-  const results: { lat: number; lng: number }[] = [];
+  const results: THREE.Vector3[] = [];
   let attempts = 0;
-
   while (results.length < count && attempts < 3000) {
     attempts++;
     const absLat = minAbsLat + Math.random() * (maxAbsLat - minAbsLat);
     const lat = Math.random() < 0.5 ? absLat : -absLat;
     const lng = Math.random() * 360 - 180;
     if (!mask.isLand(lat, lng)) {
-      results.push({ lat, lng });
+      results.push(latLngToPosition(lat, lng, GLOBE_RADIUS + 0.02));
     }
   }
-
   return results;
 }
 
-/**
- * Remove near-white background pixels by modifying alpha channel in a canvas.
- */
 function makeTransparent(image: HTMLImageElement): HTMLCanvasElement {
   const canvas = document.createElement('canvas');
   canvas.width = image.width;
@@ -97,16 +49,12 @@ function makeTransparent(image: HTMLImageElement): HTMLCanvasElement {
 
   for (let i = 0; i < data.length; i += 4) {
     const r = data[i], g = data[i + 1], b = data[i + 2];
-    // Remove near-white and near-black backgrounds
     const brightness = (r + g + b) / 3;
-    if (brightness > 235 && Math.abs(r - g) < 20 && Math.abs(g - b) < 20) {
-      // White/light grey background
-      const fade = Math.max(0, (brightness - 235) / 20);
-      data[i + 3] = Math.round(255 * (1 - fade));
-    } else if (brightness < 30 && Math.abs(r - g) < 20 && Math.abs(g - b) < 20) {
-      // Black/dark background
-      const fade = Math.max(0, (30 - brightness) / 30);
-      data[i + 3] = Math.round(255 * (1 - fade));
+    const neutral = Math.abs(r - g) < 25 && Math.abs(g - b) < 25;
+    if (brightness > 230 && neutral) {
+      data[i + 3] = Math.round(255 * Math.max(0, 1 - (brightness - 230) / 25));
+    } else if (brightness < 35 && neutral) {
+      data[i + 3] = Math.round(255 * Math.max(0, 1 - (35 - brightness) / 35));
     }
   }
 
@@ -116,24 +64,55 @@ function makeTransparent(image: HTMLImageElement): HTMLCanvasElement {
 
 export class Animals {
   group: THREE.Group;
-  private sprites: THREE.Sprite[] = [];
+  private placed: PlacedAnimal[] = [];
+  private raycaster = new THREE.Raycaster();
+  private mouse = new THREE.Vector2();
+  private hoveredAnimal: PlacedAnimal | null = null;
+  private selectedAnimal: PlacedAnimal | null = null;
+  private tooltip: HTMLDivElement;
+  private panel: AnimalPanel;
+  private domElement: HTMLElement;
 
-  constructor(terrainData: TerrainData) {
+  constructor(terrainData: TerrainData, domElement: HTMLElement) {
     this.group = new THREE.Group();
+    this.domElement = domElement;
     const loader = new THREE.TextureLoader();
 
-    for (const def of ANIMAL_DEFS) {
-      const positions = this.getPositions(def, terrainData);
+    // Create tooltip
+    this.tooltip = document.createElement('div');
+    this.tooltip.className = 'animal-tooltip';
+    this.tooltip.style.cssText = `
+      position: fixed; pointer-events: none; z-index: 100;
+      padding: 6px 14px; border-radius: 10px;
+      background: rgba(255,255,255,0.82);
+      backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(255,255,255,0.45);
+      box-shadow: 0 2px 20px rgba(0,0,0,0.08), 0 0 0 0.5px rgba(0,0,0,0.05);
+      font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', sans-serif;
+      font-size: 13px; font-weight: 500; color: #1d1d1f;
+      white-space: nowrap; display: none;
+      transform: translateY(-100%) translateY(-12px);
+      transition: opacity 0.15s ease;
+    `;
+    document.body.appendChild(this.tooltip);
+
+    // Create panel
+    this.panel = new AnimalPanel();
+
+    // Event listeners
+    domElement.addEventListener('mousemove', this.onMouseMove);
+    domElement.addEventListener('click', this.onClick);
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') this.deselect();
+    });
+
+    // Load and place animals
+    for (const info of ANIMALS) {
+      const positions = this.getPositions(info, terrainData);
       if (positions.length === 0) continue;
 
-      // Load texture and create sprites
-      const imgPath = `animals/${def.file}.png`;
-
-      loader.load(imgPath, (rawTexture) => {
-        // Process image to make background transparent
-        const image = rawTexture.image as HTMLImageElement;
-        const canvas = makeTransparent(image);
-
+      loader.load(`animals/${info.id}.png`, (rawTexture) => {
+        const canvas = makeTransparent(rawTexture.image as HTMLImageElement);
         const texture = new THREE.CanvasTexture(canvas);
         texture.minFilter = THREE.LinearFilter;
         texture.magFilter = THREE.LinearFilter;
@@ -148,65 +127,125 @@ export class Animals {
           });
 
           const sprite = new THREE.Sprite(material);
-          sprite.position.copy(pos.point);
-
-          // Scale the sprite
-          const s = def.scale * (0.85 + Math.random() * 0.3);
+          const s = info.scale * (0.9 + Math.random() * 0.2);
           sprite.scale.set(s, s, s);
 
-          // Offset sprite up so it sits on the surface
-          const normal = pos.point.clone().normalize();
-          sprite.position.addScaledVector(normal, def.scale * 0.4);
+          const normal = pos.clone().normalize();
+          sprite.position.copy(pos).addScaledVector(normal, info.scale * 0.4);
 
-          this.sprites.push(sprite);
+          // Store reference on userData
+          sprite.userData.animalId = info.id;
+
+          this.placed.push({ sprite, info, baseScale: s });
           this.group.add(sprite);
         }
       });
     }
   }
 
-  private getPositions(
-    def: AnimalDef,
-    terrainData: TerrainData
-  ): { point: THREE.Vector3 }[] {
+  private getPositions(def: AnimalInfo, terrainData: TerrainData): THREE.Vector3[] {
     if (def.biome === 'ocean') {
-      const oceanPos = findOceanPositions(def.count);
-      return oceanPos.map(({ lat, lng }) => ({
-        point: latLngToPosition(lat, lng, GLOBE_RADIUS + 0.02),
-      }));
+      return findOceanPositions(def.count);
     }
-
     if (def.biome === 'polar') {
-      // Place in polar regions (high latitude land or ocean edge)
-      const polarPoints = terrainData.landPoints.filter(
-        (p) => p.biome === 'polar'
-      );
+      const polarPoints = terrainData.landPoints.filter((p) => p.biome === 'polar');
       if (polarPoints.length === 0) {
-        // Fallback to high latitude ocean positions
-        const positions = findOceanPositions(def.count, 60, 80);
-        return positions.map(({ lat, lng }) => ({
-          point: latLngToPosition(lat, lng, GLOBE_RADIUS + 0.03),
-        }));
+        return findOceanPositions(def.count, 60, 80);
       }
       const shuffled = polarPoints.sort(() => Math.random() - 0.5);
-      return shuffled.slice(0, def.count).map((p) => ({
-        point: p.position.clone().multiplyScalar(1 + 0.005),
-      }));
+      return shuffled.slice(0, def.count).map((p) =>
+        p.position.clone().multiplyScalar(1 + 0.005)
+      );
     }
-
-    // Land biomes
-    const biomePoints = terrainData.landPoints.filter(
-      (p) => p.biome === def.biome
-    );
+    const biomePoints = terrainData.landPoints.filter((p) => p.biome === def.biome);
     if (biomePoints.length === 0) return [];
-
     const shuffled = biomePoints.sort(() => Math.random() - 0.5);
-    return shuffled.slice(0, def.count).map((p) => ({
-      point: p.position.clone().multiplyScalar(1 + 0.005),
-    }));
+    return shuffled.slice(0, def.count).map((p) =>
+      p.position.clone().multiplyScalar(1 + 0.005)
+    );
   }
 
-  update(_time: number): void {
-    // Sprites auto-face camera, no per-frame update needed
+  private onMouseMove = (e: MouseEvent) => {
+    const rect = this.domElement.getBoundingClientRect();
+    this.mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+    this.mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+    this._tooltipX = e.clientX;
+    this._tooltipY = e.clientY;
+  };
+
+  private _tooltipX = 0;
+  private _tooltipY = 0;
+
+  private onClick = () => {
+    if (this.hoveredAnimal) {
+      this.select(this.hoveredAnimal);
+    }
+  };
+
+  private select(animal: PlacedAnimal) {
+    this.selectedAnimal = animal;
+    this.panel.show(animal.info);
+    this.tooltip.style.display = 'none';
+  }
+
+  deselect() {
+    this.selectedAnimal = null;
+    this.panel.hide();
+  }
+
+  update(_time: number, camera: THREE.Camera): void {
+    if (this.placed.length === 0) return;
+
+    // Raycast
+    this.raycaster.setFromCamera(this.mouse, camera);
+    const sprites = this.placed.map((p) => p.sprite);
+    const intersects = this.raycaster.intersectObjects(sprites, false);
+
+    let newHover: PlacedAnimal | null = null;
+    if (intersects.length > 0) {
+      const hitSprite = intersects[0].object;
+      newHover = this.placed.find((p) => p.sprite === hitSprite) || null;
+    }
+
+    // Update hover state
+    if (newHover !== this.hoveredAnimal) {
+      this.hoveredAnimal = newHover;
+      if (newHover && !this.selectedAnimal) {
+        const statusLabel = newHover.info.status === 'extinct' ? '已灭绝' : '濒危';
+        this.tooltip.innerHTML = `
+          <span style="color:#86868b;font-size:11px;margin-right:6px;">${statusLabel}</span>
+          ${newHover.info.nameCn}
+          <span style="color:#86868b;font-size:11px;margin-left:4px;">${newHover.info.name}</span>
+        `;
+        this.tooltip.style.display = 'block';
+        this.domElement.style.cursor = 'pointer';
+      } else {
+        this.tooltip.style.display = 'none';
+        this.domElement.style.cursor = '';
+      }
+    }
+
+    // Update tooltip position
+    if (this.hoveredAnimal && this.tooltip.style.display === 'block') {
+      this.tooltip.style.left = `${this._tooltipX}px`;
+      this.tooltip.style.top = `${this._tooltipY}px`;
+    }
+
+    // Animate scales (hover effect)
+    for (const placed of this.placed) {
+      const isHovered = placed === this.hoveredAnimal;
+      const isSelected = placed === this.selectedAnimal;
+      const target = (isHovered || isSelected ? 1.4 : 1) * placed.baseScale;
+      const cur = placed.sprite.scale.x;
+      const next = cur + (target - cur) * 0.12;
+      placed.sprite.scale.set(next, next, next);
+    }
+  }
+
+  dispose() {
+    this.domElement.removeEventListener('mousemove', this.onMouseMove);
+    this.domElement.removeEventListener('click', this.onClick);
+    this.tooltip.remove();
+    this.panel.dispose();
   }
 }

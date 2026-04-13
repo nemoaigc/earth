@@ -452,7 +452,7 @@ function placeTrees(
     const point = shuffled[i];
     const normal = point.normal.clone().normalize();
 
-    dummy.position.copy(point.position).addScaledVector(normal, 0.03);
+    dummy.position.copy(point.position).addScaledVector(normal, 0.003);
     dummy.quaternion.setFromUnitVectors(_up, normal);
 
     const yRot = new THREE.Quaternion().setFromAxisAngle(normal, Math.random() * Math.PI * 2);
