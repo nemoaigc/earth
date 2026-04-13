@@ -21,7 +21,7 @@ import { Labels } from './features/Labels';
 import { Animals } from './features/Animals';
 
 // --- Renderer ---
-const renderer = new THREE.WebGLRenderer({ antialias: true });
+const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.toneMapping = THREE.NoToneMapping;
