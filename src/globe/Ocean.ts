@@ -66,8 +66,8 @@ export class Ocean {
         float w6 = sin(wp.z * 41.0 - wp.y * 7.0 + wp.x * 33.0 + oceanTime * 1.8) * 0.5 + 0.5;
         float w7 = sin(wp.x * 67.0 - wp.z * 43.0 + wp.y * 3.0 - oceanTime * 0.9) * 0.5 + 0.5;
         float foam = w1 * w2 * w4 * w6 + w3 * w5 * w7 * 0.3;
-        foam = 1.0 - smoothstep(0.002, 0.015, foam);
-        gl_FragColor.rgb += foamColor * foam * 0.15;
+        foam = 1.0 - smoothstep(0.0005, 0.005, foam);
+        gl_FragColor.rgb += foamColor * foam * 0.06;
 
         // === SPARKLE: bright dots ===
         float sp1 = sin(wp.x * 40.0 + wp.y * 23.0 + wp.z * 9.0 + oceanTime * 3.5);
@@ -80,8 +80,8 @@ export class Ocean {
         sparkleMask *= sin(wp.z * 2.3 + wp.y * 3.9 + oceanTime * 0.35);
         sparkleMask = smoothstep(0.15, 0.5, sparkleMask);
         float sparkle = sp1 * sp2 * sp3 * sp4 + sp2 * sp3 * sp5 * 0.5;
-        sparkle = smoothstep(0.55, 0.97, sparkle) * sparkleMask;
-        gl_FragColor.rgb += vec3(1.0, 1.0, 1.0) * sparkle * 0.35;
+        sparkle = smoothstep(0.35, 0.90, sparkle) * sparkleMask;
+        gl_FragColor.rgb += vec3(1.0, 1.0, 1.0) * sparkle * 0.55;
 
         // === FRESNEL RIM ===
         vec3 rimViewDir = normalize(vViewPosition);
