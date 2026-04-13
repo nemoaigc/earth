@@ -9,16 +9,16 @@ interface LabelDef {
 }
 
 const LABELS: LabelDef[] = [
-  { name: 'Africa', lat: 5, lng: 20 },
-  { name: 'Europe', lat: 50, lng: 15 },
-  { name: 'Asia', lat: 45, lng: 90 },
-  { name: 'North America', lat: 45, lng: -100 },
-  { name: 'South America', lat: -15, lng: -60 },
-  { name: 'Australia', lat: -25, lng: 135 },
+  { name: 'Africa', lat: 5, lng: -20 },
+  { name: 'Europe', lat: 50, lng: -15 },
+  { name: 'Asia', lat: 45, lng: -90 },
+  { name: 'North America', lat: 45, lng: 100 },
+  { name: 'South America', lat: -15, lng: 60 },
+  { name: 'Australia', lat: -25, lng: -135 },
   { name: 'Antarctica', lat: -80, lng: 0 },
-  { name: 'Pacific Ocean', lat: 0, lng: -160 },
-  { name: 'Atlantic Ocean', lat: 15, lng: -35 },
-  { name: 'Indian Ocean', lat: -20, lng: 75 },
+  { name: 'Pacific Ocean', lat: 0, lng: 160 },
+  { name: 'Atlantic Ocean', lat: 15, lng: 35 },
+  { name: 'Indian Ocean', lat: -20, lng: -75 },
 ];
 
 function latLngToPosition(lat: number, lng: number, radius: number): THREE.Vector3 {

@@ -10,7 +10,7 @@ const BIOME_GRASS: { biome: string; color: string }[] = [
 
 function buildGrassGeometry(baseColor: THREE.Color): THREE.BufferGeometry {
   const blades: THREE.BufferGeometry[] = [];
-  const dark = baseColor.clone().multiplyScalar(0.6);
+  const dark = baseColor.clone().multiplyScalar(0.8);
   const light = baseColor.clone();
 
   for (let i = 0; i < 5; i++) {

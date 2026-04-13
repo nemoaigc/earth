@@ -4,7 +4,7 @@ import type { TerrainData } from '../globe/terrain';
 
 const MOUNTAIN_COUNT = 50;
 const SNOW_MOUNTAIN_COUNT = 30;
-const MOUNTAIN_COLORS = ['#888888', '#777766', '#999988'];
+const MOUNTAIN_COLORS = ['#bbbbaa', '#aaa999', '#ccbb99'];
 const SNOW_COLORS = ['#ffffff', '#eeeeff'];
 
 function createMountainGeometry(): THREE.BufferGeometry {
@@ -13,7 +13,7 @@ function createMountainGeometry(): THREE.BufferGeometry {
 
   const posAttr = geometry.getAttribute('position');
   const colors = new Float32Array(posAttr.count * 3);
-  const baseColor = new THREE.Color('#777766');
+  const baseColor = new THREE.Color('#aaa999');
   for (let i = 0; i < posAttr.count; i++) {
     colors[i * 3] = baseColor.r;
     colors[i * 3 + 1] = baseColor.g;
@@ -41,7 +41,7 @@ function createSnowMountainGeometry(): THREE.BufferGeometry {
 
   const basePos = baseGeo.getAttribute('position');
   const baseColors = new Float32Array(basePos.count * 3);
-  const grayColor = new THREE.Color('#888888');
+  const grayColor = new THREE.Color('#bbbbaa');
   for (let i = 0; i < basePos.count; i++) {
     baseColors[i * 3] = grayColor.r;
     baseColors[i * 3 + 1] = grayColor.g;
