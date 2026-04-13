@@ -113,26 +113,22 @@ export function generateTerrain(): TerrainData {
       const noise = Math.abs(hills) * 0.85 + Math.abs(texture) * 0.15 + 0.05;
       const centralBoost = 1.0 + coastDist * 0.3;
 
-      // Regional mountain boost
-      // lng from atan2 is raw (positive=east), negate to match our polygon system
-      // Actually: lng = atan2(nz,nx), for real-world east=positive this gives positive values
-      // But our polygons are negated. So lng itself IS the negated value.
-      // Use lng directly (which is already in our negated coord system)
+      // Regional mountain boost — lng from atan2 = real-world longitude
       let regionBoost = 1.0;
-      // Himalayas / Tibet (real lat 27-40, real lng 70-100 → our lng -100 to -68)
-      if (lat > 25 && lat < 42 && lng > -102 && lng < -68)
-        regionBoost = 1.0 + 1.5 * Math.max(0, 1 - Math.abs(lat - 33) / 9) * Math.max(0, 1 - Math.abs(lng + 85) / 17);
-      // Andes (real lat -55 to 10, real lng -80 to -60 → our lng 60 to 80)
-      if (lat > -55 && lat < 10 && lng > 60 && lng < 80)
-        regionBoost = Math.max(regionBoost, 1.0 + 1.2 * Math.max(0, 1 - Math.abs(lng - 70) / 10));
-      // Rockies (real lat 35-60, real lng -120 to -105 → our lng 105 to 120)
-      if (lat > 35 && lat < 60 && lng > 105 && lng < 120)
-        regionBoost = Math.max(regionBoost, 1.0 + 1.0 * Math.max(0, 1 - Math.abs(lng - 112) / 8));
-      // Alps (real lat 44-48, real lng 5-16 → our lng -16 to -4)
-      if (lat > 43 && lat < 49 && lng > -17 && lng < -4)
+      // Himalayas / Tibet (lat 27-40, lng 70-100)
+      if (lat > 25 && lat < 42 && lng > 68 && lng < 102)
+        regionBoost = 1.0 + 1.5 * Math.max(0, 1 - Math.abs(lat - 33) / 9) * Math.max(0, 1 - Math.abs(lng - 85) / 17);
+      // Andes (lat -55 to 10, lng -80 to -60)
+      if (lat > -55 && lat < 10 && lng > -80 && lng < -60)
+        regionBoost = Math.max(regionBoost, 1.0 + 1.2 * Math.max(0, 1 - Math.abs(lng + 70) / 10));
+      // Rockies (lat 35-60, lng -120 to -105)
+      if (lat > 35 && lat < 60 && lng > -120 && lng < -105)
+        regionBoost = Math.max(regionBoost, 1.0 + 1.0 * Math.max(0, 1 - Math.abs(lng + 112) / 8));
+      // Alps (lat 44-48, lng 5-16)
+      if (lat > 43 && lat < 49 && lng > 4 && lng < 17)
         regionBoost = Math.max(regionBoost, 1.5);
-      // East Africa (real lat -5 to 5, real lng 30-40 → our lng -42 to -28)
-      if (lat > -6 && lat < 6 && lng > -42 && lng < -28)
+      // East Africa (lat -5 to 5, lng 30-40)
+      if (lat > -6 && lat < 6 && lng > 28 && lng < 42)
         regionBoost = Math.max(regionBoost, 1.3);
 
       const heightNorm = noise * coastFactor * centralBoost * regionBoost;
