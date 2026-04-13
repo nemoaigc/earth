@@ -1383,3 +1383,43 @@ export function createWorldMask(): WorldMask {
   _cachedMask = { isLand, getBiome, getBiomeWeights };
   return _cachedMask;
 }
+
+// Elevation map from NASA bump texture
+let _elevData: Uint8ClampedArray | null = null;
+let _elevW = 0, _elevH = 0;
+
+export function loadElevationMap(): Promise<void> {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = img.width;
+      canvas.height = img.height;
+      const ctx = canvas.getContext('2d')!;
+      ctx.drawImage(img, 0, 0);
+      const data = ctx.getImageData(0, 0, img.width, img.height);
+      _elevData = data.data;
+      _elevW = img.width;
+      _elevH = img.height;
+      console.log(`[elevation] loaded ${_elevW}x${_elevH}`);
+      resolve();
+    };
+    img.onerror = () => resolve(); // fail silently
+    img.src = '/earth-bump.jpg';
+  });
+}
+
+export function getElevation(lat: number, lng: number): number {
+  if (!_elevData) return 0.1; // fallback
+  // Note: our SphereGeometry atan2 gives real-world lng
+  // But our polygons use negated lng. The bump map uses standard lng.
+  // So we need to use the REAL lng for bump map sampling.
+  const realLng = lng; // atan2 already gives real lng for SphereGeometry
+  const x = Math.floor(((realLng + 180) / 360) * _elevW) % _elevW;
+  const y = Math.floor(((90 - lat) / 180) * _elevH);
+  const yc = Math.max(0, Math.min(_elevH - 1, y));
+  const idx = (yc * _elevW + x) * 4;
+  // Use red channel as elevation (0-255 → 0-1)
+  return _elevData[idx] / 255;
+}
