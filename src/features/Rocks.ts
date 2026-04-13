@@ -5,7 +5,7 @@ const ROCK_COUNT = 200;
 const ROCK_COLORS = ['#999988', '#aa9977', '#bbaa88', '#8899777', '#998866'];
 
 function createRockGeometry(): THREE.BufferGeometry {
-  const geo = new THREE.DodecahedronGeometry(0.04, 0);
+  const geo = new THREE.DodecahedronGeometry(0.056, 0);
   const pos = geo.getAttribute('position');
 
   // Perturb vertices for a natural rocky look

@@ -8,8 +8,7 @@ interface BiomeConfig {
   colors: string[];
   heightRange: [number, number];
   widthRange: [number, number];
-  useCone: boolean;
-  geoType?: 'teardrop' | 'cone' | 'acacia' | 'cactus';
+  geoType: 'tropical' | 'temperate' | 'boreal' | 'acacia' | 'cactus';
 }
 
 const BIOME_CONFIGS: BiomeConfig[] = [
@@ -17,150 +16,227 @@ const BIOME_CONFIGS: BiomeConfig[] = [
     biome: 'tropical',
     count: 400,
     colors: ['#228833', '#33aa44', '#2d9922'],
-    heightRange: [0.3, 0.5],
-    widthRange: [0.08, 0.12],
-    useCone: false,
+    heightRange: [0.6, 1.0],
+    widthRange: [0.16, 0.24],
+    geoType: 'tropical',
   },
   {
     biome: 'temperate',
     count: 400,
     colors: ['#55cc33', '#44bb44', '#66cc55', '#cc8833'],
-    heightRange: [0.25, 0.4],
-    widthRange: [0.06, 0.09],
-    useCone: false,
+    heightRange: [0.5, 0.8],
+    widthRange: [0.12, 0.18],
+    geoType: 'temperate',
   },
   {
     biome: 'boreal',
     count: 400,
     colors: ['#225533', '#336644', '#2a5533'],
-    heightRange: [0.3, 0.45],
-    widthRange: [0.04, 0.06],
-    useCone: true,
+    heightRange: [0.6, 0.9],
+    widthRange: [0.08, 0.12],
+    geoType: 'boreal',
   },
   {
     biome: 'desert',
     count: 30,
     colors: ['#889944'],
-    heightRange: [0.15, 0.25],
-    widthRange: [0.04, 0.06],
-    useCone: false,
+    heightRange: [0.21, 0.35],
+    widthRange: [0.06, 0.08],
+    geoType: 'temperate',
   },
   {
     biome: 'desert',
     count: 60,
     colors: ['#557733'],
-    heightRange: [0.25, 0.35],
-    widthRange: [0.10, 0.14],
-    useCone: false,
+    heightRange: [0.35, 0.49],
+    widthRange: [0.14, 0.20],
     geoType: 'acacia',
   },
   {
     biome: 'desert',
     count: 40,
     colors: ['#558833'],
-    heightRange: [0.10, 0.15],
-    widthRange: [0.03, 0.05],
-    useCone: false,
+    heightRange: [0.14, 0.21],
+    widthRange: [0.04, 0.07],
     geoType: 'cactus',
   },
 ];
 
-function createTeardropGeometry(height: number, width: number): THREE.BufferGeometry {
-  const points: THREE.Vector2[] = [];
-  const steps = 10;
-  for (let i = 0; i <= steps; i++) {
-    const t = i / steps;
-    const r = Math.sin(t * Math.PI) * (1 - t * 0.4) * (width / 2);
-    points.push(new THREE.Vector2(r, t * height));
+/* ---------- helpers ---------- */
+
+function colorGeometry(
+  geo: THREE.BufferGeometry,
+  bottomColor: THREE.Color,
+  topColor: THREE.Color,
+  minY: number,
+  maxY: number,
+): void {
+  const pos = geo.getAttribute('position');
+  const colors = new Float32Array(pos.count * 3);
+  const tmp = new THREE.Color();
+  const range = maxY - minY || 1;
+  for (let i = 0; i < pos.count; i++) {
+    const t = Math.max(0, Math.min(1, (pos.getY(i) - minY) / range));
+    tmp.lerpColors(bottomColor, topColor, t);
+    colors[i * 3] = tmp.r;
+    colors[i * 3 + 1] = tmp.g;
+    colors[i * 3 + 2] = tmp.b;
   }
-  points[points.length - 1].x = 0;
-  points[0].x = 0;
-
-  const geometry = new THREE.LatheGeometry(points, 6);
-
-  const posAttr = geometry.getAttribute('position');
-  const colors = new Float32Array(posAttr.count * 3);
-  const darkGreen = new THREE.Color(0.15, 0.35, 0.1);
-  const lightGreen = new THREE.Color(0.4, 0.7, 0.25);
-  const tmpColor = new THREE.Color();
-
-  for (let i = 0; i < posAttr.count; i++) {
-    const y = posAttr.getY(i);
-    const t = Math.max(0, Math.min(1, y / height));
-    tmpColor.lerpColors(darkGreen, lightGreen, t);
-    colors[i * 3] = tmpColor.r;
-    colors[i * 3 + 1] = tmpColor.g;
-    colors[i * 3 + 2] = tmpColor.b;
-  }
-
-  geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
-  return geometry;
+  geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
 }
 
-function createConeTreeGeometry(height: number, width: number): THREE.BufferGeometry {
-  const geometry = new THREE.ConeGeometry(width / 2, height, 6);
+function colorGeometryFlat(geo: THREE.BufferGeometry, color: THREE.Color): void {
+  const pos = geo.getAttribute('position');
+  const colors = new Float32Array(pos.count * 3);
+  for (let i = 0; i < pos.count; i++) {
+    colors[i * 3] = color.r;
+    colors[i * 3 + 1] = color.g;
+    colors[i * 3 + 2] = color.b;
+  }
+  geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+}
 
-  // Shift so base is at y=0
-  geometry.translate(0, height / 2, 0);
+function ensureMergeReady(geo: THREE.BufferGeometry): THREE.BufferGeometry {
+  const g = geo.index ? geo.toNonIndexed() : geo;
+  if (!g.getAttribute('normal')) g.computeVertexNormals();
+  if (!g.getAttribute('uv')) {
+    const count = g.getAttribute('position').count;
+    g.setAttribute('uv', new THREE.BufferAttribute(new Float32Array(count * 2), 2));
+  }
+  return g;
+}
 
-  const posAttr = geometry.getAttribute('position');
-  const colors = new Float32Array(posAttr.count * 3);
-  const darkGreen = new THREE.Color(0.1, 0.25, 0.1);
-  const lightGreen = new THREE.Color(0.2, 0.45, 0.2);
-  const tmpColor = new THREE.Color();
+const TRUNK_BOTTOM = new THREE.Color('#5C3D1A');
+const TRUNK_TOP = new THREE.Color('#8B6914');
 
-  for (let i = 0; i < posAttr.count; i++) {
-    const y = posAttr.getY(i);
-    const t = Math.max(0, Math.min(1, y / height));
-    tmpColor.lerpColors(darkGreen, lightGreen, t);
-    colors[i * 3] = tmpColor.r;
-    colors[i * 3 + 1] = tmpColor.g;
-    colors[i * 3 + 2] = tmpColor.b;
+function createTrunk(
+  height: number,
+  radiusBottom: number,
+  radiusTop: number,
+): THREE.BufferGeometry {
+  const geo = new THREE.CylinderGeometry(radiusTop, radiusBottom, height, 6);
+  geo.translate(0, height / 2, 0);
+  colorGeometry(geo, TRUNK_BOTTOM, TRUNK_TOP, 0, height);
+  return ensureMergeReady(geo);
+}
+
+/* ---------- tree geometry builders ---------- */
+
+function createTropicalTreeGeometry(height: number, width: number): THREE.BufferGeometry {
+  const trunkH = height * 0.38;
+  const trunkRadBot = width * 0.12;
+  const trunkRadTop = width * 0.08;
+  const trunk = createTrunk(trunkH, trunkRadBot, trunkRadTop);
+
+  const parts: THREE.BufferGeometry[] = [trunk];
+
+  // 3 stacked spheres for bushy canopy
+  const layerCount = 3;
+  const baseRadius = width * 0.5;
+  for (let i = 0; i < layerCount; i++) {
+    const t = i / (layerCount - 1); // 0 = bottom, 1 = top
+    const r = baseRadius * (1 - t * 0.35); // shrink toward top
+    const sphere = new THREE.DodecahedronGeometry(r, 1);
+    const yPos = trunkH + baseRadius * 0.4 + i * baseRadius * 0.55;
+    sphere.translate(0, yPos, 0);
+
+    const darkGreen = new THREE.Color(0.1, 0.3 + t * 0.1, 0.08);
+    const lightGreen = new THREE.Color(0.25, 0.55 + t * 0.1, 0.15);
+    colorGeometry(sphere, darkGreen, lightGreen, yPos - r, yPos + r);
+    parts.push(ensureMergeReady(sphere));
   }
 
-  geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
-  return geometry;
+  return mergeGeometries(parts, false)!;
+}
+
+function createTemperateTreeGeometry(height: number, width: number): THREE.BufferGeometry {
+  const trunkH = height * 0.4;
+  const trunkRadBot = width * 0.1;
+  const trunkRadTop = width * 0.06;
+  const trunk = createTrunk(trunkH, trunkRadBot, trunkRadTop);
+
+  // Ellipsoid canopy — icosahedron stretched on Y
+  const canopyRadius = width * 0.5;
+  const canopy = new THREE.IcosahedronGeometry(canopyRadius, 1);
+  const pos = canopy.getAttribute('position');
+  for (let i = 0; i < pos.count; i++) {
+    pos.setY(i, pos.getY(i) * 1.4);
+  }
+  const canopyCenter = trunkH + canopyRadius * 1.1;
+  canopy.translate(0, canopyCenter, 0);
+
+  const darkGreen = new THREE.Color(0.15, 0.35, 0.1);
+  const lightGreen = new THREE.Color(0.35, 0.65, 0.2);
+  colorGeometry(canopy, darkGreen, lightGreen, canopyCenter - canopyRadius * 1.4, canopyCenter + canopyRadius * 1.4);
+
+  return mergeGeometries([trunk, ensureMergeReady(canopy)], false)!;
+}
+
+function createBorealTreeGeometry(height: number, width: number): THREE.BufferGeometry {
+  const trunkH = height * 0.28;
+  const trunkRadBot = width * 0.15;
+  const trunkRadTop = width * 0.08;
+  const trunk = createTrunk(trunkH, trunkRadBot, trunkRadTop);
+
+  const parts: THREE.BufferGeometry[] = [trunk];
+
+  // 3 layered cones — pagoda/spruce silhouette
+  const layerCount = 3;
+  const canopyH = height - trunkH;
+  for (let i = 0; i < layerCount; i++) {
+    const t = i / (layerCount - 1); // 0 = bottom, 1 = top
+    const layerH = canopyH * (0.4 - t * 0.1);
+    const layerR = width * (0.55 - t * 0.2);
+    const cone = new THREE.ConeGeometry(layerR, layerH, 6);
+    const yPos = trunkH + canopyH * (i / layerCount) + layerH * 0.5;
+    cone.translate(0, yPos, 0);
+
+    const darkGreen = new THREE.Color(0.08, 0.2 + t * 0.05, 0.08);
+    const lightGreen = new THREE.Color(0.15, 0.4 + t * 0.08, 0.12);
+    colorGeometry(cone, darkGreen, lightGreen, yPos - layerH / 2, yPos + layerH / 2);
+    parts.push(ensureMergeReady(cone));
+  }
+
+  return mergeGeometries(parts, false)!;
 }
 
 function createAcaciaGeometry(height: number, width: number): THREE.BufferGeometry {
-  const trunk = new THREE.CylinderGeometry(0.008, 0.012, height, 6);
+  const trunk = new THREE.CylinderGeometry(0.012, 0.018, height, 6);
   trunk.translate(0, height / 2, 0);
-  const tc = new THREE.Color('#8B6914');
-  const tColors = new Float32Array(trunk.getAttribute('position').count * 3);
-  for (let i = 0; i < tColors.length; i += 3) { tColors[i] = tc.r; tColors[i+1] = tc.g; tColors[i+2] = tc.b; }
-  trunk.setAttribute('color', new THREE.BufferAttribute(tColors, 3));
+  colorGeometryFlat(trunk, new THREE.Color('#8B6914'));
 
-  const canopy = new THREE.CylinderGeometry(width / 2, width / 2 * 0.85, 0.025, 8);
+  const canopy = new THREE.CylinderGeometry(width / 2, width / 2 * 0.85, 0.035, 8);
   canopy.translate(0, height, 0);
-  const cc = new THREE.Color('#557733');
-  const cColors = new Float32Array(canopy.getAttribute('position').count * 3);
-  for (let i = 0; i < cColors.length; i += 3) { cColors[i] = cc.r; cColors[i+1] = cc.g; cColors[i+2] = cc.b; }
-  canopy.setAttribute('color', new THREE.BufferAttribute(cColors, 3));
+  colorGeometryFlat(canopy, new THREE.Color('#557733'));
 
-  return mergeGeometries([trunk, canopy], false)!;
+  return mergeGeometries([ensureMergeReady(trunk), ensureMergeReady(canopy)], false)!;
 }
 
 function createCactusGeometry(height: number, _width: number): THREE.BufferGeometry {
   const gc = new THREE.Color('#558833');
-  function colorGeo(g: THREE.BufferGeometry) {
-    const c = new Float32Array(g.getAttribute('position').count * 3);
-    for (let i = 0; i < c.length; i += 3) { c[i] = gc.r; c[i+1] = gc.g; c[i+2] = gc.b; }
-    g.setAttribute('color', new THREE.BufferAttribute(c, 3));
+  function makeArm(h: number, rTop: number, rBot: number): THREE.BufferGeometry {
+    const g = new THREE.CylinderGeometry(rTop, rBot, h, 6);
+    colorGeometryFlat(g, gc);
     return g;
   }
-  const trunk = colorGeo(new THREE.CylinderGeometry(0.02, 0.025, height, 6));
+  const trunk = makeArm(height, 0.028, 0.035);
   trunk.translate(0, height / 2, 0);
 
-  const armL = colorGeo(new THREE.CylinderGeometry(0.012, 0.015, height * 0.4, 5));
+  const armL = makeArm(height * 0.4, 0.017, 0.021);
   armL.rotateZ(Math.PI / 4);
   armL.translate(-0.03, height * 0.6, 0);
 
-  const armR = colorGeo(new THREE.CylinderGeometry(0.012, 0.015, height * 0.4, 5));
+  const armR = makeArm(height * 0.4, 0.017, 0.021);
   armR.rotateZ(-Math.PI / 4);
   armR.translate(0.03, height * 0.55, 0);
 
-  return mergeGeometries([trunk, armL, armR], false)!;
+  return mergeGeometries(
+    [trunk, armL, armR].map(ensureMergeReady),
+    false,
+  )!;
 }
+
+/* ---------- material ---------- */
 
 function createWindSwayMaterial(
   tintColor: THREE.Color,
@@ -192,6 +268,8 @@ function createWindSwayMaterial(
 
   return material;
 }
+
+/* ---------- placement ---------- */
 
 function placeTrees(
   points: { position: THREE.Vector3; normal: THREE.Vector3; height: number }[],
@@ -225,6 +303,8 @@ function placeTrees(
   return mesh;
 }
 
+/* ---------- main class ---------- */
+
 export class Trees {
   group: THREE.Group;
   private meshes: THREE.InstancedMesh[] = [];
@@ -241,7 +321,6 @@ export class Trees {
       );
       if (biomePoints.length === 0) continue;
 
-      // Distribute across color groups evenly
       const colorsCount = config.colors.length;
       const perColor = Math.ceil(config.count / colorsCount);
 
@@ -260,15 +339,17 @@ export class Trees {
           Math.random() * (config.widthRange[1] - config.widthRange[0]);
 
         let geometry: THREE.BufferGeometry;
-        if (config.geoType === 'acacia') geometry = createAcaciaGeometry(height, width);
-        else if (config.geoType === 'cactus') geometry = createCactusGeometry(height, width);
-        else if (config.useCone) geometry = createConeTreeGeometry(height, width);
-        else geometry = createTeardropGeometry(height, width);
+        switch (config.geoType) {
+          case 'tropical': geometry = createTropicalTreeGeometry(height, width); break;
+          case 'temperate': geometry = createTemperateTreeGeometry(height, width); break;
+          case 'boreal': geometry = createBorealTreeGeometry(height, width); break;
+          case 'acacia': geometry = createAcaciaGeometry(height, width); break;
+          case 'cactus': geometry = createCactusGeometry(height, width); break;
+        }
 
         const tintColor = new THREE.Color(config.colors[c]);
         const material = createWindSwayMaterial(tintColor, this.timeUniform);
 
-        // Slice a portion of biome points for this color group
         const startIdx = c * Math.floor(biomePoints.length / colorsCount);
         const endIdx = startIdx + Math.floor(biomePoints.length / colorsCount);
         const subset = biomePoints.slice(startIdx, endIdx);

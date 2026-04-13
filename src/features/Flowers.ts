@@ -10,8 +10,8 @@ const FLOWER_COLORS = [
 ];
 
 function buildFlowerGeometry(headColor: THREE.Color): THREE.BufferGeometry {
-  const stem = new THREE.CylinderGeometry(0.003, 0.003, 0.04, 4);
-  stem.translate(0, 0.02, 0);
+  const stem = new THREE.CylinderGeometry(0.004, 0.004, 0.056, 4);
+  stem.translate(0, 0.028, 0);
   const stemColors = new Float32Array(stem.getAttribute('position').count * 3);
   const sc = new THREE.Color('#338833');
   for (let i = 0; i < stemColors.length; i += 3) {
@@ -19,8 +19,8 @@ function buildFlowerGeometry(headColor: THREE.Color): THREE.BufferGeometry {
   }
   stem.setAttribute('color', new THREE.BufferAttribute(stemColors, 3));
 
-  const head = new THREE.SphereGeometry(0.012, 5, 4);
-  head.translate(0, 0.045, 0);
+  const head = new THREE.SphereGeometry(0.017, 5, 4);
+  head.translate(0, 0.063, 0);
   const headColors = new Float32Array(head.getAttribute('position').count * 3);
   for (let i = 0; i < headColors.length; i += 3) {
     headColors[i] = headColor.r; headColors[i+1] = headColor.g; headColors[i+2] = headColor.b;

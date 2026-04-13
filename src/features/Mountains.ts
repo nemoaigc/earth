@@ -8,9 +8,8 @@ const MOUNTAIN_COLORS = ['#888888', '#777766', '#999988'];
 const SNOW_COLORS = ['#ffffff', '#eeeeff'];
 
 function createMountainGeometry(): THREE.BufferGeometry {
-  const geometry = new THREE.ConeGeometry(0.08, 0.25, 5);
-  // Shift so base is at y=0
-  geometry.translate(0, 0.25 / 2, 0);
+  const geometry = new THREE.ConeGeometry(0.11, 0.35, 5);
+  geometry.translate(0, 0.35 / 2, 0);
 
   const posAttr = geometry.getAttribute('position');
   const colors = new Float32Array(posAttr.count * 3);

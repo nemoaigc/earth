@@ -14,7 +14,7 @@ function buildGrassGeometry(baseColor: THREE.Color): THREE.BufferGeometry {
   const light = baseColor.clone();
 
   for (let i = 0; i < 5; i++) {
-    const blade = new THREE.PlaneGeometry(0.008, 0.05, 1, 1);
+    const blade = new THREE.PlaneGeometry(0.011, 0.07, 1, 1);
     // Color: bottom dark, top light
     const pos = blade.getAttribute('position');
     const colors = new Float32Array(pos.count * 3);
