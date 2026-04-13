@@ -11,7 +11,7 @@ export interface TerrainData {
   oceanRatio: number;
 }
 
-const LAND_HEIGHT_SCALE = 0.55;
+const LAND_HEIGHT_SCALE = 0.7;
 
 // Vibrant colors matching reference screenshots
 const BIOME_COLORS: Record<string, { low: THREE.Color; mid: THREE.Color; high: THREE.Color; snow: THREE.Color }> = {
@@ -104,10 +104,12 @@ export function generateTerrain(): TerrainData {
       // Smooth ramp: height scales with distance from coast
       const coastFactor = coastDist; // linear ramp — visible mountains inland
 
-      // Low-freq large mountains + subtle detail
-      const bigShape = Math.abs(sampleNoise(nx, ny, nz, 3, 2.0, 0.5, 0.6));
-      const detail = Math.abs(sampleNoise(nx * 3, ny * 3, nz * 3, 2, 2.0, 0.4, 1.0));
-      const noise = bigShape * 0.8 + detail * 0.2;
+      // Low-freq mountains + medium detail
+      const bigShape = sampleNoise(nx, ny, nz, 3, 2.0, 0.5, 0.5);
+      const medShape = sampleNoise(nx * 2, ny * 2, nz * 2, 2, 2.0, 0.5, 0.8);
+      // Clamp to positive and boost — ensure mountains are visible
+      const raw = bigShape * 0.7 + medShape * 0.3;
+      const noise = Math.max(0, raw) + 0.15; // base height 0.15 so land is never flat
       const centralBoost = 1.0 + coastDist * 0.3;
       const heightNorm = noise * coastFactor * centralBoost;
       const height = heightNorm * LAND_HEIGHT_SCALE;
