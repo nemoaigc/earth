@@ -1,6 +1,7 @@
 import * as THREE from 'three';
-import { sampleNoise, noise3D } from '../utils/noise';
-import { createWorldMask, getElevation, type BiomeWeights } from './worldmap';
+import { noise3D } from '../utils/noise';
+import { createWorldMask, type BiomeWeights } from './worldmap';
+import { sampleElevation } from './heightmap';
 
 export const GLOBE_RADIUS = 5;
 
@@ -106,10 +107,9 @@ export function generateTerrain(): TerrainData {
       // Smooth ramp: height scales with distance from coast
       const coastFactor = coastDist; // linear ramp — visible mountains inland
 
-      // Real elevation from NASA bump map + slight noise for texture
-      const elev = getElevation(lat, lng);
-      const texture = Math.abs(sampleNoise(nx, ny, nz, 2, 2.0, 0.4, 0.5)) * 0.05;
-      const heightNorm = (elev * coastFactor + texture) * 1.2;
+      // Use real NASA elevation data — smooth, accurate, Everest is highest
+      const elevation = sampleElevation(lat, lng); // 0-1 from bump map
+      const heightNorm = elevation * coastFactor;
       const height = heightNorm * LAND_HEIGHT_SCALE;
       const newRadius = GLOBE_RADIUS + height;
 
