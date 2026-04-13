@@ -45,7 +45,7 @@ export class Labels {
 
       const div = document.createElement('div');
       div.textContent = def.name;
-      div.style.cssText = 'color: white; font-size: 16px; font-family: Inter, system-ui, sans-serif; font-weight: 700; text-shadow: 0 2px 6px rgba(0,0,0,0.7); pointer-events: none; white-space: nowrap; opacity: 0; transition: opacity 0.3s; letter-spacing: 2px;';
+      div.style.cssText = 'color: white; font-size: 28px; font-family: Inter, system-ui, sans-serif; font-weight: 800; text-shadow: 0 3px 10px rgba(0,0,0,0.8), 0 0 20px rgba(0,0,0,0.4); pointer-events: none; white-space: nowrap; opacity: 0; transition: opacity 0.3s; letter-spacing: 3px; text-transform: uppercase;';
 
       const label = new CSS2DObject(div);
       label.position.copy(pos);
