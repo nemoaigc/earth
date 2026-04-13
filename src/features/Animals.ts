@@ -107,7 +107,7 @@ export class Animals {
       const latOff = (Math.random() - 0.5) * 2;
       const lngOff = (Math.random() - 0.5) * 2;
       positions.push(
-        latLngToPosition(def.lat + latOff, def.lng + lngOff, GLOBE_RADIUS + 0.02),
+        latLngToPosition(def.lat + latOff, def.lng + lngOff, GLOBE_RADIUS + 1.5),
       );
     }
     return positions;

@@ -27,11 +27,12 @@ export class Globe {
     this.terrainMaterial = new THREE.MeshStandardMaterial({
       map: colorMap,
       displacementMap: bumpMap,
-      displacementScale: 0.4,
+      displacementScale: 0.8,
       bumpMap: bumpMap,
-      bumpScale: 0.2,
+      bumpScale: 0.3,
       roughness: 0.75,
       metalness: 0.0,
+      flatShading: true,
     });
 
     const geometry = new THREE.SphereGeometry(GLOBE_RADIUS, 256, 256);
