@@ -75,7 +75,7 @@ function buildBalloon(): THREE.Group {
   // --- Basket ---
   const basketGeo = new THREE.BoxGeometry(0.04, 0.03, 0.04);
   basketGeo.translate(0, 0.015, 0);
-  const basketMat = new THREE.MeshPhongMaterial({ color: '#6a4a2a', shininess: 10 });
+  const basketMat = new THREE.MeshPhongMaterial({ color: '#9A7A5A', shininess: 10 });
   const basket = new THREE.Mesh(basketGeo, basketMat);
   balloon.add(basket);
 

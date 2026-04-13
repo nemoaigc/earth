@@ -16,30 +16,34 @@ function latLngToPosition(lat: number, lng: number, radius: number): THREE.Vecto
 }
 
 function createIcebergGeometry(): THREE.BufferGeometry {
-  const geo = new THREE.DodecahedronGeometry(0.12, 0);
+  const geo = new THREE.DodecahedronGeometry(0.18, 1);
   const pos = geo.getAttribute('position');
 
-  // Perturb vertices for irregular iceberg shape
+  // Strong perturbation for angular crystalline look
   for (let i = 0; i < pos.count; i++) {
-    pos.setX(i, pos.getX(i) + (Math.random() - 0.5) * 0.06);
-    pos.setY(i, pos.getY(i) + (Math.random() - 0.5) * 0.06);
-    pos.setZ(i, pos.getZ(i) + (Math.random() - 0.5) * 0.06);
+    const y = pos.getY(i);
+    // Flatten bottom, keep top angular
+    if (y < 0) {
+      pos.setY(i, y * 0.4); // squash underwater portion
+    }
+    pos.setX(i, pos.getX(i) + (Math.random() - 0.5) * 0.05);
+    pos.setY(i, pos.getY(i) + (Math.random() - 0.5) * 0.03);
+    pos.setZ(i, pos.getZ(i) + (Math.random() - 0.5) * 0.05);
   }
 
-  // Vertex colors: alternate faces white and light blue
-  const faceCount = pos.count / 3;
+  // Vertex colors: bottom deep blue → top bright white
   const colors = new Float32Array(pos.count * 3);
-  const white = new THREE.Color('#eeffff');
-  const lightBlue = new THREE.Color('#ccddff');
+  const deepBlue = new THREE.Color('#8ABBE8');
+  const iceWhite = new THREE.Color('#F0FAFF');
+  const tmp = new THREE.Color();
 
-  for (let f = 0; f < faceCount; f++) {
-    const c = f % 2 === 0 ? white : lightBlue;
-    for (let v = 0; v < 3; v++) {
-      const idx = f * 3 + v;
-      colors[idx * 3] = c.r;
-      colors[idx * 3 + 1] = c.g;
-      colors[idx * 3 + 2] = c.b;
-    }
+  for (let i = 0; i < pos.count; i++) {
+    const y = pos.getY(i);
+    const t = Math.max(0, Math.min(1, (y + 0.08) / 0.22));
+    tmp.lerpColors(deepBlue, iceWhite, t);
+    colors[i * 3] = tmp.r;
+    colors[i * 3 + 1] = tmp.g;
+    colors[i * 3 + 2] = tmp.b;
   }
 
   geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));

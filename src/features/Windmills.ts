@@ -18,7 +18,7 @@ function buildWindmill(): THREE.Group {
   // --- Platform/cap on top ---
   const capGeo = new THREE.CylinderGeometry(0.025, 0.022, 0.02, 8);
   capGeo.translate(0, 0.21, 0);
-  const capMat = new THREE.MeshPhongMaterial({ color: '#4a4a4a', shininess: 20 });
+  const capMat = new THREE.MeshPhongMaterial({ color: '#8a7a6a', shininess: 20 });
   const cap = new THREE.Mesh(capGeo, capMat);
   windmill.add(cap);
 

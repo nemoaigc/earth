@@ -353,7 +353,7 @@ export class Villages {
         houseMesh.rotateX(Math.PI / 2);
         houseMesh.rotateY(Math.random() * Math.PI * 2);
 
-        const scale = 0.8 + Math.random() * 0.4;
+        const scale = 0.5 + Math.random() * 0.3;
         houseMesh.scale.set(scale, scale, scale);
 
         houseMesh.castShadow = true;

@@ -52,7 +52,7 @@ function buildLighthouse(): THREE.Group {
   const railingGeo = new THREE.TorusGeometry(0.022, 0.002, 6, 16);
   railingGeo.rotateX(Math.PI / 2);
   railingGeo.translate(0, towerHeight, 0);
-  const railingMat = new THREE.MeshPhongMaterial({ color: '#333333', shininess: 30 });
+  const railingMat = new THREE.MeshPhongMaterial({ color: '#666666', shininess: 30 });
   const railing = new THREE.Mesh(railingGeo, railingMat);
   lighthouse.add(railing);
 

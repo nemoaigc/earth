@@ -49,8 +49,8 @@ function buildPalmGeometry(): THREE.BufferGeometry {
     const frondGeo = new THREE.BufferGeometry();
     const vertices = new Float32Array([
       0, 0, 0,
-      0.12, -0.04, 0.015,
-      0.12, -0.04, -0.015,
+      0.15, -0.05, 0.025,
+      0.15, -0.05, -0.025,
     ]);
     frondGeo.setAttribute('position', new THREE.BufferAttribute(vertices, 3));
     frondGeo.computeVertexNormals();

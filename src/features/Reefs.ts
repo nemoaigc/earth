@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { GLOBE_RADIUS } from '../globe/terrain';
 import type { TerrainData } from '../globe/terrain';
 import { createWorldMask } from '../globe/worldmap';
@@ -15,29 +16,71 @@ function latLngToPosition(lat: number, lng: number, radius: number): THREE.Vecto
   );
 }
 
-function createReefGeometry(): THREE.BufferGeometry {
-  const geo = new THREE.SphereGeometry(0.04, 6, 4);
+const REEF_BUILDERS = [createBrainCoralGeo, createFanCoralGeo, createBranchCoralGeo];
 
-  // Flatten Y
-  geo.scale(1, 0.3, 1);
-
+function colorFlat(geo: THREE.BufferGeometry, color: THREE.Color): void {
   const pos = geo.getAttribute('position');
   const colors = new Float32Array(pos.count * 3);
-  const sand = new THREE.Color('#ddcc88');
-  const green = new THREE.Color('#77aa55');
-
   for (let i = 0; i < pos.count; i++) {
-    // Top vertices get green, sides get sand
-    const y = pos.getY(i);
-    const c = y > 0.005 ? green : sand;
-    colors[i * 3] = c.r;
-    colors[i * 3 + 1] = c.g;
-    colors[i * 3 + 2] = c.b;
+    colors[i * 3] = color.r;
+    colors[i * 3 + 1] = color.g;
+    colors[i * 3 + 2] = color.b;
   }
-
   geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+}
+
+// Brain coral: bumpy flattened sphere
+function createBrainCoralGeo(): THREE.BufferGeometry {
+  const geo = new THREE.DodecahedronGeometry(0.05, 1);
+  const pos = geo.getAttribute('position');
+  for (let i = 0; i < pos.count; i++) {
+    pos.setY(i, pos.getY(i) * 0.4);
+    pos.setX(i, pos.getX(i) + (Math.random() - 0.5) * 0.01);
+    pos.setZ(i, pos.getZ(i) + (Math.random() - 0.5) * 0.01);
+  }
+  const colors = ['#E8887A', '#CC6688', '#DD8877'];
+  colorFlat(geo, new THREE.Color(colors[Math.floor(Math.random() * colors.length)]));
   geo.computeVertexNormals();
   return geo;
+}
+
+// Fan coral: thin upright half-disc
+function createFanCoralGeo(): THREE.BufferGeometry {
+  const geo = new THREE.CylinderGeometry(0.04, 0.04, 0.005, 8, 1, false, 0, Math.PI);
+  geo.rotateX(Math.PI / 2);
+  geo.rotateZ(Math.PI / 2);
+  geo.translate(0, 0.025, 0);
+  const colors = ['#DD6699', '#EE8844', '#CC55AA'];
+  colorFlat(geo, new THREE.Color(colors[Math.floor(Math.random() * colors.length)]));
+  geo.computeVertexNormals();
+  return geo;
+}
+
+// Branch coral: 3 thin cylinders
+function createBranchCoralGeo(): THREE.BufferGeometry {
+  const parts: THREE.BufferGeometry[] = [];
+  const color = new THREE.Color(['#EEAA66', '#DD7788', '#AADD77'][Math.floor(Math.random() * 3)]);
+
+  for (let i = 0; i < 3; i++) {
+    const h = 0.04 + Math.random() * 0.03;
+    const branch = new THREE.CylinderGeometry(0.004, 0.006, h, 4);
+    const angle = (i / 3) * Math.PI * 2 + Math.random() * 0.5;
+    branch.rotateZ((Math.random() - 0.5) * 0.4);
+    branch.translate(Math.cos(angle) * 0.01, h / 2, Math.sin(angle) * 0.01);
+    colorFlat(branch, color);
+    const ni = branch.index ? branch.toNonIndexed() : branch;
+    ni.computeVertexNormals();
+    if (!ni.getAttribute('uv')) {
+      ni.setAttribute('uv', new THREE.BufferAttribute(new Float32Array(ni.getAttribute('position').count * 2), 2));
+    }
+    parts.push(ni);
+  }
+  return mergeGeometries(parts, false) ?? parts[0];
+}
+
+function createReefGeometry(): THREE.BufferGeometry {
+  const builder = REEF_BUILDERS[Math.floor(Math.random() * REEF_BUILDERS.length)];
+  return builder();
 }
 
 function findTropicalOceanPositions(count: number): { lat: number; lng: number }[] {
