@@ -187,6 +187,13 @@ function setShadingMode(mode: number) {
   }
   globe.terrainMaterial.needsUpdate = true;
   globe.ocean.material.needsUpdate = true;
+  // Recompute normals for smooth/flat toggle
+  if (mode === 1) {
+    globe.terrainData.geometry.computeVertexNormals();
+  } else {
+    // For smooth shading, compute smooth normals
+    globe.terrainData.geometry.computeVertexNormals();
+  }
 }
 setShadingMode(1);
 

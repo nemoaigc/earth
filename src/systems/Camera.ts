@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 
-const ORBIT_RADIUS = 18;
+const ORBIT_RADIUS = 10;
 const AUTO_ROTATE_SPEED = 0.3;
 
 export class CameraController {
@@ -11,7 +11,7 @@ export class CameraController {
   constructor(aspect: number, domElement: HTMLElement) {
     this.camera = new THREE.PerspectiveCamera(50, aspect, 0.1, 100);
     // Start looking at Europe/Africa side
-    this.camera.position.set(ORBIT_RADIUS * 0.5, 4, ORBIT_RADIUS * 0.87);
+    this.camera.position.set(ORBIT_RADIUS * 0.5, 3, ORBIT_RADIUS * 0.87);
     this.camera.lookAt(0, 0, 0);
 
     this.controls = new OrbitControls(this.camera, domElement);
@@ -19,8 +19,8 @@ export class CameraController {
     this.controls.dampingFactor = 0.05;
     this.controls.autoRotate = true;
     this.controls.autoRotateSpeed = AUTO_ROTATE_SPEED;
-    this.controls.minDistance = 12;
-    this.controls.maxDistance = 50;
+    this.controls.minDistance = 7;
+    this.controls.maxDistance = 25;
     this.controls.enablePan = false;
     this.controls.target.set(0, 0, 0);
   }

@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { sampleNoise, noise3D } from '../utils/noise';
 import { createWorldMask, type BiomeWeights } from './worldmap';
 
-export const GLOBE_RADIUS = 10;
+export const GLOBE_RADIUS = 5;
 
 export interface TerrainData {
   geometry: THREE.BufferGeometry;
@@ -11,7 +11,7 @@ export interface TerrainData {
   oceanRatio: number;
 }
 
-const LAND_HEIGHT_SCALE = 1.6;
+const LAND_HEIGHT_SCALE = 0.8;
 
 // Vibrant colors matching reference screenshots
 const BIOME_COLORS: Record<string, { low: THREE.Color; mid: THREE.Color; high: THREE.Color; snow: THREE.Color }> = {
@@ -59,7 +59,7 @@ const COLOR_OCEAN_DEEP = new THREE.Color('#22aadd');
 const COLOR_OCEAN_SHALLOW = new THREE.Color('#55ccee');
 
 export function generateTerrain(): TerrainData {
-  const geometry = new THREE.IcosahedronGeometry(GLOBE_RADIUS, 200);
+  const geometry = new THREE.IcosahedronGeometry(GLOBE_RADIUS, 256);
   const posAttr = geometry.getAttribute('position');
   const vertexCount = posAttr.count;
 
