@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { GLOBE_RADIUS } from './terrain';
+import { createWorldMask } from './worldmap';
 
 export class Ocean {
   mesh: THREE.Mesh;
@@ -8,14 +9,50 @@ export class Ocean {
 
   constructor() {
     const geometry = new THREE.IcosahedronGeometry(GLOBE_RADIUS - 0.005, 80);
+    const mask = createWorldMask();
 
-    this.uniforms = {
-      oceanTime: { value: 0 },
-    };
+    // Add vertex colors: shallow near coast, deep far from coast
+    const posAttr = geometry.getAttribute('position');
+    const count = posAttr.count;
+    const colors = new Float32Array(count * 3);
+    const shallow = new THREE.Color('#4dd8e8'); // bright cyan
+    const mid = new THREE.Color('#2899cc');      // medium blue
+    const deep = new THREE.Color('#1a6699');      // deep blue
+
+    for (let i = 0; i < count; i++) {
+      const x = posAttr.getX(i), y = posAttr.getY(i), z = posAttr.getZ(i);
+      const len = Math.sqrt(x*x + y*y + z*z);
+      const nx = x/len, ny = y/len, nz = z/len;
+      const lat = Math.asin(Math.max(-1, Math.min(1, ny))) * 180 / Math.PI;
+      const lng = Math.atan2(nz, nx) * 180 / Math.PI;
+
+      // Check distance to nearest land
+      let nearCoast = false;
+      let veryNearCoast = false;
+      if (mask.isLand(lat+2, lng) || mask.isLand(lat-2, lng) ||
+          mask.isLand(lat, lng+2) || mask.isLand(lat, lng-2)) {
+        veryNearCoast = true;
+      } else if (mask.isLand(lat+5, lng) || mask.isLand(lat-5, lng) ||
+          mask.isLand(lat, lng+5) || mask.isLand(lat, lng-5)) {
+        nearCoast = true;
+      }
+
+      const c = new THREE.Color();
+      if (veryNearCoast) c.copy(shallow);
+      else if (nearCoast) c.copy(mid);
+      else c.copy(deep);
+
+      colors[i*3] = c.r;
+      colors[i*3+1] = c.g;
+      colors[i*3+2] = c.b;
+    }
+    geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+
+    this.uniforms = { oceanTime: { value: 0 } };
 
     const material = new THREE.MeshPhongMaterial({
-      color: new THREE.Color('#3AC5F5'),
-      emissive: new THREE.Color('#1a6699'),
+      vertexColors: true,
+      emissive: new THREE.Color('#0d3355'),
       shininess: 8,
       flatShading: true,
     });
@@ -24,17 +61,12 @@ export class Ocean {
 
     material.onBeforeCompile = (shader) => {
       shader.uniforms.oceanTime = uniforms.oceanTime;
-      shader.uniforms.foamColor = { value: new THREE.Color('#b3ffff') };
-      shader.uniforms.rimColor = { value: new THREE.Color('#aaddff') };
-      shader.uniforms.rimIntensity = { value: 0.6 };
-      shader.uniforms.rimPower = { value: 4.0 };
 
       shader.vertexShader = shader.vertexShader.replace(
         '#include <common>',
         `#include <common>
         varying vec3 vWorldPos;`
       );
-
       shader.vertexShader = shader.vertexShader.replace(
         '#include <worldpos_vertex>',
         `#include <worldpos_vertex>
@@ -45,10 +77,6 @@ export class Ocean {
         'uniform vec3 emissive;',
         `uniform vec3 emissive;
         uniform float oceanTime;
-        uniform vec3 foamColor;
-        uniform vec3 rimColor;
-        uniform float rimIntensity;
-        uniform float rimPower;
         varying vec3 vWorldPos;`
       );
 
@@ -57,19 +85,7 @@ export class Ocean {
         `
         vec3 wp = vWorldPos;
 
-        // === FOAM: web-like patterns (original formula) ===
-        float w1 = sin(wp.x * 43.0 + wp.y * 27.0 + wp.z * 11.0 + oceanTime * 3.6) * 0.5 + 0.5;
-        float w2 = sin(wp.y * 37.0 + wp.z * 53.0 + wp.x * 7.0 - oceanTime * 2.7) * 0.5 + 0.5;
-        float w3 = sin(wp.z * 31.0 + wp.x * 19.0 + wp.y * 47.0 + oceanTime * 2.1) * 0.5 + 0.5;
-        float w4 = sin(wp.x * 17.0 + wp.z * 29.0 - wp.y * 13.0 + oceanTime * 1.5) * 0.5 + 0.5;
-        float w5 = sin(wp.y * 11.0 + wp.x * 59.0 + wp.z * 23.0 - oceanTime * 1.2) * 0.5 + 0.5;
-        float w6 = sin(wp.z * 41.0 - wp.y * 7.0 + wp.x * 33.0 + oceanTime * 1.8) * 0.5 + 0.5;
-        float w7 = sin(wp.x * 67.0 - wp.z * 43.0 + wp.y * 3.0 - oceanTime * 0.9) * 0.5 + 0.5;
-        float foam = w1 * w2 * w4 * w6 + w3 * w5 * w7 * 0.3;
-        foam = 1.0 - smoothstep(0.0005, 0.005, foam);
-        gl_FragColor.rgb += foamColor * foam * 0.06;
-
-        // === SPARKLE: bright dots ===
+        // Sparkle dots
         float sp1 = sin(wp.x * 40.0 + wp.y * 23.0 + wp.z * 9.0 + oceanTime * 3.5);
         float sp2 = sin(wp.y * 35.0 + wp.z * 29.0 + wp.x * 13.0 - oceanTime * 2.8);
         float sp3 = sin(wp.z * 27.0 + wp.x * 37.0 - wp.y * 17.0 + oceanTime * 4.1);
@@ -81,13 +97,22 @@ export class Ocean {
         sparkleMask = smoothstep(0.15, 0.5, sparkleMask);
         float sparkle = sp1 * sp2 * sp3 * sp4 + sp2 * sp3 * sp5 * 0.5;
         sparkle = smoothstep(0.35, 0.90, sparkle) * sparkleMask;
-        gl_FragColor.rgb += vec3(1.0, 1.0, 1.0) * sparkle * 0.55;
+        gl_FragColor.rgb += vec3(1.0, 1.0, 1.0) * sparkle * 0.5;
 
-        // === FRESNEL RIM ===
+        // Subtle foam
+        float w1 = sin(wp.x * 43.0 + wp.y * 27.0 + wp.z * 11.0 + oceanTime * 3.6) * 0.5 + 0.5;
+        float w2 = sin(wp.y * 37.0 + wp.z * 53.0 + wp.x * 7.0 - oceanTime * 2.7) * 0.5 + 0.5;
+        float w3 = sin(wp.z * 31.0 + wp.x * 19.0 + wp.y * 47.0 + oceanTime * 2.1) * 0.5 + 0.5;
+        float w4 = sin(wp.x * 17.0 + wp.z * 29.0 - wp.y * 13.0 + oceanTime * 1.5) * 0.5 + 0.5;
+        float foam = w1 * w2 * w3 * w4;
+        foam = 1.0 - smoothstep(0.0005, 0.004, foam);
+        gl_FragColor.rgb += vec3(0.7, 0.9, 0.95) * foam * 0.08;
+
+        // Fresnel rim
         vec3 rimViewDir = normalize(vViewPosition);
         vec3 rimNormal = normalize(normal);
         float rimFresnel = 1.0 - abs(dot(rimViewDir, rimNormal));
-        gl_FragColor.rgb += rimColor * rimIntensity * pow(rimFresnel, rimPower);
+        gl_FragColor.rgb += vec3(0.5, 0.8, 1.0) * 0.4 * pow(rimFresnel, 3.5);
 
         #include <dithering_fragment>
         `
