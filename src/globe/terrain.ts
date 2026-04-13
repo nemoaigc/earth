@@ -179,3 +179,17 @@ export function generateTerrain(): TerrainData {
     oceanRatio: oceanCount / vertexCount,
   };
 }
+
+// Shallow water transition ring — sits between land and deep ocean
+export function createShallowWaterMesh(): THREE.Mesh {
+  const geo = new THREE.IcosahedronGeometry(GLOBE_RADIUS - 0.003, 80);
+  const mat = new THREE.MeshPhongMaterial({
+    color: new THREE.Color('#44bbcc'),
+    transparent: true,
+    opacity: 0.5,
+    shininess: 30,
+    flatShading: true,
+    depthWrite: false,
+  });
+  return new THREE.Mesh(geo, mat);
+}

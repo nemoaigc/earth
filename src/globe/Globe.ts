@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { generateTerrain, GLOBE_RADIUS } from './terrain';
+import { createShallowWaterMesh, generateTerrain, GLOBE_RADIUS } from './terrain';
 import type { TerrainData } from './terrain';
 import { Ocean } from './Ocean';
 import { Atmosphere } from './Atmosphere';
@@ -16,7 +16,6 @@ export class Globe {
   constructor() {
     this.group = new THREE.Group();
 
-    // Generate terrain
     this.terrainData = generateTerrain();
     this.terrainMaterial = new THREE.MeshPhongMaterial({
       vertexColors: true,
@@ -28,7 +27,6 @@ export class Globe {
       shader.uniforms.uTime = timeUniform;
       shader.uniforms.uGlobeRadius = { value: GLOBE_RADIUS };
 
-      // Vertex shader: add varying + wind sway
       shader.vertexShader = shader.vertexShader.replace('#include <common>',
         `#include <common>
     uniform float uTime;
@@ -41,7 +39,6 @@ export class Globe {
     vec4 wp = modelMatrix * vec4(transformed, 1.0);
     vWorldPos = wp.xyz;
     vAltitude = (length(wp.xyz) - uGlobeRadius) / 0.8;
-    // Wind sway on low-altitude grassland
     if (vAltitude < 0.4) {
       float sw = vAltitude * 0.003;
       transformed.x += sin(uTime * 1.5 + wp.x * 3.0) * sw;
@@ -49,7 +46,6 @@ export class Globe {
     }`
       );
 
-      // Fragment shader: smooth altitude color blending
       shader.fragmentShader = shader.fragmentShader.replace('#include <common>',
         `#include <common>
     varying float vAltitude;
@@ -62,13 +58,14 @@ export class Globe {
       this.terrainMaterial
     );
 
-    // Create ocean and atmosphere
     this.ocean = new Ocean();
+    const shallows = createShallowWaterMesh();
     this.atmosphere = new Atmosphere();
 
-    // Add all to group
-    this.group.add(this.terrain);
+    // Order: ocean first, then shallows, then terrain on top, atmosphere last
     this.group.add(this.ocean.mesh);
+    this.group.add(shallows);
+    this.group.add(this.terrain);
     this.group.add(this.atmosphere.mesh);
   }
 
