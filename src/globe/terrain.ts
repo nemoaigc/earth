@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { sampleNoise } from '../utils/noise';
+import { sampleNoise, noise3D } from '../utils/noise';
 import { createWorldMask, type BiomeWeights } from './worldmap';
 
 export const GLOBE_RADIUS = 10;
@@ -13,30 +13,30 @@ export interface TerrainData {
 
 const LAND_HEIGHT_SCALE = 0.8;
 
-// Biome color palettes
+// Colors matching original Tiny Skies (extracted from source)
 const BIOME_COLORS: Record<string, { low: THREE.Color; mid: THREE.Color; high: THREE.Color; snow: THREE.Color }> = {
   tropical: {
-    low: new THREE.Color('#33aa44'),
-    mid: new THREE.Color('#228833'),
-    high: new THREE.Color('#667744'),
-    snow: new THREE.Color('#889966'),
+    low: new THREE.Color('#3a833a'),
+    mid: new THREE.Color('#4a8b5f'),
+    high: new THREE.Color('#5a8b0a'),
+    snow: new THREE.Color('#8a7744'),
   },
   temperate: {
-    low: new THREE.Color('#55cc33'),
-    mid: new THREE.Color('#44bb44'),
-    high: new THREE.Color('#99aa55'),
-    snow: new THREE.Color('#ddddcc'),
+    low: new THREE.Color('#4a8b3a'),
+    mid: new THREE.Color('#5e9944'),
+    high: new THREE.Color('#7a8a44'),
+    snow: new THREE.Color('#c4aa6a'),
   },
   boreal: {
-    low: new THREE.Color('#336644'),
-    mid: new THREE.Color('#225533'),
-    high: new THREE.Color('#556655'),
-    snow: new THREE.Color('#ccddcc'),
+    low: new THREE.Color('#2a6633'),
+    mid: new THREE.Color('#1a4422'),
+    high: new THREE.Color('#445533'),
+    snow: new THREE.Color('#aabbaa'),
   },
   desert: {
-    low: new THREE.Color('#ddcc88'),
-    mid: new THREE.Color('#ccbb77'),
-    high: new THREE.Color('#aa9966'),
+    low: new THREE.Color('#ccbb77'),
+    mid: new THREE.Color('#bbaa66'),
+    high: new THREE.Color('#aa9955'),
     snow: new THREE.Color('#ccbbaa'),
   },
   polar: {
@@ -47,12 +47,19 @@ const BIOME_COLORS: Record<string, { low: THREE.Color; mid: THREE.Color; high: T
   },
 };
 
+// Secondary noise patch colors (original Tiny Skies)
+const PATCH_COLORS = [
+  new THREE.Color('#5e5868'), // dark brown-grey
+  new THREE.Color('#8a6c50'), // warm brown
+  new THREE.Color('#b0a568'), // tan/olive
+];
+
 // Ocean colors
 const COLOR_OCEAN_DEEP = new THREE.Color('#22aadd');
 const COLOR_OCEAN_SHALLOW = new THREE.Color('#55ccee');
 
 export function generateTerrain(): TerrainData {
-  const geometry = new THREE.IcosahedronGeometry(GLOBE_RADIUS, 140);
+  const geometry = new THREE.IcosahedronGeometry(GLOBE_RADIUS, 200);
   const posAttr = geometry.getAttribute('position');
   const vertexCount = posAttr.count;
 
@@ -123,6 +130,17 @@ export function generateTerrain(): TerrainData {
         color.r += tmpC.r * weight;
         color.g += tmpC.g * weight;
         color.b += tmpC.b * weight;
+      }
+
+      // Secondary noise: add color patches (like original Tiny Skies)
+      if (biome !== 'desert' && biome !== 'polar') {
+        const patchNoise = noise3D(nx * 4 + 100, ny * 4 + 100, nz * 4 + 100);
+        if (patchNoise > 0.2) {
+          const patchStrength = Math.min(1, (patchNoise - 0.2) * 2.5) * 0.6;
+          const patchIdx = Math.floor(Math.abs(patchNoise * 7)) % PATCH_COLORS.length;
+          const patchColor = PATCH_COLORS[patchIdx];
+          color.lerp(patchColor, patchStrength);
+        }
       }
 
       colors[i * 3] = color.r;

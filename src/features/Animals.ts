@@ -127,11 +127,11 @@ export class Animals {
           });
 
           const sprite = new THREE.Sprite(material);
-          const s = info.scale * (0.9 + Math.random() * 0.2);
+          const s = info.scale * 2.5 * (0.9 + Math.random() * 0.2);
           sprite.scale.set(s, s, s);
 
           const normal = pos.clone().normalize();
-          sprite.position.copy(pos).addScaledVector(normal, info.scale * 0.4);
+          sprite.position.copy(pos).addScaledVector(normal, s * 0.45);
 
           // Store reference on userData
           sprite.userData.animalId = info.id;
@@ -235,7 +235,7 @@ export class Animals {
     for (const placed of this.placed) {
       const isHovered = placed === this.hoveredAnimal;
       const isSelected = placed === this.selectedAnimal;
-      const target = (isHovered || isSelected ? 1.4 : 1) * placed.baseScale;
+      const target = (isHovered || isSelected ? 1.8 : 1) * placed.baseScale;
       const cur = placed.sprite.scale.x;
       const next = cur + (target - cur) * 0.12;
       placed.sprite.scale.set(next, next, next);
