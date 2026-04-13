@@ -78,19 +78,19 @@ export function generateTerrain(): TerrainData {
   console.log('[coord] Sahara(25,-10):', mask.isLand(25, -10));
   console.log('[coord] Pacific(0,160):', mask.isLand(0, 160));
   console.log('[coord] Pacific(0,-160):', mask.isLand(0, -160));
-  // Find a vertex on Asia and print its lng
+  // Find Himalaya vertex specifically (lat~30, lng~85)
+  let himCount = 0;
   for (let ti = 0; ti < vertexCount; ti++) {
     const vx = posAttr.getX(ti), vy = posAttr.getY(ti), vz = posAttr.getZ(ti);
     const vl = Math.sqrt(vx*vx+vy*vy+vz*vz);
     const vlat = Math.asin(vy/vl)*180/Math.PI;
     const vlng = Math.atan2(vz/vl, vx/vl)*180/Math.PI;
-    if (Math.abs(vlat - 35) < 1 && mask.isLand(vlat, vlng) && Math.abs(vlng) > 50) {
-      console.log(`[asia vertex] lat=${vlat.toFixed(1)} lng=${vlng.toFixed(1)}`);
-      console.log(`[asia vertex] regionBoost check: lng>68 && lng<102 = ${vlng > 68 && vlng < 102}`);
-      console.log(`[asia vertex] regionBoost check: lng>-102 && lng<-68 = ${vlng > -102 && vlng < -68}`);
-      break;
+    if (Math.abs(vlat - 30) < 3 && Math.abs(vlng - 85) < 10 && mask.isLand(vlat, vlng)) {
+      himCount++;
+      if (himCount <= 3) console.log(`[himalaya found] lat=${vlat.toFixed(1)} lng=${vlng.toFixed(1)} isLand=true`);
     }
   }
+  console.log(`[himalaya total] ${himCount} vertices in Himalaya zone`);
 
   const color = new THREE.Color();
   const tmpC = new THREE.Color();
