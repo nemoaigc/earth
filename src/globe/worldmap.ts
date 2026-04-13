@@ -1406,7 +1406,7 @@ export function loadElevationMap(): Promise<void> {
       resolve();
     };
     img.onerror = () => resolve(); // fail silently
-    img.src = '/earth-bump.jpg';
+    img.src = '/earth-heightmap.png';
   });
 }
 

@@ -52,7 +52,7 @@ export class Ocean {
 
     const material = new THREE.MeshPhongMaterial({
       vertexColors: true,
-      emissive: new THREE.Color('#0d3355'),
+      emissive: new THREE.Color('#0a2040'),
       shininess: 8,
       flatShading: true,
     });

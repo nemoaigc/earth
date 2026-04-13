@@ -92,8 +92,41 @@ scene.add(stars.points);
 // lensFlare removed
 // Rain removed
 
-// --- Lighting: Self-illuminating (no sun, sky-driven) ---
-const ambientLight = new THREE.AmbientLight('#ffffff', 5.0);
+// --- Lighting: Sun + ambient fill ---
+
+// Sun — large glowing sphere
+const sunGroup = new THREE.Group();
+const sunGeo = new THREE.SphereGeometry(3, 32, 32);
+const sunMat = new THREE.MeshBasicMaterial({
+  color: new THREE.Color('#fff8e0'),
+});
+const sunMesh = new THREE.Mesh(sunGeo, sunMat);
+sunGroup.add(sunMesh);
+
+// Sun glow (larger transparent sphere)
+const glowGeo = new THREE.SphereGeometry(4.5, 32, 32);
+const glowMat = new THREE.MeshBasicMaterial({
+  color: new THREE.Color('#ffe880'),
+  transparent: true,
+  opacity: 0.15,
+  side: THREE.BackSide,
+});
+sunGroup.add(new THREE.Mesh(glowGeo, glowMat));
+
+// Position sun far away
+sunGroup.position.set(30, 10, 20);
+scene.add(sunGroup);
+
+// Directional light from sun
+const sunLight = new THREE.DirectionalLight('#fff8e0', 3.0);
+sunLight.position.copy(sunGroup.position);
+scene.add(sunLight);
+
+// Hemisphere light for ambient fill
+const hemiLight = new THREE.HemisphereLight('#88aacc', '#223344', 1.0);
+scene.add(hemiLight);
+
+const ambientLight = new THREE.AmbientLight('#334466', 0.8);
 scene.add(ambientLight);
 
 // --- Animation loop ---
@@ -108,11 +141,6 @@ function animate(): void {
   dayNight.update(deltaTime);
   const state = dayNight.state;
 
-  // --- Light driven by sky brightness ---
-  const skyBrightness = (state.hemiSkyColor.r + state.hemiSkyColor.g + state.hemiSkyColor.b) / 3;
-  const brightnessFactor = Math.max(0.4, skyBrightness * 2);
-  ambientLight.color.copy(state.hemiSkyColor).lerp(new THREE.Color('#ffffff'), 0.6);
-  ambientLight.intensity = 2.5 * brightnessFactor;
 
   // --- Fog ---
   if (scene.fog instanceof THREE.Fog) {
