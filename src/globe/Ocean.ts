@@ -105,8 +105,8 @@ export class Ocean {
         float w3 = sin(wp.z * 31.0 + wp.x * 19.0 + wp.y * 47.0 + oceanTime * 2.1) * 0.5 + 0.5;
         float w4 = sin(wp.x * 17.0 + wp.z * 29.0 - wp.y * 13.0 + oceanTime * 1.5) * 0.5 + 0.5;
         float foam = w1 * w2 * w3 * w4;
-        foam = 1.0 - smoothstep(0.0005, 0.004, foam);
-        gl_FragColor.rgb += vec3(0.7, 0.9, 0.95) * foam * 0.08;
+        foam = 1.0 - smoothstep(0.00005, 0.001, foam);
+        gl_FragColor.rgb += vec3(0.7, 0.9, 0.95) * foam * 0.04;
 
         // Fresnel rim
         vec3 rimViewDir = normalize(vViewPosition);
