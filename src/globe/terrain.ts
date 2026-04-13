@@ -115,7 +115,6 @@ export function generateTerrain(): TerrainData {
 
       // Regional mountain boost
       // lng from atan2 is raw (positive=east), negate to match our polygon system
-      const rlng = -lng; // real-world longitude (positive=east is now negative in our system)
       // Actually: lng = atan2(nz,nx), for real-world east=positive this gives positive values
       // But our polygons are negated. So lng itself IS the negated value.
       // Use lng directly (which is already in our negated coord system)
