@@ -12,7 +12,7 @@ export interface TerrainData {
   oceanRatio: number;
 }
 
-const LAND_HEIGHT_SCALE = 1.2;
+const LAND_HEIGHT_SCALE = 1.8;
 
 // Vibrant colors matching reference screenshots
 const BIOME_COLORS: Record<string, { low: THREE.Color; mid: THREE.Color; high: THREE.Color; snow: THREE.Color }> = {
@@ -60,7 +60,7 @@ const COLOR_OCEAN_DEEP = new THREE.Color('#22aadd');
 const COLOR_OCEAN_SHALLOW = new THREE.Color('#55ccee');
 
 export function generateTerrain(): TerrainData {
-  const geometry = new THREE.SphereGeometry(GLOBE_RADIUS, 256, 256);
+  const geometry = new THREE.SphereGeometry(GLOBE_RADIUS, 400, 400);
   const posAttr = geometry.getAttribute('position');
   const vertexCount = posAttr.count;
 
