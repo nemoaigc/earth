@@ -60,7 +60,7 @@ const COLOR_OCEAN_DEEP = new THREE.Color('#22aadd');
 const COLOR_OCEAN_SHALLOW = new THREE.Color('#55ccee');
 
 export function generateTerrain(): TerrainData {
-  const geometry = new THREE.SphereGeometry(GLOBE_RADIUS, 300, 300);
+  const geometry = new THREE.SphereGeometry(GLOBE_RADIUS, 256, 256);
   const posAttr = geometry.getAttribute('position');
   const vertexCount = posAttr.count;
 
