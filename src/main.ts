@@ -130,9 +130,7 @@ function animate(): void {
   skyDome.updateGradient(state.skyGradient);
 
   // --- Terrain & ocean ---
-  globe.terrainMaterial.color.copy(state.terrainTint);
-  globe.ocean.material.color.copy(state.oceanShallow);
-  globe.ocean.material.emissive.copy(state.oceanDeep);
+  // Tinting handled by shader now
 
   globe.update(elapsed, state.atmosphereColor);
 
