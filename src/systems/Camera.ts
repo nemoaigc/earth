@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 
-const ORBIT_RADIUS = 16;
+const ORBIT_RADIUS = 13;
 const AUTO_ROTATE_SPEED = 0.3;
 
 export class CameraController {
