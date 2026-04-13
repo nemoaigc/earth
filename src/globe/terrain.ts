@@ -78,10 +78,19 @@ export function generateTerrain(): TerrainData {
   console.log('[coord] Sahara(25,-10):', mask.isLand(25, -10));
   console.log('[coord] Pacific(0,160):', mask.isLand(0, 160));
   console.log('[coord] Pacific(0,-160):', mask.isLand(0, -160));
-  // Check SphereGeometry vertex coords
-  const v0x = posAttr.getX(0), v0y = posAttr.getY(0), v0z = posAttr.getZ(0);
-  const v0l = Math.sqrt(v0x*v0x+v0y*v0y+v0z*v0z);
-  console.log('[sphere v0] lat:', (Math.asin(v0y/v0l)*180/Math.PI).toFixed(1), 'lng:', (Math.atan2(v0z/v0l, v0x/v0l)*180/Math.PI).toFixed(1));
+  // Find a vertex on Asia and print its lng
+  for (let ti = 0; ti < vertexCount; ti++) {
+    const vx = posAttr.getX(ti), vy = posAttr.getY(ti), vz = posAttr.getZ(ti);
+    const vl = Math.sqrt(vx*vx+vy*vy+vz*vz);
+    const vlat = Math.asin(vy/vl)*180/Math.PI;
+    const vlng = Math.atan2(vz/vl, vx/vl)*180/Math.PI;
+    if (Math.abs(vlat - 35) < 1 && mask.isLand(vlat, vlng) && Math.abs(vlng) > 50) {
+      console.log(`[asia vertex] lat=${vlat.toFixed(1)} lng=${vlng.toFixed(1)}`);
+      console.log(`[asia vertex] regionBoost check: lng>68 && lng<102 = ${vlng > 68 && vlng < 102}`);
+      console.log(`[asia vertex] regionBoost check: lng>-102 && lng<-68 = ${vlng > -102 && vlng < -68}`);
+      break;
+    }
+  }
 
   const color = new THREE.Color();
   const tmpC = new THREE.Color();
