@@ -76,7 +76,7 @@ export function generateTerrain(): TerrainData {
 
     // Convert to lat/lng
     const lat = Math.asin(Math.max(-1, Math.min(1, ny))) * 180 / Math.PI;
-    const lng = -Math.atan2(nz, nx) * 180 / Math.PI;
+    const lng = Math.atan2(nz, nx) * 180 / Math.PI;
 
     const biome = mask.getBiome(lat, lng);
 
@@ -196,7 +196,7 @@ export function createShallowWaterMesh(): THREE.Mesh {
     const len = Math.sqrt(x * x + y * y + z * z);
     const nx = x / len, ny = y / len, nz = z / len;
     const lat = Math.asin(Math.max(-1, Math.min(1, ny))) * 180 / Math.PI;
-    const lng = -Math.atan2(nz, nx) * 180 / Math.PI;
+    const lng = Math.atan2(nz, nx) * 180 / Math.PI;
 
     const onLand = mask.isLand(lat, lng);
     // Check if near coast (within 5°)

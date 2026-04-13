@@ -7,52 +7,27 @@ interface BiomeConfig {
   count: number;
   heightRange: [number, number];
   widthRange: [number, number];
-  geoType: 'tropical' | 'temperate' | 'boreal' | 'acacia' | 'cactus';
+  geoType: 'tropical' | 'temperate' | 'boreal' | 'acacia' | 'cactus'
+    | 'oak' | 'bamboo' | 'eucalyptus' | 'baobab' | 'spruce' | 'cherry' | 'olive' | 'sequoia';
 }
 
 const BIOME_CONFIGS: BiomeConfig[] = [
-  {
-    biome: 'tropical',
-    count: 250,
-    heightRange: [0.11, 0.18],
-    widthRange: [0.065, 0.095],
-    geoType: 'tropical',
-  },
-  {
-    biome: 'temperate',
-    count: 250,
-    heightRange: [0.10, 0.15],
-    widthRange: [0.055, 0.085],
-    geoType: 'temperate',
-  },
-  {
-    biome: 'boreal',
-    count: 250,
-    heightRange: [0.11, 0.18],
-    widthRange: [0.038, 0.055],
-    geoType: 'boreal',
-  },
-  {
-    biome: 'desert',
-    count: 20,
-    heightRange: [0.065, 0.095],
-    widthRange: [0.038, 0.055],
-    geoType: 'temperate',
-  },
-  {
-    biome: 'desert',
-    count: 40,
-    heightRange: [0.075, 0.105],
-    widthRange: [0.045, 0.065],
-    geoType: 'acacia',
-  },
-  {
-    biome: 'desert',
-    count: 25,
-    heightRange: [0.038, 0.055],
-    widthRange: [0.015, 0.023],
-    geoType: 'cactus',
-  },
+  // --- existing ---
+  { biome: 'tropical',  count: 250, heightRange: [0.11, 0.18], widthRange: [0.065, 0.095], geoType: 'tropical' },
+  { biome: 'temperate', count: 250, heightRange: [0.10, 0.15], widthRange: [0.055, 0.085], geoType: 'temperate' },
+  { biome: 'boreal',    count: 250, heightRange: [0.11, 0.18], widthRange: [0.038, 0.055], geoType: 'boreal' },
+  { biome: 'desert',    count: 20,  heightRange: [0.065, 0.095], widthRange: [0.038, 0.055], geoType: 'temperate' },
+  { biome: 'desert',    count: 40,  heightRange: [0.075, 0.105], widthRange: [0.045, 0.065], geoType: 'acacia' },
+  { biome: 'desert',    count: 25,  heightRange: [0.038, 0.055], widthRange: [0.015, 0.023], geoType: 'cactus' },
+  // --- new ---
+  { biome: 'temperate', count: 120, heightRange: [0.12, 0.16], widthRange: [0.07, 0.095],  geoType: 'oak' },
+  { biome: 'tropical',  count: 60,  heightRange: [0.14, 0.20], widthRange: [0.025, 0.04],  geoType: 'bamboo' },
+  { biome: 'temperate', count: 80,  heightRange: [0.13, 0.18], widthRange: [0.04, 0.06],   geoType: 'eucalyptus' },
+  { biome: 'desert',    count: 25,  heightRange: [0.10, 0.14], widthRange: [0.07, 0.10],   geoType: 'baobab' },
+  { biome: 'boreal',    count: 150, heightRange: [0.12, 0.19], widthRange: [0.03, 0.045],  geoType: 'spruce' },
+  { biome: 'temperate', count: 40,  heightRange: [0.10, 0.14], widthRange: [0.06, 0.085],  geoType: 'cherry' },
+  { biome: 'desert',    count: 30,  heightRange: [0.08, 0.12], widthRange: [0.05, 0.075],  geoType: 'olive' },
+  { biome: 'temperate', count: 15,  heightRange: [0.16, 0.22], widthRange: [0.05, 0.07],   geoType: 'sequoia' },
 ];
 
 /* ---------- helpers ---------- */
@@ -108,19 +83,22 @@ function createTrunk(
   height: number,
   radiusBottom: number,
   radiusTop: number,
+  segments = 6,
+  bottomCol = TRUNK_BOTTOM,
+  topCol = TRUNK_TOP,
 ): THREE.BufferGeometry {
-  const geo = new THREE.CylinderGeometry(radiusTop, radiusBottom, height, 6);
+  const geo = new THREE.CylinderGeometry(radiusTop, radiusBottom, height, segments);
   geo.translate(0, height / 2, 0);
-  colorGeometry(geo, TRUNK_BOTTOM, TRUNK_TOP, 0, height);
+  colorGeometry(geo, bottomCol, topCol, 0, height);
   return ensureMergeReady(geo);
 }
 
+// --- Tropical: 2 bushy dodecahedron canopy ---
 function createTropicalTreeGeometry(height: number, width: number): THREE.BufferGeometry {
   const trunkH = height * 0.4;
   const trunk = createTrunk(trunkH, 0.04, 0.025);
   const parts: THREE.BufferGeometry[] = [trunk];
 
-  // 2 overlapping dodecahedrons for bushy round canopy
   const r1 = width * 0.5;
   const r2 = r1 * 0.72;
   const layers = [
@@ -136,37 +114,33 @@ function createTropicalTreeGeometry(height: number, width: number): THREE.Buffer
       layer.y - layer.r, layer.y + layer.r);
     parts.push(ensureMergeReady(sphere));
   }
-
   return mergeGeometries(parts, false)!;
 }
 
+// --- Temperate: ellipsoid canopy on trunk ---
 function createTemperateTreeGeometry(height: number, width: number): THREE.BufferGeometry {
   const trunkH = height * 0.4;
   const trunk = createTrunk(trunkH, 0.035, 0.02);
 
-  // Fat ellipsoid canopy
   const canopyR = width * 0.5;
   const canopy = new THREE.IcosahedronGeometry(canopyR, 1);
   const pos = canopy.getAttribute('position');
-  for (let i = 0; i < pos.count; i++) {
-    pos.setY(i, pos.getY(i) * 1.3);
-  }
+  for (let i = 0; i < pos.count; i++) pos.setY(i, pos.getY(i) * 1.3);
   const cy = trunkH + canopyR * 0.9;
   canopy.translate(0, cy, 0);
   colorGeometry(canopy,
     new THREE.Color(0.2, 0.5, 0.12),
     new THREE.Color(0.45, 0.82, 0.25),
     cy - canopyR * 1.3, cy + canopyR * 1.3);
-
   return mergeGeometries([trunk, ensureMergeReady(canopy)], false)!;
 }
 
+// --- Boreal: 3 layered cones ---
 function createBorealTreeGeometry(height: number, width: number): THREE.BufferGeometry {
   const trunkH = height * 0.2;
   const trunk = createTrunk(trunkH, 0.025, 0.016);
   const parts: THREE.BufferGeometry[] = [trunk];
 
-  // 3 layered cones — spruce silhouette
   const canopyH = height - trunkH;
   for (let i = 0; i < 3; i++) {
     const t = i / 2;
@@ -181,10 +155,10 @@ function createBorealTreeGeometry(height: number, width: number): THREE.BufferGe
       yPos - layerH / 2, yPos + layerH / 2);
     parts.push(ensureMergeReady(cone));
   }
-
   return mergeGeometries(parts, false)!;
 }
 
+// --- Acacia: flat disk canopy ---
 function createAcaciaGeometry(height: number, width: number): THREE.BufferGeometry {
   const trunk = new THREE.CylinderGeometry(0.015, 0.025, height, 6);
   trunk.translate(0, height / 2, 0);
@@ -193,10 +167,10 @@ function createAcaciaGeometry(height: number, width: number): THREE.BufferGeomet
   const canopy = new THREE.CylinderGeometry(width / 2, width / 2 * 0.85, 0.05, 8);
   canopy.translate(0, height, 0);
   colorGeometryFlat(canopy, new THREE.Color('#5A8C32'));
-
   return mergeGeometries([ensureMergeReady(trunk), ensureMergeReady(canopy)], false)!;
 }
 
+// --- Cactus ---
 function createCactusGeometry(height: number, _width: number): THREE.BufferGeometry {
   const gc = new THREE.Color('#5A8C32');
   function makeArm(h: number, rTop: number, rBot: number): THREE.BufferGeometry {
@@ -206,19 +180,222 @@ function createCactusGeometry(height: number, _width: number): THREE.BufferGeome
   }
   const trunk = makeArm(height, 0.035, 0.04);
   trunk.translate(0, height / 2, 0);
-
   const armL = makeArm(height * 0.4, 0.022, 0.026);
   armL.rotateZ(Math.PI / 4);
   armL.translate(-0.04, height * 0.6, 0);
-
   const armR = makeArm(height * 0.4, 0.022, 0.026);
   armR.rotateZ(-Math.PI / 4);
   armR.translate(0.04, height * 0.55, 0);
+  return mergeGeometries([trunk, armL, armR].map(ensureMergeReady), false)!;
+}
 
-  return mergeGeometries(
-    [trunk, armL, armR].map(ensureMergeReady),
-    false,
-  )!;
+// --- Oak: wide flattened canopy, thick trunk ---
+function createOakGeometry(height: number, width: number): THREE.BufferGeometry {
+  const trunkH = height * 0.35;
+  const trunk = createTrunk(trunkH, 0.045, 0.03);
+  const parts: THREE.BufferGeometry[] = [trunk];
+
+  const r1 = width * 0.6;
+  const r2 = width * 0.4;
+  for (const { r, y } of [
+    { r: r1, y: trunkH + width * 0.3 },
+    { r: r2, y: trunkH + width * 0.7 },
+  ]) {
+    const geo = new THREE.DodecahedronGeometry(r, 1);
+    const pos = geo.getAttribute('position');
+    for (let i = 0; i < pos.count; i++) pos.setY(i, pos.getY(i) * 0.7);
+    geo.translate(0, y, 0);
+    colorGeometry(geo,
+      new THREE.Color('#2D5A1E'), new THREE.Color('#4A8C2A'),
+      y - r * 0.7, y + r * 0.7);
+    parts.push(ensureMergeReady(geo));
+  }
+  return mergeGeometries(parts, false)!;
+}
+
+// --- Bamboo: thin stalk with node ring, small leaf tuft ---
+function createBambooGeometry(height: number, width: number): THREE.BufferGeometry {
+  const lowerH = height * 0.5;
+  const lower = new THREE.CylinderGeometry(0.008, 0.012, lowerH, 6);
+  lower.translate(0, lowerH / 2, 0);
+  colorGeometryFlat(lower, new THREE.Color('#5A7A3A'));
+
+  const upperH = height * 0.35;
+  const upper = new THREE.CylinderGeometry(0.006, 0.009, upperH, 6);
+  upper.translate(0, lowerH + upperH / 2, 0);
+  colorGeometryFlat(upper, new THREE.Color('#6B8B4A'));
+
+  const ring = new THREE.CylinderGeometry(0.012, 0.012, height * 0.02, 6);
+  ring.translate(0, lowerH, 0);
+  colorGeometryFlat(ring, new THREE.Color('#4A6A2A'));
+
+  const leafR = width * 0.4;
+  const leaf = new THREE.IcosahedronGeometry(leafR, 0);
+  const lp = leaf.getAttribute('position');
+  for (let i = 0; i < lp.count; i++) {
+    lp.setY(i, lp.getY(i) * 0.5);
+    lp.setX(i, lp.getX(i) * 1.3);
+  }
+  leaf.translate(0, height * 0.9, 0);
+  colorGeometry(leaf,
+    new THREE.Color('#3D8B2E'), new THREE.Color('#6BBF4A'),
+    height * 0.9 - leafR * 0.5, height * 0.9 + leafR * 0.5);
+
+  return mergeGeometries([lower, upper, ring, leaf].map(ensureMergeReady), false)!;
+}
+
+// --- Eucalyptus: tall pale trunk, narrow cone canopy ---
+function createEucalyptusGeometry(height: number, width: number): THREE.BufferGeometry {
+  const trunkH = height * 0.6;
+  const trunk = createTrunk(trunkH, 0.035, 0.02, 6,
+    new THREE.Color('#8B7355'), new THREE.Color('#C4A882'));
+
+  const c1H = height * 0.35;
+  const c1 = new THREE.ConeGeometry(width * 0.35, c1H, 7);
+  c1.translate(0, trunkH + c1H * 0.4, 0);
+  colorGeometry(c1,
+    new THREE.Color('#3B6B3B'), new THREE.Color('#5A9A5A'),
+    trunkH, trunkH + c1H);
+
+  const c2H = height * 0.2;
+  const c2 = new THREE.ConeGeometry(width * 0.2, c2H, 7);
+  c2.translate(0, trunkH + c1H * 0.65 + c2H * 0.4, 0);
+  colorGeometry(c2,
+    new THREE.Color('#4A7A4A'), new THREE.Color('#6AAA6A'),
+    trunkH + c1H * 0.5, trunkH + c1H * 0.5 + c2H);
+
+  return mergeGeometries([trunk, ensureMergeReady(c1), ensureMergeReady(c2)], false)!;
+}
+
+// --- Baobab: massive trunk, tiny canopy ---
+function createBaobabGeometry(height: number, width: number): THREE.BufferGeometry {
+  const trunkH = height * 0.7;
+  const trunk = createTrunk(trunkH, width * 0.5, width * 0.35, 7,
+    new THREE.Color('#6B4226'), new THREE.Color('#A08060'));
+
+  const bulge = new THREE.SphereGeometry(width * 0.3, 6, 4);
+  const bp = bulge.getAttribute('position');
+  for (let i = 0; i < bp.count; i++) bp.setY(i, bp.getY(i) * 0.4);
+  bulge.translate(0, trunkH, 0);
+  colorGeometryFlat(bulge, new THREE.Color('#9A7B5A'));
+
+  const canopyR = width * 0.25;
+  const canopy = new THREE.IcosahedronGeometry(canopyR, 0);
+  const cp = canopy.getAttribute('position');
+  for (let i = 0; i < cp.count; i++) cp.setY(i, cp.getY(i) * 0.6);
+  canopy.translate(0, height * 0.85, 0);
+  colorGeometry(canopy,
+    new THREE.Color('#4A7A2A'), new THREE.Color('#6A9A4A'),
+    height * 0.85 - canopyR * 0.6, height * 0.85 + canopyR * 0.6);
+
+  return mergeGeometries([trunk, ensureMergeReady(bulge), ensureMergeReady(canopy)], false)!;
+}
+
+// --- Spruce: narrower/darker than boreal, 3 tighter cones ---
+function createSpruceGeometry(height: number, width: number): THREE.BufferGeometry {
+  const trunkH = height * 0.15;
+  const trunk = createTrunk(trunkH, 0.02, 0.012);
+  const parts: THREE.BufferGeometry[] = [trunk];
+
+  const canopyH = height - trunkH;
+  for (let i = 0; i < 3; i++) {
+    const t = i / 2;
+    const layerH = canopyH * (0.5 - t * 0.12);
+    const layerR = width * (0.5 - t * 0.15);
+    const cone = new THREE.ConeGeometry(layerR, layerH, 6);
+    const yPos = trunkH + canopyH * (i / 3) * 0.85 + layerH * 0.5;
+    cone.translate(0, yPos, 0);
+    colorGeometry(cone,
+      new THREE.Color(0.04, 0.23 + t * 0.04, 0.04),
+      new THREE.Color(0.1, 0.38 + t * 0.06, 0.1),
+      yPos - layerH / 2, yPos + layerH / 2);
+    parts.push(ensureMergeReady(cone));
+  }
+  return mergeGeometries(parts, false)!;
+}
+
+// --- Cherry Blossom: pink canopy ---
+function createCherryGeometry(height: number, width: number): THREE.BufferGeometry {
+  const trunkH = height * 0.45;
+  const trunk = createTrunk(trunkH, 0.03, 0.02, 6,
+    new THREE.Color('#5A3A2A'), new THREE.Color('#7A5A4A'));
+  const parts: THREE.BufferGeometry[] = [trunk];
+
+  const r1 = width * 0.5;
+  const r2 = width * 0.35;
+  for (const { r, y, cBot, cTop } of [
+    { r: r1, y: trunkH + width * 0.35, cBot: new THREE.Color('#E8A0B0'), cTop: new THREE.Color('#FFD0DD') },
+    { r: r2, y: trunkH + width * 0.7,  cBot: new THREE.Color('#F0C0D0'), cTop: new THREE.Color('#FFE8F0') },
+  ]) {
+    const geo = new THREE.DodecahedronGeometry(r, 1);
+    const p = geo.getAttribute('position');
+    for (let i = 0; i < p.count; i++) p.setY(i, p.getY(i) * 0.75);
+    geo.translate(0, y, 0);
+    colorGeometry(geo, cBot, cTop, y - r * 0.75, y + r * 0.75);
+    parts.push(ensureMergeReady(geo));
+  }
+  return mergeGeometries(parts, false)!;
+}
+
+// --- Olive: silvery-green, asymmetric canopy ---
+function createOliveGeometry(height: number, width: number): THREE.BufferGeometry {
+  const trunkH = height * 0.35;
+  const trunkGeo = new THREE.CylinderGeometry(0.025, 0.04, trunkH, 5);
+  // Gnarled trunk: perturb vertices
+  const tp = trunkGeo.getAttribute('position');
+  for (let i = 0; i < tp.count; i++) {
+    const angle = Math.atan2(tp.getZ(i), tp.getX(i));
+    const offset = Math.sin(angle * 3) * 0.005;
+    tp.setX(i, tp.getX(i) + offset);
+    tp.setZ(i, tp.getZ(i) + offset);
+  }
+  trunkGeo.translate(0, trunkH / 2, 0);
+  colorGeometry(trunkGeo,
+    new THREE.Color('#5A4A30'), new THREE.Color('#7A6A50'),
+    0, trunkH);
+
+  const c1R = width * 0.45;
+  const c1 = new THREE.IcosahedronGeometry(c1R, 1);
+  const c1p = c1.getAttribute('position');
+  for (let i = 0; i < c1p.count; i++) c1p.setX(i, c1p.getX(i) * 1.2);
+  c1.translate(0, trunkH + width * 0.3, 0);
+  colorGeometry(c1,
+    new THREE.Color('#6A7A5A'), new THREE.Color('#8A9A7A'),
+    trunkH, trunkH + c1R * 2);
+
+  const c2R = width * 0.3;
+  const c2 = new THREE.IcosahedronGeometry(c2R, 0);
+  c2.translate(width * 0.1, trunkH + width * 0.55, width * 0.05);
+  colorGeometry(c2,
+    new THREE.Color('#7A8A6A'), new THREE.Color('#9AAA8A'),
+    trunkH + width * 0.3, trunkH + width * 0.8);
+
+  return mergeGeometries([ensureMergeReady(trunkGeo), ensureMergeReady(c1), ensureMergeReady(c2)], false)!;
+}
+
+// --- Giant Sequoia: very tall reddish trunk, small top canopy ---
+function createSequoiaGeometry(height: number, width: number): THREE.BufferGeometry {
+  const trunkH = height * 0.75;
+  const trunk = createTrunk(trunkH, 0.065, 0.04, 7,
+    new THREE.Color('#6B2A1A'), new THREE.Color('#9B4A2A'));
+
+  const canopyR = width * 0.35;
+  const canopy = new THREE.IcosahedronGeometry(canopyR, 1);
+  const cp = canopy.getAttribute('position');
+  for (let i = 0; i < cp.count; i++) cp.setY(i, cp.getY(i) * 1.4);
+  canopy.translate(0, height * 0.8, 0);
+  colorGeometry(canopy,
+    new THREE.Color('#1A4A1A'), new THREE.Color('#2A6A2A'),
+    height * 0.8 - canopyR * 1.4, height * 0.8 + canopyR * 1.4);
+
+  const topH = height * 0.12;
+  const top = new THREE.ConeGeometry(width * 0.15, topH, 6);
+  top.translate(0, height * 0.95, 0);
+  colorGeometry(top,
+    new THREE.Color('#2A5A2A'), new THREE.Color('#3A7A3A'),
+    height * 0.95 - topH / 2, height * 0.95 + topH / 2);
+
+  return mergeGeometries([trunk, ensureMergeReady(canopy), ensureMergeReady(top)], false)!;
 }
 
 /* ---------- material ---------- */
@@ -275,13 +452,9 @@ function placeTrees(
     const point = shuffled[i];
     const normal = point.normal.clone().normalize();
 
-    // Position: push slightly outward along normal to avoid terrain burial
     dummy.position.copy(point.position).addScaledVector(normal, 0.03);
-
-    // Orientation: quaternion from Y-up to surface normal (robust on curved surface)
     dummy.quaternion.setFromUnitVectors(_up, normal);
 
-    // Random rotation around local Y (around the normal)
     const yRot = new THREE.Quaternion().setFromAxisAngle(normal, Math.random() * Math.PI * 2);
     dummy.quaternion.premultiply(yRot);
 
@@ -327,11 +500,19 @@ export class Trees {
 
       let geometry: THREE.BufferGeometry;
       switch (config.geoType) {
-        case 'tropical': geometry = createTropicalTreeGeometry(height, width); break;
-        case 'temperate': geometry = createTemperateTreeGeometry(height, width); break;
-        case 'boreal': geometry = createBorealTreeGeometry(height, width); break;
-        case 'acacia': geometry = createAcaciaGeometry(height, width); break;
-        case 'cactus': geometry = createCactusGeometry(height, width); break;
+        case 'tropical':   geometry = createTropicalTreeGeometry(height, width); break;
+        case 'temperate':  geometry = createTemperateTreeGeometry(height, width); break;
+        case 'boreal':     geometry = createBorealTreeGeometry(height, width); break;
+        case 'acacia':     geometry = createAcaciaGeometry(height, width); break;
+        case 'cactus':     geometry = createCactusGeometry(height, width); break;
+        case 'oak':        geometry = createOakGeometry(height, width); break;
+        case 'bamboo':     geometry = createBambooGeometry(height, width); break;
+        case 'eucalyptus': geometry = createEucalyptusGeometry(height, width); break;
+        case 'baobab':     geometry = createBaobabGeometry(height, width); break;
+        case 'spruce':     geometry = createSpruceGeometry(height, width); break;
+        case 'cherry':     geometry = createCherryGeometry(height, width); break;
+        case 'olive':      geometry = createOliveGeometry(height, width); break;
+        case 'sequoia':    geometry = createSequoiaGeometry(height, width); break;
       }
 
       const material = createWindSwayMaterial(this.timeUniform);

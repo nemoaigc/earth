@@ -10,7 +10,8 @@ export class CameraController {
 
   constructor(aspect: number, domElement: HTMLElement) {
     this.camera = new THREE.PerspectiveCamera(50, aspect, 0.1, 100);
-    this.camera.position.set(ORBIT_RADIUS, 3, 0);
+    // Start looking at Europe/Africa side
+    this.camera.position.set(ORBIT_RADIUS * 0.5, 4, ORBIT_RADIUS * 0.87);
     this.camera.lookAt(0, 0, 0);
 
     this.controls = new OrbitControls(this.camera, domElement);
