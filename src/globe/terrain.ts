@@ -12,7 +12,7 @@ export interface TerrainData {
   oceanRatio: number;
 }
 
-const LAND_HEIGHT_SCALE = 0.7;
+const LAND_HEIGHT_SCALE = 1.2;
 
 // Vibrant colors matching reference screenshots
 const BIOME_COLORS: Record<string, { low: THREE.Color; mid: THREE.Color; high: THREE.Color; snow: THREE.Color }> = {
@@ -109,7 +109,9 @@ export function generateTerrain(): TerrainData {
 
       // Use real NASA elevation data — smooth, accurate, Everest is highest
       const elevation = sampleElevation(lat, lng); // 0-1 from bump map
-      const heightNorm = elevation * coastFactor;
+      // coastFactor softened: sqrt makes it less aggressive near coast
+      const softCoast = Math.sqrt(coastFactor);
+      const heightNorm = elevation * (0.3 + softCoast * 0.7); // min 30% height even at coast
       const height = heightNorm * LAND_HEIGHT_SCALE;
       const newRadius = GLOBE_RADIUS + height;
 
