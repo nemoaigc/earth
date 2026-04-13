@@ -136,7 +136,7 @@ export class Clouds {
     cloudMat.transparent = opacity < 1;
 
     for (const c of this.clusters) {
-      c.azimuth += c.orbitSpeed * 0.01;
+      c.azimuth += c.orbitSpeed * 0.1;
 
       const x = c.orbitRadius * Math.cos(c.azimuth) * Math.cos(c.inclination);
       const y = c.orbitRadius * Math.sin(c.inclination);

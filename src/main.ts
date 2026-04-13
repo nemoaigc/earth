@@ -13,7 +13,7 @@ import { SkyDome } from './sky/SkyDome';
 import { Clouds } from './sky/Clouds';
 import { Stars } from './sky/Stars';
 // LensFlare removed
-import { Rain } from './sky/Rain';
+// Rain removed
 import { DayNightCycle } from './systems/DayNightCycle';
 import { CameraController } from './systems/Camera';
 import { CSS2DRenderer } from 'three/examples/jsm/renderers/CSS2DRenderer.js';
@@ -90,8 +90,7 @@ const stars = new Stars();
 scene.add(stars.points);
 // lensFlare removed
 // lensFlare removed
-const rain = new Rain();
-scene.add(rain.group);
+// Rain removed
 
 // --- Lighting: Self-illuminating (no sun, sky-driven) ---
 const ambientLight = new THREE.AmbientLight('#ffffff', 5.0);
@@ -136,7 +135,7 @@ function animate(): void {
   clouds.update(elapsed, state.cloudOpacity);
   stars.update(state.starVisibility);
   // lensFlare removed
-  rain.update(elapsed, state.rainIntensity);
+  // rain removed
 
   // --- Terrain features ---
   trees.update(elapsed);
