@@ -5,8 +5,8 @@
   top: 50%;
   right: 24px;
   z-index: 220;
-  width: min(560px, calc(100vw - 32px));
-  max-height: calc(100vh - 32px);
+  width: min(380px, calc(100vw - 32px));
+  max-height: calc(100vh - 80px);
   opacity: 0;
   pointer-events: none;
   transform: translate3d(40px, -50%, 0) scale(0.985);
@@ -20,7 +20,7 @@
     BlinkMacSystemFont,
     "Helvetica Neue",
     sans-serif;
-  color: #172033;
+  color: rgba(255, 255, 255, 0.9);
   overflow: hidden;
   border-radius: 28px;
   -webkit-font-smoothing: antialiased;
@@ -42,16 +42,11 @@
   max-height: inherit;
   overflow: auto;
   border-radius: inherit;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.78), rgba(242, 247, 255, 0.58)),
-    linear-gradient(135deg, rgba(255, 255, 255, 0.82), rgba(222, 232, 249, 0.38));
-  border: 1px solid rgba(255, 255, 255, 0.72);
-  box-shadow:
-    0 24px 70px rgba(34, 51, 84, 0.18),
-    inset 0 1px 0 rgba(255, 255, 255, 0.9),
-    inset 0 -1px 0 rgba(255, 255, 255, 0.28);
-  backdrop-filter: blur(28px) saturate(150%);
-  -webkit-backdrop-filter: blur(28px) saturate(150%);
+  background: rgba(10, 20, 40, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
 }
 
 .animal-panel__shell::before {
@@ -59,18 +54,16 @@
   position: absolute;
   inset: 0;
   background:
-    radial-gradient(circle at top left, rgba(255, 255, 255, 0.8), transparent 30%),
-    radial-gradient(circle at 78% 8%, rgba(var(--animal-accent-rgb), 0.16), transparent 22%);
+    radial-gradient(circle at top left, rgba(255, 255, 255, 0.05), transparent 30%),
+    radial-gradient(circle at 78% 8%, rgba(var(--animal-accent-rgb), 0.08), transparent 22%);
   pointer-events: none;
 }
 
 .animal-panel__hero {
   position: relative;
-  height: clamp(280px, 34vh, 340px);
+  height: clamp(180px, 26vh, 240px);
   overflow: hidden;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.2), transparent),
-    linear-gradient(160deg, rgba(194, 211, 243, 0.42), rgba(165, 190, 231, 0.2));
+  background: rgba(15, 25, 50, 0.4);
 }
 
 .animal-panel__hero-image,
@@ -162,11 +155,9 @@
   position: relative;
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  padding: 22px 22px 24px;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.72), rgba(244, 248, 255, 0.56)),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.36), transparent);
+  gap: 12px;
+  padding: 16px 16px 18px;
+  background: transparent;
 }
 
 .animal-panel__header {
@@ -186,14 +177,14 @@
 
 .animal-panel__subtitle {
   font-size: 17px;
-  color: rgba(47, 63, 92, 0.9);
+  color: rgba(200, 220, 255, 0.8);
   margin-bottom: 4px;
   font-weight: 500;
 }
 
 .animal-panel__scientific {
   font-size: 13px;
-  color: rgba(88, 102, 132, 0.68);
+  color: rgba(150, 170, 200, 0.7);
   font-style: italic;
 }
 
@@ -207,7 +198,7 @@
 
 .animal-panel__chip {
   background: rgba(255, 255, 255, 0.44);
-  color: rgba(60, 74, 101, 0.86);
+  color: rgba(180, 200, 230, 0.8);
   font-size: 12px;
   font-weight: 600;
   letter-spacing: 0.04em;
@@ -231,12 +222,8 @@
   text-decoration: none;
   color: inherit;
   border: 1px solid rgba(255, 255, 255, 0.76);
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.66), rgba(244, 248, 255, 0.42)),
-    rgba(255, 255, 255, 0.24);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.86),
-    0 10px 24px rgba(78, 99, 138, 0.1);
+  background: rgba(255, 255, 255, 0.06);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   transition:
     transform 0.18s ease,
     border-color 0.18s ease,
@@ -264,7 +251,7 @@
   line-height: 1.4;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: rgba(83, 100, 132, 0.56);
+  color: rgba(140, 165, 200, 0.55);
 }
 
 .animal-panel__meta-grid {
@@ -275,14 +262,10 @@
 
 .animal-panel__meta-card,
 .animal-panel__section {
-  border-radius: 20px;
-  border: 1px solid rgba(255, 255, 255, 0.72);
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.58), rgba(243, 248, 255, 0.38)),
-    rgba(255, 255, 255, 0.2);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.86),
-    0 8px 20px rgba(80, 98, 132, 0.07);
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.06);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 .animal-panel__meta-card {
@@ -298,14 +281,14 @@
   font-weight: 700;
   letter-spacing: 0.16em;
   text-transform: uppercase;
-  color: rgba(88, 104, 136, 0.52);
+  color: rgba(140, 165, 200, 0.6);
   margin-bottom: 8px;
 }
 
 .animal-panel__meta-value {
   font-size: 15px;
   line-height: 1.5;
-  color: rgba(23, 33, 53, 0.94);
+  color: rgba(220, 230, 255, 0.9);
 }
 
 .animal-panel__section {
@@ -320,7 +303,7 @@
   font-weight: 700;
   letter-spacing: 0.16em;
   text-transform: uppercase;
-  color: rgba(88, 104, 136, 0.52);
+  color: rgba(140, 165, 200, 0.6);
 }
 
 .animal-panel__summary,
@@ -328,7 +311,7 @@
 .animal-panel__sound-surface {
   font-size: 15px;
   line-height: 1.7;
-  color: rgba(32, 43, 67, 0.88);
+  color: rgba(200, 215, 240, 0.85);
 }
 
 .animal-panel__insight p,
@@ -353,7 +336,7 @@
   display: block;
   margin-bottom: 6px;
   font-size: 15px;
-  color: rgba(28, 41, 67, 0.94);
+  color: rgba(220, 230, 255, 0.9);
 }
 
 .animal-panel__loader {
