@@ -14,43 +14,43 @@ const BIOME_CONFIGS: BiomeConfig[] = [
   {
     biome: 'tropical',
     count: 400,
-    heightRange: [0.5, 0.7],
-    widthRange: [0.18, 0.26],
+    heightRange: [0.6, 0.9],
+    widthRange: [0.35, 0.50],
     geoType: 'tropical',
   },
   {
     biome: 'temperate',
     count: 400,
-    heightRange: [0.45, 0.65],
-    widthRange: [0.16, 0.22],
+    heightRange: [0.55, 0.8],
+    widthRange: [0.30, 0.45],
     geoType: 'temperate',
   },
   {
     biome: 'boreal',
     count: 400,
-    heightRange: [0.5, 0.7],
-    widthRange: [0.10, 0.16],
+    heightRange: [0.6, 0.9],
+    widthRange: [0.20, 0.30],
     geoType: 'boreal',
   },
   {
     biome: 'desert',
     count: 30,
-    heightRange: [0.30, 0.45],
-    widthRange: [0.12, 0.18],
+    heightRange: [0.35, 0.50],
+    widthRange: [0.20, 0.30],
     geoType: 'temperate',
   },
   {
     biome: 'desert',
     count: 60,
-    heightRange: [0.35, 0.49],
-    widthRange: [0.14, 0.20],
+    heightRange: [0.40, 0.55],
+    widthRange: [0.25, 0.35],
     geoType: 'acacia',
   },
   {
     biome: 'desert',
     count: 40,
-    heightRange: [0.14, 0.21],
-    widthRange: [0.04, 0.07],
+    heightRange: [0.20, 0.30],
+    widthRange: [0.08, 0.12],
     geoType: 'cactus',
   },
 ];
@@ -116,24 +116,23 @@ function createTrunk(
 }
 
 function createTropicalTreeGeometry(height: number, width: number): THREE.BufferGeometry {
-  // Tall trunk + 2 bushy round canopy blobs
-  const trunkH = height * 0.45;
-  const trunk = createTrunk(trunkH, 0.03, 0.02);
-
+  const trunkH = height * 0.4;
+  const trunk = createTrunk(trunkH, 0.04, 0.025);
   const parts: THREE.BufferGeometry[] = [trunk];
 
+  // 2 overlapping dodecahedrons for bushy round canopy
   const r1 = width * 0.5;
-  const r2 = r1 * 0.7;
+  const r2 = r1 * 0.72;
   const layers = [
-    { r: r1, y: trunkH + r1 * 0.8 },
-    { r: r2, y: trunkH + r1 * 1.6 },
+    { r: r1, y: trunkH + r1 * 0.75 },
+    { r: r2, y: trunkH + r1 * 1.45 },
   ];
   for (const layer of layers) {
     const sphere = new THREE.DodecahedronGeometry(layer.r, 1);
     sphere.translate(0, layer.y, 0);
     colorGeometry(sphere,
       new THREE.Color(0.15, 0.45, 0.1),
-      new THREE.Color(0.3, 0.7, 0.2),
+      new THREE.Color(0.35, 0.75, 0.2),
       layer.y - layer.r, layer.y + layer.r);
     parts.push(ensureMergeReady(sphere));
   }
@@ -142,43 +141,42 @@ function createTropicalTreeGeometry(height: number, width: number): THREE.Buffer
 }
 
 function createTemperateTreeGeometry(height: number, width: number): THREE.BufferGeometry {
-  // Trunk + ellipsoid canopy (lollipop)
-  const trunkH = height * 0.45;
-  const trunk = createTrunk(trunkH, 0.025, 0.016);
+  const trunkH = height * 0.4;
+  const trunk = createTrunk(trunkH, 0.035, 0.02);
 
+  // Fat ellipsoid canopy
   const canopyR = width * 0.5;
   const canopy = new THREE.IcosahedronGeometry(canopyR, 1);
   const pos = canopy.getAttribute('position');
   for (let i = 0; i < pos.count; i++) {
-    pos.setY(i, pos.getY(i) * 1.4);
+    pos.setY(i, pos.getY(i) * 1.3);
   }
-  const cy = trunkH + canopyR * 1.1;
+  const cy = trunkH + canopyR * 0.9;
   canopy.translate(0, cy, 0);
   colorGeometry(canopy,
-    new THREE.Color(0.2, 0.5, 0.1),
-    new THREE.Color(0.45, 0.8, 0.25),
-    cy - canopyR * 1.4, cy + canopyR * 1.4);
+    new THREE.Color(0.2, 0.5, 0.12),
+    new THREE.Color(0.45, 0.82, 0.25),
+    cy - canopyR * 1.3, cy + canopyR * 1.3);
 
   return mergeGeometries([trunk, ensureMergeReady(canopy)], false)!;
 }
 
 function createBorealTreeGeometry(height: number, width: number): THREE.BufferGeometry {
-  // Short trunk + 3 layered cones (spruce)
   const trunkH = height * 0.2;
-  const trunk = createTrunk(trunkH, 0.02, 0.014);
-
+  const trunk = createTrunk(trunkH, 0.025, 0.016);
   const parts: THREE.BufferGeometry[] = [trunk];
 
+  // 3 layered cones — spruce silhouette
   const canopyH = height - trunkH;
   for (let i = 0; i < 3; i++) {
     const t = i / 2;
-    const layerH = canopyH * (0.5 - t * 0.12);
-    const layerR = width * (0.55 - t * 0.18);
+    const layerH = canopyH * (0.48 - t * 0.1);
+    const layerR = width * (0.55 - t * 0.15);
     const cone = new THREE.ConeGeometry(layerR, layerH, 6);
     const yPos = trunkH + canopyH * (i / 3) * 0.85 + layerH * 0.5;
     cone.translate(0, yPos, 0);
     colorGeometry(cone,
-      new THREE.Color(0.08, 0.3 + t * 0.05, 0.08),
+      new THREE.Color(0.08, 0.32 + t * 0.05, 0.08),
       new THREE.Color(0.18, 0.55 + t * 0.08, 0.15),
       yPos - layerH / 2, yPos + layerH / 2);
     parts.push(ensureMergeReady(cone));
@@ -188,11 +186,11 @@ function createBorealTreeGeometry(height: number, width: number): THREE.BufferGe
 }
 
 function createAcaciaGeometry(height: number, width: number): THREE.BufferGeometry {
-  const trunk = new THREE.CylinderGeometry(0.012, 0.018, height, 6);
+  const trunk = new THREE.CylinderGeometry(0.015, 0.025, height, 6);
   trunk.translate(0, height / 2, 0);
   colorGeometryFlat(trunk, new THREE.Color('#A0784C'));
 
-  const canopy = new THREE.CylinderGeometry(width / 2, width / 2 * 0.85, 0.035, 8);
+  const canopy = new THREE.CylinderGeometry(width / 2, width / 2 * 0.85, 0.05, 8);
   canopy.translate(0, height, 0);
   colorGeometryFlat(canopy, new THREE.Color('#5A8C32'));
 
@@ -206,16 +204,16 @@ function createCactusGeometry(height: number, _width: number): THREE.BufferGeome
     colorGeometryFlat(g, gc);
     return g;
   }
-  const trunk = makeArm(height, 0.028, 0.035);
+  const trunk = makeArm(height, 0.035, 0.04);
   trunk.translate(0, height / 2, 0);
 
-  const armL = makeArm(height * 0.4, 0.017, 0.021);
+  const armL = makeArm(height * 0.4, 0.022, 0.026);
   armL.rotateZ(Math.PI / 4);
-  armL.translate(-0.03, height * 0.6, 0);
+  armL.translate(-0.04, height * 0.6, 0);
 
-  const armR = makeArm(height * 0.4, 0.017, 0.021);
+  const armR = makeArm(height * 0.4, 0.022, 0.026);
   armR.rotateZ(-Math.PI / 4);
-  armR.translate(0.03, height * 0.55, 0);
+  armR.translate(0.04, height * 0.55, 0);
 
   return mergeGeometries(
     [trunk, armL, armR].map(ensureMergeReady),
@@ -233,7 +231,6 @@ function createWindSwayMaterial(
     shininess: 10,
     flatShading: true,
   });
-  // White base so vertex colors show through at full brightness
   material.color.set(0xffffff);
 
   material.onBeforeCompile = (shader) => {
@@ -247,7 +244,7 @@ function createWindSwayMaterial(
       '#include <begin_vertex>',
       `#include <begin_vertex>
       vec4 worldPos4 = modelMatrix * vec4(transformed, 1.0);
-      float swayAmount = transformed.y * transformed.y * 0.02;
+      float swayAmount = transformed.y * transformed.y * 0.015;
       transformed.x += sin(uTime * 2.0 + worldPos4.x * 3.0 + worldPos4.z * 2.0) * swayAmount;
       transformed.z += cos(uTime * 1.7 + worldPos4.z * 3.0 + worldPos4.x * 2.0) * swayAmount;`
     );
@@ -257,6 +254,8 @@ function createWindSwayMaterial(
 }
 
 /* ---------- placement ---------- */
+
+const _up = new THREE.Vector3(0, 1, 0);
 
 function placeTrees(
   points: { position: THREE.Vector3; normal: THREE.Vector3; height: number }[],
@@ -269,18 +268,26 @@ function placeTrees(
   const mesh = new THREE.InstancedMesh(geometry, material, actual);
   mesh.castShadow = true;
   mesh.receiveShadow = true;
+  mesh.frustumCulled = false;
 
   const dummy = new THREE.Object3D();
   for (let i = 0; i < actual; i++) {
     const point = shuffled[i];
-    dummy.position.copy(point.position);
-    dummy.lookAt(0, 0, 0);
-    dummy.rotateX(Math.PI / 2);
+    const normal = point.normal.clone().normalize();
 
-    const scaleY = 0.8 + Math.random() * 0.5;
-    const scaleXZ = 0.8 + Math.random() * 0.4;
+    // Position: push slightly outward along normal to avoid terrain burial
+    dummy.position.copy(point.position).addScaledVector(normal, 0.03);
+
+    // Orientation: quaternion from Y-up to surface normal (robust on curved surface)
+    dummy.quaternion.setFromUnitVectors(_up, normal);
+
+    // Random rotation around local Y (around the normal)
+    const yRot = new THREE.Quaternion().setFromAxisAngle(normal, Math.random() * Math.PI * 2);
+    dummy.quaternion.premultiply(yRot);
+
+    const scaleY = 0.9 + Math.random() * 0.3;
+    const scaleXZ = 0.9 + Math.random() * 0.3;
     dummy.scale.set(scaleXZ, scaleY, scaleXZ);
-    dummy.rotateY(Math.random() * Math.PI * 2);
 
     dummy.updateMatrix();
     mesh.setMatrixAt(i, dummy.matrix);
