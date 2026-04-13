@@ -93,14 +93,14 @@ export function generateTerrain(): TerrainData {
     if (biome !== 'ocean') {
       // Check distance to coast: sample nearby points for ocean
       let coastDist = 1.0; // 1.0 = far from coast
-      for (let step = 1; step <= 7; step++) {
-        const d = step * 2.1;
+      for (let step = 1; step <= 4; step++) {
+        const d = step * 3;
         const nearOcean =
           !mask.isLand(lat + d, lng) || !mask.isLand(lat - d, lng) ||
           !mask.isLand(lat, lng + d) || !mask.isLand(lat, lng - d) ||
           !mask.isLand(lat + d, lng + d) || !mask.isLand(lat - d, lng - d);
         if (nearOcean) {
-          coastDist = step / 7;
+          coastDist = step / 4;
           break;
         }
       }
