@@ -111,7 +111,27 @@ export function generateTerrain(): TerrainData {
       const texture = sampleNoise(nx, ny, nz, 2, 2.0, 0.4, 0.5);
       const noise = Math.abs(hills) * 0.85 + Math.abs(texture) * 0.15 + 0.05;
       const centralBoost = 1.0 + coastDist * 0.3;
-      const heightNorm = noise * coastFactor * centralBoost;
+
+      // Regional mountain boost (negated lng to match our coordinate system)
+      const nlng = -lng;
+      let regionBoost = 1.0;
+      // Himalayas / Tibet (lat 27-40, lng 70-100)
+      if (lat > 25 && lat < 42 && nlng > 68 && nlng < 102)
+        regionBoost = 1.0 + 1.5 * Math.max(0, 1 - Math.abs(lat - 33) / 9) * Math.max(0, 1 - Math.abs(nlng - 85) / 17);
+      // Andes (lat -55 to 10, lng -80 to -60)
+      if (lat > -55 && lat < 10 && nlng > -80 && nlng < -60)
+        regionBoost = Math.max(regionBoost, 1.0 + 1.2 * Math.max(0, 1 - Math.abs(nlng + 70) / 10));
+      // Rockies (lat 35-60, lng -120 to -105)
+      if (lat > 35 && lat < 60 && nlng > -120 && nlng < -105)
+        regionBoost = Math.max(regionBoost, 1.0 + 1.0 * Math.max(0, 1 - Math.abs(nlng + 112) / 8));
+      // Alps (lat 44-48, lng 5-16)
+      if (lat > 43 && lat < 49 && nlng > 4 && nlng < 17)
+        regionBoost = Math.max(regionBoost, 1.5);
+      // East Africa (lat -5 to 5, lng 30-40)
+      if (lat > -6 && lat < 6 && nlng > 28 && nlng < 42)
+        regionBoost = Math.max(regionBoost, 1.3);
+
+      const heightNorm = noise * coastFactor * centralBoost * regionBoost;
       const height = heightNorm * LAND_HEIGHT_SCALE;
       const newRadius = GLOBE_RADIUS + height;
 
