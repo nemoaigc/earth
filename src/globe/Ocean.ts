@@ -14,10 +14,13 @@ export class Ocean {
     };
 
     const material = new THREE.MeshPhongMaterial({
-      color: new THREE.Color('#3399cc'),
+      color: new THREE.Color('#44aacc'),
       emissive: new THREE.Color('#0a2244'),
-      shininess: 20,
+      shininess: 15,
       flatShading: true,
+      transparent: true,
+      opacity: 0.75,
+      depthWrite: false,
     });
 
     const uniforms = this.uniforms;
@@ -49,36 +52,40 @@ export class Ocean {
         `
         vec3 wp = vWorldPos;
 
-        // === FLOWING CURRENT: slow undulating color waves ===
-        float flow1 = sin(wp.x * 2.5 + wp.z * 1.8 + oceanTime * 0.4) * 0.5 + 0.5;
-        float flow2 = sin(wp.y * 3.0 - wp.x * 2.0 + oceanTime * 0.3) * 0.5 + 0.5;
-        float flow3 = sin(wp.z * 2.2 + wp.y * 1.5 - oceanTime * 0.35) * 0.5 + 0.5;
-        float currentPattern = flow1 * flow2 * 0.5 + flow3 * 0.3;
-        // Subtle lighter streaks where currents converge
-        gl_FragColor.rgb += vec3(0.08, 0.15, 0.20) * currentPattern;
+        // === FOAM: original multiplied sine waves ===
+        float w1 = sin(wp.x * 43.0 + wp.y * 27.0 + wp.z * 11.0 + oceanTime * 3.6) * 0.5 + 0.5;
+        float w2 = sin(wp.y * 37.0 + wp.z * 53.0 + wp.x * 7.0 - oceanTime * 2.7) * 0.5 + 0.5;
+        float w3 = sin(wp.z * 31.0 + wp.x * 19.0 + wp.y * 47.0 + oceanTime * 2.1) * 0.5 + 0.5;
+        float w4 = sin(wp.x * 17.0 + wp.z * 29.0 - wp.y * 13.0 + oceanTime * 1.5) * 0.5 + 0.5;
+        float w5 = sin(wp.y * 11.0 + wp.x * 59.0 + wp.z * 23.0 - oceanTime * 1.2) * 0.5 + 0.5;
+        float w6 = sin(wp.z * 41.0 - wp.y * 7.0 + wp.x * 33.0 + oceanTime * 1.8) * 0.5 + 0.5;
+        float w7 = sin(wp.x * 67.0 - wp.z * 43.0 + wp.y * 3.0 - oceanTime * 0.9) * 0.5 + 0.5;
+        float foam = w1 * w2 * w4 * w6 + w3 * w5 * w7 * 0.3;
+        foam = 1.0 - smoothstep(0.0001, 0.003, foam);
+        gl_FragColor.rgb += vec3(0.7, 0.85, 0.9) * foam * 0.2;
 
-        // === SOFT CAUSTICS: gentle light ripples ===
-        float c1 = sin(wp.x * 8.0 + wp.y * 5.0 + oceanTime * 1.2) * 0.5 + 0.5;
-        float c2 = sin(wp.z * 7.0 - wp.x * 6.0 + oceanTime * 0.9) * 0.5 + 0.5;
-        float c3 = sin(wp.y * 9.0 + wp.z * 4.0 - oceanTime * 1.0) * 0.5 + 0.5;
-        float caustics = c1 * c2 * c3;
-        caustics = smoothstep(0.08, 0.15, caustics);
-        gl_FragColor.rgb += vec3(0.12, 0.18, 0.22) * caustics;
+        // === SPARKLE ===
+        float sp1 = sin(wp.x * 40.0 + wp.y * 23.0 + wp.z * 9.0 + oceanTime * 3.5);
+        float sp2 = sin(wp.y * 35.0 + wp.z * 29.0 + wp.x * 13.0 - oceanTime * 2.8);
+        float sp3 = sin(wp.z * 27.0 + wp.x * 37.0 - wp.y * 17.0 + oceanTime * 4.1);
+        float sp4 = sin(wp.x * 71.0 - wp.z * 47.0 + wp.y * 5.0 + oceanTime * 1.9);
+        float sp5 = sin(wp.y * 59.0 + wp.x * 11.0 - wp.z * 31.0 - oceanTime * 2.3);
+        float sparkleMask = sin(wp.x * 3.1 + wp.z * 4.7 + oceanTime * 0.25)
+                          * sin(wp.y * 5.3 - wp.x * 2.9 - oceanTime * 0.18);
+        sparkleMask *= sin(wp.z * 2.3 + wp.y * 3.9 + oceanTime * 0.35);
+        sparkleMask = smoothstep(0.15, 0.5, sparkleMask);
+        float sparkle = sp1 * sp2 * sp3 * sp4 + sp2 * sp3 * sp5 * 0.5;
+        sparkle = smoothstep(0.55, 0.97, sparkle) * sparkleMask;
+        gl_FragColor.rgb += vec3(1.0, 1.0, 1.0) * sparkle * 0.6;
 
-        // === SPARSE SPARKLE: just a few bright dots, not everywhere ===
-        float sp = sin(wp.x * 30.0 + oceanTime * 2.5)
-                 * sin(wp.y * 28.0 - oceanTime * 2.0)
-                 * sin(wp.z * 32.0 + oceanTime * 1.8);
-        float sparkleMask = sin(wp.x * 1.5 + wp.z * 2.0 + oceanTime * 0.15);
-        sparkleMask = smoothstep(0.3, 0.6, sparkleMask);
-        float sparkle = smoothstep(0.85, 0.98, sp * 0.5 + 0.5) * sparkleMask;
-        gl_FragColor.rgb += vec3(0.9, 0.95, 1.0) * sparkle * 0.5;
-
-        // === FRESNEL RIM: subtle edge glow ===
+        // === GLASS EFFECT: vary opacity by viewing angle ===
         vec3 rimViewDir = normalize(vViewPosition);
         vec3 rimNormal = normalize(normal);
         float rimFresnel = 1.0 - abs(dot(rimViewDir, rimNormal));
-        gl_FragColor.rgb += vec3(0.15, 0.25, 0.35) * pow(rimFresnel, 3.0) * 0.5;
+        // More opaque at edges (glass-like refraction look)
+        gl_FragColor.a = mix(0.6, 0.9, pow(rimFresnel, 2.0));
+        // Edge glow
+        gl_FragColor.rgb += vec3(0.2, 0.35, 0.45) * pow(rimFresnel, 2.5) * 0.4;
 
         #include <dithering_fragment>
         `
