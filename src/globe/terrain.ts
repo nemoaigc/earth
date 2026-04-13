@@ -102,7 +102,7 @@ export function generateTerrain(): TerrainData {
         }
       }
       // Smooth ramp: height scales with distance from coast
-      const coastFactor = coastDist * coastDist; // quadratic ramp — gentle near coast
+      const coastFactor = coastDist; // linear ramp — visible mountains inland
 
       // Low-freq large mountains + subtle detail
       const bigShape = Math.abs(sampleNoise(nx, ny, nz, 3, 2.0, 0.5, 0.6));

@@ -99,14 +99,14 @@ export class Ocean {
         sparkle = smoothstep(0.35, 0.90, sparkle) * sparkleMask;
         gl_FragColor.rgb += vec3(1.0, 1.0, 1.0) * sparkle * 0.5;
 
-        // Subtle foam
+        // 4 waves, extremely narrow lines
         float w1 = sin(wp.x * 43.0 + wp.y * 27.0 + wp.z * 11.0 + oceanTime * 3.6) * 0.5 + 0.5;
         float w2 = sin(wp.y * 37.0 + wp.z * 53.0 + wp.x * 7.0 - oceanTime * 2.7) * 0.5 + 0.5;
         float w3 = sin(wp.z * 31.0 + wp.x * 19.0 + wp.y * 47.0 + oceanTime * 2.1) * 0.5 + 0.5;
         float w4 = sin(wp.x * 17.0 + wp.z * 29.0 - wp.y * 13.0 + oceanTime * 1.5) * 0.5 + 0.5;
         float foam = w1 * w2 * w3 * w4;
-        foam = 1.0 - smoothstep(0.00005, 0.001, foam);
-        gl_FragColor.rgb += vec3(0.7, 0.9, 0.95) * foam * 0.04;
+        foam = 1.0 - smoothstep(0.00001, 0.0008, foam);
+        gl_FragColor.rgb += vec3(0.8, 0.95, 1.0) * foam * 0.05;
 
         // Fresnel rim
         vec3 rimViewDir = normalize(vViewPosition);
