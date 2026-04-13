@@ -69,6 +69,20 @@ export function generateTerrain(): TerrainData {
   let oceanCount = 0;
 
   const mask = createWorldMask();
+
+  // Coordinate check - printed once at startup
+  console.log('[coord] Beijing(40,-116):', mask.isLand(40, -116));
+  console.log('[coord] Beijing(40,116):', mask.isLand(40, 116));
+  console.log('[coord] London(51,0):', mask.isLand(51, 0));
+  console.log('[coord] Sahara(25,10):', mask.isLand(25, 10));
+  console.log('[coord] Sahara(25,-10):', mask.isLand(25, -10));
+  console.log('[coord] Pacific(0,160):', mask.isLand(0, 160));
+  console.log('[coord] Pacific(0,-160):', mask.isLand(0, -160));
+  // Check SphereGeometry vertex coords
+  const v0x = posAttr.getX(0), v0y = posAttr.getY(0), v0z = posAttr.getZ(0);
+  const v0l = Math.sqrt(v0x*v0x+v0y*v0y+v0z*v0z);
+  console.log('[sphere v0] lat:', (Math.asin(v0y/v0l)*180/Math.PI).toFixed(1), 'lng:', (Math.atan2(v0z/v0l, v0x/v0l)*180/Math.PI).toFixed(1));
+
   const color = new THREE.Color();
   const tmpC = new THREE.Color();
 
@@ -86,14 +100,6 @@ export function generateTerrain(): TerrainData {
     const lat = Math.asin(Math.max(-1, Math.min(1, ny))) * 180 / Math.PI;
     const lng = Math.atan2(nz, nx) * 180 / Math.PI;
 
-    // Debug: log one vertex near Beijing (lat~40, real lng~116)
-    if (i === 1000) {
-      console.log(`[terrain debug] vertex 1000: lat=${lat.toFixed(1)}, lng=${lng.toFixed(1)}, isLand=${mask.isLand(lat, lng)}`);
-    }
-    // Debug: find a land vertex near lat=30 to check Himalaya region
-    if (Math.abs(lat - 30) < 0.5 && mask.isLand(lat, lng) && i % 500 === 0) {
-      console.log(`[himalaya check] lat=${lat.toFixed(1)}, lng=${lng.toFixed(1)}, isLand=true`);
-    }
     const biome = mask.getBiome(lat, lng);
 
     if (biome !== 'ocean') {
