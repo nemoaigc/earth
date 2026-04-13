@@ -13,45 +13,45 @@ export interface TerrainData {
 
 const LAND_HEIGHT_SCALE = 0.8;
 
-// Colors matching original Tiny Skies (extracted from source)
+// Vibrant colors matching reference screenshots
 const BIOME_COLORS: Record<string, { low: THREE.Color; mid: THREE.Color; high: THREE.Color; snow: THREE.Color }> = {
   tropical: {
-    low: new THREE.Color('#3a833a'),
-    mid: new THREE.Color('#4a8b5f'),
-    high: new THREE.Color('#5a8b0a'),
-    snow: new THREE.Color('#8a7744'),
+    low: new THREE.Color('#86D468'),  // bright grass green
+    mid: new THREE.Color('#55A645'),  // forest green
+    high: new THREE.Color('#6B8B3A'), // olive
+    snow: new THREE.Color('#A09060'), // brown peak
   },
   temperate: {
-    low: new THREE.Color('#4a8b3a'),
-    mid: new THREE.Color('#5e9944'),
-    high: new THREE.Color('#7a8a44'),
-    snow: new THREE.Color('#c4aa6a'),
+    low: new THREE.Color('#7ACC55'),  // vivid green
+    mid: new THREE.Color('#55A645'),  // forest
+    high: new THREE.Color('#8B9944'), // yellow-green
+    snow: new THREE.Color('#D4C4A0'), // sandy peak
   },
   boreal: {
-    low: new THREE.Color('#2a6633'),
-    mid: new THREE.Color('#1a4422'),
-    high: new THREE.Color('#445533'),
-    snow: new THREE.Color('#aabbaa'),
+    low: new THREE.Color('#3A8833'),  // dark green
+    mid: new THREE.Color('#2A6622'),  // deep forest
+    high: new THREE.Color('#556644'), // grey-green
+    snow: new THREE.Color('#BBCCBB'), // pale green-white
   },
   desert: {
-    low: new THREE.Color('#ccbb77'),
-    mid: new THREE.Color('#bbaa66'),
-    high: new THREE.Color('#aa9955'),
-    snow: new THREE.Color('#ccbbaa'),
+    low: new THREE.Color('#DDCC88'),  // sand
+    mid: new THREE.Color('#CCBB77'),  // darker sand
+    high: new THREE.Color('#AA9955'), // brown
+    snow: new THREE.Color('#CCBBAA'), // pale brown
   },
   polar: {
-    low: new THREE.Color('#ddeeff'),
-    mid: new THREE.Color('#ccddee'),
-    high: new THREE.Color('#bbccdd'),
-    snow: new THREE.Color('#ffffff'),
+    low: new THREE.Color('#DDEEFF'),  // ice blue
+    mid: new THREE.Color('#CCDDEE'),  // lighter
+    high: new THREE.Color('#BBCCDD'), // grey-blue
+    snow: new THREE.Color('#FFFFFF'), // white
   },
 };
 
-// Secondary noise patch colors (original Tiny Skies)
+// Secondary noise: darker vegetation patches
 const PATCH_COLORS = [
-  new THREE.Color('#5e5868'), // dark brown-grey
-  new THREE.Color('#8a6c50'), // warm brown
-  new THREE.Color('#b0a568'), // tan/olive
+  new THREE.Color('#3A7A2A'), // dark green patch
+  new THREE.Color('#7A8844'), // olive patch
+  new THREE.Color('#998855'), // brown-green patch
 ];
 
 // Ocean colors

@@ -14,8 +14,8 @@ export class Ocean {
     };
 
     const material = new THREE.MeshPhongMaterial({
-      color: new THREE.Color('#55ccee'),
-      emissive: new THREE.Color('#1a5577'),
+      color: new THREE.Color('#3AC5F5'),
+      emissive: new THREE.Color('#2972C7'),
       shininess: 15,
       flatShading: true,
       transparent: true,

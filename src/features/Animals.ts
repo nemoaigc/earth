@@ -46,15 +46,42 @@ function makeTransparent(image: HTMLImageElement): HTMLCanvasElement {
 
   const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
   const data = imageData.data;
+  const w = canvas.width, h = canvas.height;
+
+  // Sample corners to detect background color
+  const corners = [
+    0, // top-left
+    (w - 1) * 4, // top-right
+    (h - 1) * w * 4, // bottom-left
+    ((h - 1) * w + (w - 1)) * 4, // bottom-right
+    Math.floor(w / 2) * 4, // top-center
+    ((h - 1) * w + Math.floor(w / 2)) * 4, // bottom-center
+  ];
+
+  let bgR = 0, bgG = 0, bgB = 0, count = 0;
+  for (const idx of corners) {
+    bgR += data[idx]; bgG += data[idx + 1]; bgB += data[idx + 2];
+    count++;
+  }
+  bgR = Math.round(bgR / count);
+  bgG = Math.round(bgG / count);
+  bgB = Math.round(bgB / count);
+
+  // Remove pixels close to the detected background color
+  const threshold = 45;
+  const softEdge = 25;
 
   for (let i = 0; i < data.length; i += 4) {
     const r = data[i], g = data[i + 1], b = data[i + 2];
-    const brightness = (r + g + b) / 3;
-    const neutral = Math.abs(r - g) < 25 && Math.abs(g - b) < 25;
-    if (brightness > 230 && neutral) {
-      data[i + 3] = Math.round(255 * Math.max(0, 1 - (brightness - 230) / 25));
-    } else if (brightness < 35 && neutral) {
-      data[i + 3] = Math.round(255 * Math.max(0, 1 - (35 - brightness) / 35));
+    const dist = Math.sqrt(
+      (r - bgR) ** 2 + (g - bgG) ** 2 + (b - bgB) ** 2
+    );
+
+    if (dist < threshold) {
+      data[i + 3] = 0;
+    } else if (dist < threshold + softEdge) {
+      const fade = (dist - threshold) / softEdge;
+      data[i + 3] = Math.round(255 * fade);
     }
   }
 
@@ -127,7 +154,7 @@ export class Animals {
           });
 
           const sprite = new THREE.Sprite(material);
-          const s = info.scale * 2.5 * (0.9 + Math.random() * 0.2);
+          const s = info.scale * 1.8 * (0.9 + Math.random() * 0.2);
           sprite.scale.set(s, s, s);
 
           const normal = pos.clone().normalize();
