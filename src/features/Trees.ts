@@ -168,26 +168,24 @@ function createTemperateTreeGeometry(height: number, width: number): THREE.Buffe
 }
 
 function createBorealTreeGeometry(height: number, width: number): THREE.BufferGeometry {
-  const trunkH = height * 0.28;
-  const trunkRadBot = width * 0.15;
-  const trunkRadTop = width * 0.08;
-  const trunk = createTrunk(trunkH, trunkRadBot, trunkRadTop);
+  const trunkH = height * 0.25;
+  const trunk = createTrunk(trunkH, 0.018, 0.012);
 
   const parts: THREE.BufferGeometry[] = [trunk];
 
-  // 3 layered cones — pagoda/spruce silhouette
+  // 3 layered cones — spruce/christmas tree silhouette
   const layerCount = 3;
   const canopyH = height - trunkH;
   for (let i = 0; i < layerCount; i++) {
     const t = i / (layerCount - 1); // 0 = bottom, 1 = top
-    const layerH = canopyH * (0.4 - t * 0.1);
-    const layerR = width * (0.55 - t * 0.2);
+    const layerH = canopyH * (0.45 - t * 0.1);
+    const layerR = width * (0.5 - t * 0.18);
     const cone = new THREE.ConeGeometry(layerR, layerH, 6);
-    const yPos = trunkH + canopyH * (i / layerCount) + layerH * 0.5;
+    const yPos = trunkH + canopyH * (i / layerCount) * 0.9 + layerH * 0.5;
     cone.translate(0, yPos, 0);
 
-    const darkGreen = new THREE.Color(0.08, 0.2 + t * 0.05, 0.08);
-    const lightGreen = new THREE.Color(0.15, 0.4 + t * 0.08, 0.12);
+    const darkGreen = new THREE.Color(0.06, 0.18 + t * 0.05, 0.06);
+    const lightGreen = new THREE.Color(0.12, 0.35 + t * 0.08, 0.1);
     colorGeometry(cone, darkGreen, lightGreen, yPos - layerH / 2, yPos + layerH / 2);
     parts.push(ensureMergeReady(cone));
   }

@@ -201,8 +201,8 @@ export function createShallowWaterMesh(): THREE.Mesh {
     const onLand = mask.isLand(lat, lng);
     // Check if near coast (within 5°)
     const nearLand = !onLand && (
-      mask.isLand(lat + 2, lng) || mask.isLand(lat - 2, lng) ||
-      mask.isLand(lat, lng + 2) || mask.isLand(lat, lng - 2)
+      mask.isLand(lat + 1, lng) || mask.isLand(lat - 1, lng) ||
+      mask.isLand(lat, lng + 1) || mask.isLand(lat, lng - 1)
     );
 
     if (nearLand) {
@@ -225,7 +225,7 @@ export function createShallowWaterMesh(): THREE.Mesh {
   const mat = new THREE.MeshPhongMaterial({
     vertexColors: true,
     transparent: true,
-    opacity: 0.3,
+    opacity: 0.2,
     shininess: 20,
     flatShading: true,
     depthWrite: false,
