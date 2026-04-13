@@ -81,8 +81,8 @@
   align-items: center;
   justify-content: center;
   background:
-    radial-gradient(circle at 50% 34%, rgba(var(--animal-accent-rgb), 0.26), transparent 24%),
-    linear-gradient(180deg, rgba(237, 244, 255, 0.88), rgba(197, 215, 244, 0.72));
+    radial-gradient(circle at 50% 34%, rgba(var(--animal-accent-rgb), 0.15), transparent 24%),
+    linear-gradient(180deg, rgba(15, 25, 50, 0.6), rgba(10, 20, 40, 0.8));
 }
 
 .animal-panel__hero-art {
@@ -96,8 +96,8 @@
   position: absolute;
   inset: 0;
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.08) 44%, rgba(248, 251, 255, 0.84)),
-    linear-gradient(180deg, transparent 56%, rgba(255, 255, 255, 0.34) 100%);
+    linear-gradient(180deg, rgba(0, 0, 0, 0.05), rgba(0, 0, 0, 0.2) 44%, rgba(10, 20, 40, 0.7)),
+    linear-gradient(180deg, transparent 56%, rgba(10, 20, 40, 0.4) 100%);
 }
 
 .animal-panel__hero-topbar {
