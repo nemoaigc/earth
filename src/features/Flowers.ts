@@ -116,7 +116,7 @@ export class Flowers {
       const dummy = new THREE.Object3D();
       for (let i = 0; i < count && idx < eligible.length; i++, idx++) {
         const p = eligible[idx];
-        dummy.position.copy(p.position).setLength(p.position.length() + 0.04);
+        dummy.position.copy(p.position);
         dummy.lookAt(0, 0, 0);
         dummy.rotateX(Math.PI / 2);
         dummy.scale.setScalar(0.7 + Math.random() * 0.6);

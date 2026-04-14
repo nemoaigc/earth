@@ -103,7 +103,7 @@ export class Rocks {
       const dummy = new THREE.Object3D();
       for (let i = 0; i < count; i++) {
         const point = shuffled[i];
-        dummy.position.copy(point.position).setLength(point.position.length() + 0.04);
+        dummy.position.copy(point.position);
         dummy.lookAt(0, 0, 0);
         dummy.rotateX(Math.PI / 2);
 

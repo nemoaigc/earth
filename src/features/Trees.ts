@@ -452,9 +452,7 @@ function placeTrees(
     const point = shuffled[i];
     const normal = point.normal.clone().normalize();
 
-    // Nudge outward so tree base clears neighbouring flat-shaded facets
-    // that can otherwise bury a vertex sitting in a local valley.
-    dummy.position.copy(point.position).setLength(point.position.length() + 0.05);
+    dummy.position.copy(point.position);
     dummy.quaternion.setFromUnitVectors(_up, normal);
 
     const yRot = new THREE.Quaternion().setFromAxisAngle(normal, Math.random() * Math.PI * 2);

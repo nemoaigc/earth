@@ -236,18 +236,15 @@ export function generateTerrain(): TerrainData {
       colors[i * 3 + 1] = color.g;
       colors[i * 3 + 2] = color.b;
 
-      // Collect land points with random jitter to avoid grid patterns
+      // Collect land points at the exact vertex position. We deliberately
+      // don't jitter the XZ here — jittering moved the point off the
+      // actual triangle face plane, which caused features to float or get
+      // buried. Visual variation comes from per-instance rotation/scale
+      // in the feature classes instead.
       const sampleChance = (Math.sin(i * 7.13) * 0.5 + 0.5) > 0.85;
       if (i % 12 === 0 || sampleChance) {
-        // Jitter position slightly along surface tangent
-        const jx = (Math.sin(i * 3.17) * 2 - 1) * 0.03;
-        const jz = (Math.cos(i * 5.31) * 2 - 1) * 0.03;
         landPoints.push({
-          position: new THREE.Vector3(
-            nx * newRadius + jx,
-            ny * newRadius,
-            nz * newRadius + jz
-          ),
+          position: new THREE.Vector3(nx * newRadius, ny * newRadius, nz * newRadius),
           normal: new THREE.Vector3(nx, ny, nz),
           height: heightNorm,
           biome,

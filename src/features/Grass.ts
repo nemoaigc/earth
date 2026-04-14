@@ -96,7 +96,7 @@ export class Grass {
       const dummy = new THREE.Object3D();
       for (let i = 0; i < count; i++) {
         const p = eligible[i];
-        dummy.position.copy(p.position).setLength(p.position.length() + 0.03);
+        dummy.position.copy(p.position);
         dummy.lookAt(0, 0, 0);
         dummy.rotateX(Math.PI / 2);
         dummy.scale.setScalar(0.6 + Math.random() * 0.8);

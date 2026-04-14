@@ -4,6 +4,20 @@ import type { TerrainData } from './terrain';
 import { Ocean } from './Ocean';
 import { Atmosphere } from './Atmosphere';
 
+/**
+ * Raycast from globe centre outward through (lat, lng) direction onto the
+ * actual terrain mesh. Returns the visible surface point — this is the only
+ * reliable way to snap instances onto flat-shaded facets, since vertex
+ * positions alone don't describe the triangle face between them.
+ *
+ * Returns null if the ray misses the mesh (shouldn't happen for a closed
+ * globe but kept defensive).
+ */
+export type SurfaceSnap = (lat: number, lng: number) => {
+  point: THREE.Vector3;
+  normal: THREE.Vector3;
+} | null;
+
 export class Globe {
   group: THREE.Group;
   terrain: THREE.Mesh;
@@ -12,6 +26,7 @@ export class Globe {
   atmosphere: Atmosphere;
   terrainData: TerrainData;
   timeUniform = { value: 0 };
+  snapToSurface: SurfaceSnap;
 
   constructor() {
     this.group = new THREE.Group();
@@ -67,6 +82,40 @@ export class Globe {
     this.group.add(shallows);
     this.group.add(this.terrain);
     this.group.add(this.atmosphere.mesh);
+
+    // Build a raycaster bound to the terrain mesh for exact surface snapping.
+    // Shoots from outside the globe inward so the FrontSide material is hit
+    // (a ray from the centre outward would hit back-facing triangles, which
+    // are ignored by default).
+    const raycaster = new THREE.Raycaster();
+    raycaster.near = 0;
+    raycaster.far = GLOBE_RADIUS * 2 + 10;
+    const FAR = GLOBE_RADIUS + 5;
+    const origin = new THREE.Vector3();
+    const dir = new THREE.Vector3();
+    const inward = new THREE.Vector3();
+    const terrainMesh = this.terrain;
+    const oceanMesh = this.ocean.mesh;
+    this.snapToSurface = (lat, lng) => {
+      const phi = (lat * Math.PI) / 180;
+      const theta = (lng * Math.PI) / 180;
+      dir.set(
+        Math.cos(phi) * Math.cos(theta),
+        Math.sin(phi),
+        Math.cos(phi) * Math.sin(theta),
+      ).normalize();
+      origin.copy(dir).multiplyScalar(FAR);
+      inward.copy(dir).negate();
+      raycaster.set(origin, inward);
+      const hits = raycaster.intersectObjects([terrainMesh, oceanMesh], false);
+      if (hits.length === 0) return null;
+      const hit = hits[0];
+      const normal = hit.face
+        ? hit.face.normal.clone().transformDirection(hit.object.matrixWorld)
+        : dir.clone();
+      return { point: hit.point.clone(), normal };
+    };
+
   }
 
   update(time: number, atmosphereColor: THREE.Color): void {

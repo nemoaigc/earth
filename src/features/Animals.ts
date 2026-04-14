@@ -1,6 +1,6 @@
 import * as THREE from 'three';
-import { sampleGroundRadius } from '../globe/terrain';
 import type { TerrainData } from '../globe/terrain';
+import type { SurfaceSnap } from '../globe/Globe';
 import { ANIMALS, type AnimalInfo } from '../data/animals';
 import { AnimalPanel } from '../ui/AnimalPanel';
 
@@ -9,17 +9,6 @@ interface PlacedAnimal {
   info: AnimalInfo;
   baseScale: number;
 }
-
-function latLngToPosition(lat: number, lng: number, radius: number): THREE.Vector3 {
-  const phi = (lat * Math.PI) / 180;
-  const theta = (lng * Math.PI) / 180;
-  return new THREE.Vector3(
-    Math.cos(phi) * Math.cos(theta) * radius,
-    Math.sin(phi) * radius,
-    Math.cos(phi) * Math.sin(theta) * radius,
-  );
-}
-
 
 export class Animals {
   group: THREE.Group;
@@ -31,10 +20,12 @@ export class Animals {
   private tooltip: HTMLDivElement;
   private panel: AnimalPanel;
   private domElement: HTMLElement;
+  private snap: SurfaceSnap;
 
-  constructor(terrainData: TerrainData, domElement: HTMLElement) {
+  constructor(terrainData: TerrainData, domElement: HTMLElement, snap: SurfaceSnap) {
     this.group = new THREE.Group();
     this.domElement = domElement;
+    this.snap = snap;
     const loader = new THREE.TextureLoader();
 
     // Create tooltip
@@ -87,8 +78,10 @@ export class Animals {
           const s = info.scale * 1.8 * (0.9 + Math.random() * 0.2);
           sprite.scale.set(s, s, s);
 
+          // Offset sprite center by half-height along normal so the
+          // sprite's BOTTOM touches the ground (pos).
           const normal = pos.clone().normalize();
-          sprite.position.copy(pos).addScaledVector(normal, s * 0.45);
+          sprite.position.copy(pos).addScaledVector(normal, s * 0.5);
 
           // Store reference on userData
           sprite.userData.animalId = info.id;
@@ -102,16 +95,15 @@ export class Animals {
 
   private getPositions(def: AnimalInfo, _terrainData: TerrainData): THREE.Vector3[] {
     const positions: THREE.Vector3[] = [];
-    // Altitude above surface: ocean animals hover just above the waterline,
-    // land animals sit slightly above the trees so the sprite reads clearly.
-    const altitude = def.biome === 'ocean' ? 0.08 : 0.28;
     for (let i = 0; i < def.count; i++) {
       const latOff = (Math.random() - 0.5) * 2;
       const lngOff = (Math.random() - 0.5) * 2;
       const lat = def.lat + latOff;
       const lng = def.lng + lngOff;
-      const groundR = sampleGroundRadius(lat, lng);
-      positions.push(latLngToPosition(lat, lng, groundR + altitude));
+      // Raycast onto the actual visible surface — exact ground point,
+      // accounting for flat-shaded triangle faces.
+      const snap = this.snap(lat, lng);
+      if (snap) positions.push(snap.point);
     }
     return positions;
   }

@@ -78,7 +78,7 @@ scene.add(grass.group);
 
 const labels = new Labels();
 scene.add(labels.group);
-const animals = new Animals(globe.terrainData, renderer.domElement);
+const animals = new Animals(globe.terrainData, renderer.domElement, globe.snapToSurface);
 scene.add(animals.group);
 
 // --- Sky elements ---
