@@ -63,7 +63,7 @@ async function viaElevenLabs(animal) {
   if (!key) throw new Error('ELEVENLABS_API_KEY not set');
   const body = {
     text: animal.prompt,
-    model_id: 'eleven_sound_effect_v1',
+    model_id: 'eleven_text_to_sound_v2',
     duration_seconds: 5,
     prompt_influence: 0.7,
   };

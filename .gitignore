@@ -23,3 +23,10 @@ dist-ssr
 *.sln
 *.sw?
 .omx/
+
+# Debug & dev artifacts (never commit these)
+.playwright-mcp/
+*.jpeg
+*.jpg
+!public/**/*.jpeg
+!public/**/*.jpg

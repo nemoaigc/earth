@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Animal sound review · Lost Planet</title>
+  <style>
+    :root { color-scheme: dark; font-family: -apple-system, system-ui, sans-serif; }
+    body {
+      margin: 0;
+      background: #0b0d12;
+      color: #d9dde4;
+      padding: 24px;
+      max-width: 960px;
+      margin-inline: auto;
+    }
+    h1 { font-size: 18px; font-weight: 600; letter-spacing: 2px; text-transform: uppercase; color: #8a93a6; margin: 0 0 4px; }
+    .sub { color: #5d6676; margin: 0 0 24px; font-size: 13px; }
+    .progress { height: 3px; background: #1e232e; border-radius: 2px; overflow: hidden; margin-bottom: 24px; }
+    .progress span { display: block; height: 100%; background: linear-gradient(90deg, #7ca4ff, #55ccee); transition: width 0.3s; }
+    ul { list-style: none; padding: 0; margin: 0; display: grid; gap: 10px; }
+    li {
+      display: grid;
+      grid-template-columns: 1fr auto auto auto auto;
+      gap: 12px;
+      align-items: center;
+      padding: 14px 16px;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 12px;
+    }
+    li[data-accepted="true"]  { border-color: rgba(108, 204, 120, 0.42); background: rgba(108, 204, 120, 0.06); }
+    li[data-accepted="false"] { border-color: rgba(240, 90, 90, 0.42);  background: rgba(240, 90, 90, 0.06); }
+    .id { font-weight: 600; font-size: 14px; color: #e8edf5; }
+    .prompt { color: #6f7a8c; font-size: 12px; margin-top: 3px; }
+    audio { height: 30px; }
+    button {
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.14);
+      color: inherit;
+      padding: 6px 14px;
+      border-radius: 20px;
+      cursor: pointer;
+      font: inherit;
+      font-size: 12px;
+      letter-spacing: 0.5px;
+      transition: background 0.15s;
+    }
+    button:hover { background: rgba(255,255,255,0.12); }
+    button.accept[data-active="true"] { background: rgba(108, 204, 120, 0.25); border-color: rgba(108, 204, 120, 0.55); color: #a7e8b3; }
+    button.reject[data-active="true"] { background: rgba(240, 90, 90, 0.22);  border-color: rgba(240, 90, 90, 0.55);  color: #f5a5a5; }
+    .actions { display: flex; gap: 16px; margin: 24px 0; }
+    code { background: rgba(255,255,255,0.06); padding: 1px 6px; border-radius: 4px; font-size: 12px; }
+  </style>
+</head>
+<body>
+  <h1>Animal sound review</h1>
+  <p class="sub">Listen to each generated clip and mark accept / reject. Changes save to <code>manifest.json</code> on download below.</p>
+  <div class="progress"><span id="bar"></span></div>
+  <ul id="list"></ul>
+  <div class="actions">
+    <button id="download">Download updated manifest.json</button>
+    <button id="reset">Reset decisions</button>
+  </div>
+
+<script type="module">
+const PROMPTS = {
+  dodo: 'Large flightless pigeon call, deep throaty coo',
+  thylacine: 'Canine-like bark and hissing growl',
+  moa: 'Deep ratite vocalisation, low resonant honk',
+  passengerpigeon: 'Flock of pigeons cooing and wings clapping',
+  greatauk: 'Auk squawk, gull-like seabird call',
+  stellerseacow: 'Sirenian low moaning underwater vocal',
+  quagga: 'Zebra-like whinny, higher than a horse',
+  caspiantiger: 'Large tiger roar, deep chuff',
+  barbarylion: 'Lion roar with dense desert reverb',
+  formosanleopard: 'Leopard growl and chuff, forest ambience',
+  japanesewolf: 'Small wolf howl, melancholy and high-pitched',
+  goldentoad: 'Toad trill, cloud-forest background',
+  caribbeanmonkseal: 'Monk seal bark, shallow-water splash',
+  westernblackrhino: 'Rhino huff and trumpet, savanna ambience',
+  chinesepaddlefish: 'Large river fish splash, underwater rumble',
+  baijidolphin: 'Freshwater dolphin click and whistle',
+  pyreneanibex: 'Ibex bleat with alpine echo',
+  bluebuck: 'Antelope snort and grunt',
+  carolinaparakeet: 'Parakeet flock chatter, sharp bright calls',
+  ivorybill: 'Woodpecker double rap and nasal trumpet',
+};
+
+const manifest = await (await fetch('./manifest.json')).json();
+// Normalise legacy schema { files: { id: 'foo.mp3' } } to structured entries.
+const entries = Object.keys(PROMPTS).map(id => {
+  const raw = manifest.files?.[id];
+  if (raw && typeof raw === 'object') return { id, ...raw };
+  if (typeof raw === 'string') return { id, file: raw, version: 1, accepted: null, generated: true, prompt: PROMPTS[id] };
+  return { id, file: `${id}.mp3`, version: 1, accepted: null, generated: true, prompt: PROMPTS[id] };
+});
+
+const list = document.getElementById('list');
+const bar  = document.getElementById('bar');
+
+function renderRow(entry) {
+  const li = document.createElement('li');
+  li.dataset.accepted = entry.accepted === true ? 'true' : entry.accepted === false ? 'false' : '';
+  li.innerHTML = `
+    <div>
+      <div class="id">${entry.id}</div>
+      <div class="prompt">${entry.prompt ?? PROMPTS[entry.id]}</div>
+    </div>
+    <audio controls preload="none" src="${entry.file}"></audio>
+    <button class="accept" data-active="${entry.accepted === true}">Accept</button>
+    <button class="reject" data-active="${entry.accepted === false}">Reject</button>
+    <button class="clear">Clear</button>
+  `;
+  li.querySelector('.accept').addEventListener('click', () => update(entry, true));
+  li.querySelector('.reject').addEventListener('click', () => update(entry, false));
+  li.querySelector('.clear').addEventListener('click',  () => update(entry, null));
+  return li;
+}
+
+function update(entry, value) {
+  entry.accepted = value;
+  render();
+}
+
+function render() {
+  list.innerHTML = '';
+  for (const entry of entries) list.appendChild(renderRow(entry));
+  const done = entries.filter(e => e.accepted !== null).length;
+  bar.style.width = `${(done / entries.length) * 100}%`;
+}
+
+document.getElementById('download').addEventListener('click', () => {
+  const next = {
+    ...manifest,
+    reviewedAt: new Date().toISOString(),
+    files: Object.fromEntries(entries.map(e => [e.id, {
+      file: e.file,
+      version: e.version,
+      accepted: e.accepted,
+      generated: e.generated,
+      prompt: e.prompt ?? PROMPTS[e.id],
+    }])),
+  };
+  const blob = new Blob([JSON.stringify(next, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'manifest.json';
+  a.click();
+});
+
+document.getElementById('reset').addEventListener('click', () => {
+  entries.forEach(e => (e.accepted = null));
+  render();
+});
+
+render();
+</script>
+</body>
+</html>

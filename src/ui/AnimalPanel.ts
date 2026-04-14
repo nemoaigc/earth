@@ -20,10 +20,26 @@ type SoundState =
   | { status: 'playing' }
   | { status: 'unavailable' };
 
+interface SoundEntry {
+  file: string;
+  version?: number;
+  accepted?: boolean | null;
+  generated?: boolean;
+  prompt?: string;
+}
+
 interface SoundManifest {
   provider: string;
   generatedAt: string;
-  files: Record<string, string | null>;
+  files: Record<string, string | SoundEntry | null>;
+}
+
+function resolveSound(entry: string | SoundEntry | null | undefined): SoundEntry | null {
+  if (!entry) return null;
+  if (typeof entry === 'string') return { file: entry, accepted: true, generated: true };
+  // If the reviewer explicitly rejected this clip, treat as unavailable.
+  if (entry.accepted === false) return null;
+  return entry;
 }
 
 function escapeHtml(value: string): string {
@@ -175,13 +191,13 @@ export class AnimalPanel {
   private playSound() {
     const info = this.current;
     if (!info) return;
-    const file = (soundManifest as SoundManifest).files[info.id];
-    if (!file) {
+    const entry = resolveSound((soundManifest as SoundManifest).files[info.id]);
+    if (!entry) {
       this.sound = { status: 'unavailable' };
       this.render();
       return;
     }
-    this.audio.src = `/animal-sounds/${file}`;
+    this.audio.src = `/animal-sounds/${entry.file}`;
     void this.audio.play().then(() => {
       this.sound = { status: 'playing' };
       this.render();
@@ -201,8 +217,10 @@ export class AnimalPanel {
     const status = STATUS_COLORS[info.status];
     const summaryLabel = info.extinctYear ? 'Extinct since' : 'Population';
     const summaryValue = info.extinctYear ?? info.population ?? 'Data pending';
-    const soundFile = (soundManifest as SoundManifest).files[info.id];
+    const soundEntry = resolveSound((soundManifest as SoundManifest).files[info.id]);
+    const soundFile = soundEntry?.file ?? null;
     const soundUnavailable = !soundFile || this.sound.status === 'unavailable';
+    const soundIsAi = soundEntry?.generated ?? false;
 
     this.container.innerHTML = `
       <div class="animal-panel__shell">
@@ -252,7 +270,7 @@ export class AnimalPanel {
             </button>
             <button class="animal-panel__action animal-panel__action--primary" type="button" data-action="sound" ${soundUnavailable ? 'disabled' : ''}>
               <span class="animal-panel__action-label">${this.sound.status === 'playing' ? 'Playing…' : 'Hear Voice'}</span>
-              <span class="animal-panel__action-meta">${soundFile ? 'AUDIO' : 'Pending'}</span>
+              <span class="animal-panel__action-meta">${soundFile ? (soundIsAi ? 'AI RECONSTRUCTION' : 'ARCHIVE') : 'Pending'}</span>
             </button>
             <a
               class="animal-panel__action animal-panel__action--secondary"
