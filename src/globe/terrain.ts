@@ -11,7 +11,7 @@ export interface TerrainData {
   oceanRatio: number;
 }
 
-const LAND_HEIGHT_SCALE = 1.0;
+const LAND_HEIGHT_SCALE = 0.7;
 
 // Vibrant colors matching reference screenshots
 const BIOME_COLORS: Record<string, { low: THREE.Color; mid: THREE.Color; high: THREE.Color; snow: THREE.Color }> = {
@@ -69,7 +69,6 @@ export function generateTerrain(): TerrainData {
   let oceanCount = 0;
 
   const mask = createWorldMask();
-
   const color = new THREE.Color();
   const tmpC = new THREE.Color();
 
@@ -114,31 +113,29 @@ export function generateTerrain(): TerrainData {
       const noise = Math.abs(hills) * 0.85 + Math.abs(texture) * 0.15 + 0.05;
       const centralBoost = 1.0 + coastDist * 0.3;
 
-      // Regional mountain boost — add FIXED height for mountain ranges
-      let regionAdd = 0;
-      // Himalayas / Tibet (lat 27-40, lng 70-100) — world's highest
-      if (lat > 25 && lat < 42 && lng > 68 && lng < 102) {
-        const f = Math.max(0, 1 - Math.abs(lat - 33) / 9) * Math.max(0, 1 - Math.abs(lng - 85) / 17);
-        regionAdd = f * 0.9;
-      }
-      // Andes (lat -55 to 10, lng -80 to -60)
-      if (lat > -55 && lat < 10 && lng > -80 && lng < -60) {
-        const f = Math.max(0, 1 - Math.abs(lng + 70) / 10);
-        regionAdd = Math.max(regionAdd, f * 0.6);
-      }
-      // Rockies (lat 35-60, lng -120 to -105)
-      if (lat > 35 && lat < 60 && lng > -120 && lng < -105) {
-        const f = Math.max(0, 1 - Math.abs(lng + 112) / 8);
-        regionAdd = Math.max(regionAdd, f * 0.5);
-      }
-      // Alps (lat 44-48, lng 5-16)
-      if (lat > 43 && lat < 49 && lng > 4 && lng < 17)
-        regionAdd = Math.max(regionAdd, 0.25);
-      // East Africa (lat -5 to 5, lng 30-40)
-      if (lat > -6 && lat < 6 && lng > 28 && lng < 42)
-        regionAdd = Math.max(regionAdd, 0.2);
+      // Regional mountain boost
+      // lng from atan2 is raw (positive=east), negate to match our polygon system
+      // Actually: lng = atan2(nz,nx), for real-world east=positive this gives positive values
+      // But our polygons are negated. So lng itself IS the negated value.
+      // Use lng directly (which is already in our negated coord system)
+      let regionBoost = 1.0;
+      // Himalayas / Tibet (real lat 27-40, real lng 70-100 → our lng -100 to -68)
+      if (lat > 25 && lat < 42 && lng > -102 && lng < -68)
+        regionBoost = 1.0 + 1.5 * Math.max(0, 1 - Math.abs(lat - 33) / 9) * Math.max(0, 1 - Math.abs(lng + 85) / 17);
+      // Andes (real lat -55 to 10, real lng -80 to -60 → our lng 60 to 80)
+      if (lat > -55 && lat < 10 && lng > 60 && lng < 80)
+        regionBoost = Math.max(regionBoost, 1.0 + 1.2 * Math.max(0, 1 - Math.abs(lng - 70) / 10));
+      // Rockies (real lat 35-60, real lng -120 to -105 → our lng 105 to 120)
+      if (lat > 35 && lat < 60 && lng > 105 && lng < 120)
+        regionBoost = Math.max(regionBoost, 1.0 + 1.0 * Math.max(0, 1 - Math.abs(lng - 112) / 8));
+      // Alps (real lat 44-48, real lng 5-16 → our lng -16 to -4)
+      if (lat > 43 && lat < 49 && lng > -17 && lng < -4)
+        regionBoost = Math.max(regionBoost, 1.5);
+      // East Africa (real lat -5 to 5, real lng 30-40 → our lng -42 to -28)
+      if (lat > -6 && lat < 6 && lng > -42 && lng < -28)
+        regionBoost = Math.max(regionBoost, 1.3);
 
-      const heightNorm = noise * coastFactor * centralBoost + regionAdd;
+      const heightNorm = noise * coastFactor * centralBoost * regionBoost;
       const height = heightNorm * LAND_HEIGHT_SCALE;
       const newRadius = GLOBE_RADIUS + height;
 
@@ -161,13 +158,6 @@ export function generateTerrain(): TerrainData {
         color.r += tmpC.r * weight;
         color.g += tmpC.g * weight;
         color.b += tmpC.b * weight;
-      }
-
-      // Coast color blending: near coast, mix in shallow water color for smooth transition
-      if (coastDist < 0.4) {
-        const coastBlend = 1.0 - coastDist / 0.4; // 1.0 at shore, 0.0 inland
-        const shallowColor = new THREE.Color('#55bbaa');
-        color.lerp(shallowColor, coastBlend * 0.5);
       }
 
       // Secondary noise: add color patches (like original Tiny Skies)

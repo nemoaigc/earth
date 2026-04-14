@@ -93,13 +93,8 @@ scene.add(stars.points);
 // Rain removed
 
 // --- Lighting: Self-illuminating (no sun, sky-driven) ---
-const ambientLight = new THREE.AmbientLight('#ffffff', 1.5);
+const ambientLight = new THREE.AmbientLight('#ffffff', 5.0);
 scene.add(ambientLight);
-const hemiLight = new THREE.HemisphereLight('#aaccee', '#334422', 1.2);
-scene.add(hemiLight);
-const dirLight = new THREE.DirectionalLight('#ffffff', 2.0);
-dirLight.position.set(8, 6, 4);
-scene.add(dirLight);
 
 // --- Animation loop ---
 const clock = new THREE.Clock();
@@ -130,7 +125,9 @@ function animate(): void {
   skyDome.updateGradient(state.skyGradient);
 
   // --- Terrain & ocean ---
-  // Tinting handled by shader now
+  globe.terrainMaterial.color.copy(state.terrainTint);
+  globe.ocean.material.color.copy(state.oceanShallow);
+  globe.ocean.material.emissive.copy(state.oceanDeep);
 
   globe.update(elapsed, state.atmosphereColor);
 
@@ -159,30 +156,6 @@ function animate(): void {
 }
 
 animate();
-
-// --- Click to get lat/lng coordinates ---
-const raycaster = new THREE.Raycaster();
-const mouse = new THREE.Vector2();
-const coordLabel = document.createElement('div');
-coordLabel.style.cssText = 'position:fixed;top:70px;left:50%;transform:translateX(-50%);color:white;font-size:14px;font-family:monospace;background:rgba(0,0,0,0.6);padding:6px 14px;border-radius:8px;z-index:200;pointer-events:none;display:none;';
-document.body.appendChild(coordLabel);
-
-renderer.domElement.addEventListener('dblclick', (e) => {
-  mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
-  mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
-  raycaster.setFromCamera(mouse, cameraController.camera);
-  const intersects = raycaster.intersectObject(globe.terrain);
-  if (intersects.length > 0) {
-    const p = intersects[0].point;
-    const len = Math.sqrt(p.x*p.x + p.y*p.y + p.z*p.z);
-    const lat = Math.asin(p.y/len) * 180 / Math.PI;
-    const lng = Math.atan2(p.z/len, p.x/len) * 180 / Math.PI;
-    coordLabel.textContent = `lat: ${lat.toFixed(1)}, lng: ${lng.toFixed(1)}`;
-    coordLabel.style.display = 'block';
-    console.log(`{ lat: ${lat.toFixed(1)}, lng: ${lng.toFixed(1)} }`);
-    setTimeout(() => { coordLabel.style.display = 'none'; }, 4000);
-  }
-});
 
 window.addEventListener('resize', () => {
   renderer.setSize(window.innerWidth, window.innerHeight);
