@@ -256,7 +256,7 @@ export class AnimalPanel {
             </button>
             <a
               class="animal-panel__action animal-panel__action--secondary"
-              href="https://zh.wikipedia.org/wiki/${encodeURIComponent(info.wikiTitle)}"
+              href="https://zh.wikipedia.org/wiki/${encodeURIComponent(info.wikiTitleZh ?? info.wikiTitle)}"
               target="_blank"
               rel="noreferrer"
             >

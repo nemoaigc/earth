@@ -15,7 +15,14 @@ export interface AnimalInfo {
   region: string;
   cause: string;
   blurb: string;
+  /** English Wikipedia title (used for API lookups, e.g. page summary). */
   wikiTitle: string;
+  /**
+   * zh.wikipedia.org title, verified to exist via the langlinks API.
+   * If absent the UI falls back to wikiTitle (ZH wiki will usually
+   * redirect, but it's not guaranteed for every English title).
+   */
+  wikiTitleZh?: string;
   count: number;
   scale: number;
 }
@@ -37,6 +44,7 @@ export const ANIMALS: AnimalInfo[] = [
     cause: '人类捕猎 + 外来物种入侵',
     blurb: '不会飞的大型鸟类，因长期没有天敌而失去飞行能力。荷兰殖民者到达毛里求斯后不到一个世纪就将其彻底灭绝，成为人类导致物种灭绝的经典案例。',
     wikiTitle: 'Dodo',
+    wikiTitleZh: '渡渡鸟',
     count: 1,
     scale: 0.22,
   },
@@ -55,6 +63,7 @@ export const ANIMALS: AnimalInfo[] = [
     cause: '人类捕杀 + 栖息地丧失',
     blurb: '又称塔斯马尼亚虎，是近代灭绝的最大有袋类肉食动物。最后一只名为"本杰明"的袋狼于1936年在霍巴特动物园去世。目前科学家正尝试通过基因技术复活该物种。',
     wikiTitle: 'Thylacine',
+    wikiTitleZh: '袋狼',
     count: 1,
     scale: 0.24,
   },
@@ -73,6 +82,7 @@ export const ANIMALS: AnimalInfo[] = [
     cause: '毛利人捕猎',
     blurb: '曾是新西兰最高的鸟类，身高可达3.6米。在毛利人到达新西兰后约200年内即被猎杀殆尽，是人类导致大型鸟类灭绝的典型案例。',
     wikiTitle: 'Moa',
+    wikiTitleZh: '恐鳥',
     count: 1,
     scale: 0.30,
   },
@@ -91,6 +101,7 @@ export const ANIMALS: AnimalInfo[] = [
     cause: '大规模商业捕猎 + 栖息地破坏',
     blurb: '曾是北美数量最多的鸟类，种群一度达50亿只，迁徙时遮天蔽日。最后一只旅鸽"玛莎"于1914年在辛辛那提动物园去世，从数十亿到零的过程仅用了几十年。',
     wikiTitle: 'Passenger_pigeon',
+    wikiTitleZh: '旅鴿',
     count: 1,
     scale: 0.20,
   },
@@ -109,6 +120,7 @@ export const ANIMALS: AnimalInfo[] = [
     cause: '人类捕猎（羽毛、油脂、标本）',
     blurb: '北半球唯一不会飞的海雀，因外形与企鹅相似而被早期航海者称为"北方企鹅"。最后一对大海雀于1844年在冰岛被杀害，其蛋也被踩碎。',
     wikiTitle: 'Great_auk',
+    wikiTitleZh: '大海雀',
     count: 1,
     scale: 0.24,
   },
@@ -127,6 +139,7 @@ export const ANIMALS: AnimalInfo[] = [
     cause: '人类捕猎',
     blurb: '体长可达9米的巨型海牛，是近代灭绝的最大海洋哺乳动物。1741年被发现时仅存约1500只，在被发现后短短27年内即被猎杀殆尽。',
     wikiTitle: "Steller's_sea_cow",
+    wikiTitleZh: '大海牛',
     count: 1,
     scale: 0.40,
   },
@@ -145,6 +158,7 @@ export const ANIMALS: AnimalInfo[] = [
     cause: '殖民者猎杀 + 与家畜争地',
     blurb: '一种只有身体前半部有条纹的斑马亚种，后半身为棕色。最后一只斑驴于1883年在阿姆斯特丹动物园去世。目前南非正在通过选择性育种尝试"复活"斑驴外表。',
     wikiTitle: 'Quagga',
+    wikiTitleZh: '斑驢',
     count: 1,
     scale: 0.28,
   },
@@ -163,6 +177,7 @@ export const ANIMALS: AnimalInfo[] = [
     cause: '栖息地开垦 + 猎杀',
     blurb: '曾分布于从土耳其到中国新疆的广袤地带，是体型最大的老虎亚种之一。苏联时期大规模农垦破坏了其栖息地，最后确认记录在1970年代的土耳其。',
     wikiTitle: 'Caspian_tiger',
+    wikiTitleZh: '里海虎',
     count: 1,
     scale: 0.28,
   },
@@ -181,6 +196,7 @@ export const ANIMALS: AnimalInfo[] = [
     cause: '猎杀 + 栖息地丧失',
     blurb: '北非的标志性猛兽，以雄性巨大浓密的深色鬃毛闻名，古罗马斗兽场中使用的就是这种狮子。野外于1920年代灭绝，可能有少量后裔存活于动物园中。',
     wikiTitle: 'Barbary_lion',
+    wikiTitleZh: '巴巴里獅',
     count: 1,
     scale: 0.32,
   },
@@ -199,6 +215,7 @@ export const ANIMALS: AnimalInfo[] = [
     cause: '伐木 + 偷猎',
     blurb: '台湾唯一的本土大型猫科动物，因大规模伐木导致栖息地消失而灭绝。1983年后再未有可靠目击记录，2013年被正式宣布灭绝，但偶有民间声称目击。',
     wikiTitle: 'Formosan_clouded_leopard',
+    wikiTitleZh: '台灣雲豹',
     count: 1,
     scale: 0.24,
   },
@@ -217,6 +234,7 @@ export const ANIMALS: AnimalInfo[] = [
     cause: '狂犬病 + 人类捕杀 + 栖息地减少',
     blurb: '世界上体型最小的狼亚种，在日本神话中被视为神灵的使者。最后一只日本狼于1905年在奈良县被猎杀。至今仍有人声称在深山中目击到存活个体。',
     wikiTitle: 'Japanese_wolf',
+    wikiTitleZh: '日本狼',
     count: 1,
     scale: 0.22,
   },
@@ -235,6 +253,7 @@ export const ANIMALS: AnimalInfo[] = [
     cause: '壶菌病 + 气候变化',
     blurb: '雄性通体橙金色，是世界上最美丽的两栖动物之一。仅分布在哥斯达黎加一片4平方公里的云雾林中，1989年后再未被发现，被认为是气候变化导致灭绝的首批物种。',
     wikiTitle: 'Golden_toad',
+    wikiTitleZh: '金蟾蜍',
     count: 1,
     scale: 0.15,
   },
@@ -253,6 +272,7 @@ export const ANIMALS: AnimalInfo[] = [
     cause: '人类捕猎（油脂）+ 渔业冲突',
     blurb: '加勒比海唯一的海豹物种，哥伦布1494年首次记录。因性格温顺不怕人而极易被猎杀，被大量捕杀以获取油脂。2008年被正式宣布灭绝。',
     wikiTitle: 'Caribbean_monk_seal',
+    wikiTitleZh: '加勒比僧海豹',
     count: 1,
     scale: 0.28,
   },
@@ -271,6 +291,7 @@ export const ANIMALS: AnimalInfo[] = [
     cause: '偷猎（犀角）',
     blurb: '黑犀牛的西部亚种，2006年最后一次搜索未发现任何个体，2011年被IUCN正式宣布灭绝。犀角在传统医药市场的高价是导致其灭绝的直接原因。',
     wikiTitle: 'Western_black_rhinoceros',
+    wikiTitleZh: '西部黑犀',
     count: 1,
     scale: 0.30,
   },
@@ -289,6 +310,7 @@ export const ANIMALS: AnimalInfo[] = [
     cause: '过度捕捞 + 水坝建设',
     blurb: '有"淡水鱼之王"之称，体长可达7米，是世界上最大的淡水鱼之一。葛洲坝建设阻断了其洄游通道，2003年后再未有目击记录，2022年被正式宣布灭绝。',
     wikiTitle: 'Chinese_paddlefish',
+    wikiTitleZh: '白鲟',
     count: 1,
     scale: 0.35,
   },
@@ -307,6 +329,7 @@ export const ANIMALS: AnimalInfo[] = [
     cause: '航运、水污染、非法捕鱼',
     blurb: '被称为"长江女神"的淡水豚类，2006年考察未发现任何个体，被宣布功能性灭绝。它是第一种因人类活动而灭绝的鲸类动物。',
     wikiTitle: 'Baiji',
+    wikiTitleZh: '白鱀豚',
     count: 1,
     scale: 0.25,
   },
@@ -325,6 +348,7 @@ export const ANIMALS: AnimalInfo[] = [
     cause: '猎杀 + 与家畜竞争',
     blurb: '2000年最后一只个体"塞莉亚"被倒木砸死。2003年科学家用其冷冻组织克隆出一只幼崽，但仅存活数分钟，是人类首次尝试复活灭绝物种。',
     wikiTitle: 'Pyrenean_ibex',
+    wikiTitleZh: '庇里牛斯羱羊',
     count: 1,
     scale: 0.26,
   },
@@ -343,6 +367,7 @@ export const ANIMALS: AnimalInfo[] = [
     cause: '欧洲殖民者猎杀',
     blurb: '因蓝灰色皮毛而得名的大型羚羊，是非洲近代第一个被记录灭绝的大型哺乳动物。荷兰殖民者到达南非后大量猎杀，约1800年灭绝，全球仅存4件标本。',
     wikiTitle: 'Bluebuck',
+    wikiTitleZh: '藍馬羚',
     count: 1,
     scale: 0.28,
   },
@@ -361,6 +386,7 @@ export const ANIMALS: AnimalInfo[] = [
     cause: '猎杀（农业害鸟）+ 栖息地破坏',
     blurb: '美国本土唯一的鹦鹉物种，绿色身体配橙黄色头部。因啄食农作物被大量射杀，加上森林砍伐，最后一只"因卡斯"于1918年在辛辛那提动物园去世——与旅鸽在同一家动物园。',
     wikiTitle: 'Carolina_parakeet',
+    wikiTitleZh: '卡羅萊納長尾鸚鵡',
     count: 1,
     scale: 0.20,
   },
@@ -379,6 +405,7 @@ export const ANIMALS: AnimalInfo[] = [
     cause: '伐木 + 栖息地丧失',
     blurb: '北美最大的啄木鸟之一，被称为"上帝鸟"因其壮观的外表。2004年曾有疑似目击引发轰动，但2021年美国鱼类与野生动物管理局正式将其列为灭绝。',
     wikiTitle: 'Ivory-billed_woodpecker',
+    wikiTitleZh: '象牙喙啄木鳥',
     count: 1,
     scale: 0.22,
   },
