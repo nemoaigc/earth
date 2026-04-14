@@ -1,36 +1,30 @@
 import './animal-panel.css';
 import type { AnimalInfo } from '../data/animals';
-
-type AnimalExplanationResult =
-  | string
-  | { text: string; provider?: string };
-
-type AnimalAiExplainer = (animal: AnimalInfo) => Promise<AnimalExplanationResult>;
-
-declare global {
-  interface Window {
-    __EARTH_AI_EXPLAIN__?: AnimalAiExplainer;
-  }
-}
-
-type ExplanationState =
-  | { status: 'idle' }
-  | { status: 'loading' }
-  | { status: 'ready'; text: string; sourceLabel: string }
-  | { status: 'error'; message: string };
+import type { ChatMessage } from '../ai/types';
+import { getChat, getTts } from '../ai/registry';
+import soundManifest from '../../public/animal-sounds/manifest.json';
 
 const STATUS_COLORS = {
-  extinct: {
-    bg: 'rgba(120, 122, 128, 0.14)',
-    text: '#7f8794',
-    label: '已灭绝',
-  },
-  endangered: {
-    bg: 'rgba(255, 95, 87, 0.14)',
-    text: '#f85d54',
-    label: '濒危',
-  },
+  extinct:    { bg: 'rgba(120, 122, 128, 0.14)', text: '#7f8794', label: '已灭绝' },
+  endangered: { bg: 'rgba(255, 95, 87, 0.14)',   text: '#f85d54', label: '濒危'   },
 } as const;
+
+type ChatState =
+  | { status: 'idle' }
+  | { status: 'streaming'; turns: ChatMessage[]; liveText: string }
+  | { status: 'ready'; turns: ChatMessage[] }
+  | { status: 'error'; turns: ChatMessage[]; message: string };
+
+type SoundState =
+  | { status: 'idle' }
+  | { status: 'playing' }
+  | { status: 'unavailable' };
+
+interface SoundManifest {
+  provider: string;
+  generatedAt: string;
+  files: Record<string, string | null>;
+}
 
 function escapeHtml(value: string): string {
   return value
@@ -41,79 +35,174 @@ function escapeHtml(value: string): string {
     .replaceAll("'", '&#39;');
 }
 
-function buildFallbackExplanation(info: AnimalInfo): string {
-  const opening =
-    info.status === 'extinct'
-      ? `${info.nameCn}已经从地球上消失，但它留下的痕迹仍然在提醒我们，人类活动可以在很短的时间里改写一个物种的命运。`
-      : `${info.nameCn}仍然活着，但它正处在与时间赛跑的阶段，每一次栖息地变化和人为干扰都会直接影响它的未来。`;
-  const profile = `${info.nameCn}主要生活在${info.habitat}，分布于${info.region}。${info.blurb}`;
-  const pressure =
-    info.status === 'extinct'
-      ? `它最终走向消失，核心诱因是${info.cause}。这类故事最值得被记住的，不是“已经太晚”，而是哪些错误曾经被重复发生。`
-      : `目前估计数量${info.population ?? '仍在持续波动'}，而最主要的压力来自${info.cause}。只要保护窗口还在，恢复就不是空话。`;
-  return `${opening}\n\n${profile}\n\n${pressure}`;
-}
-
 function renderParagraphs(text: string): string {
-  return text
-    .split(/\n{2,}/)
-    .map((paragraph) => `<p>${escapeHtml(paragraph.trim())}</p>`)
-    .join('');
+  return text.split(/\n{2,}/).map((p) => `<p>${escapeHtml(p.trim())}</p>`).join('');
 }
 
 export class AnimalPanel {
   private container: HTMLDivElement;
   private current: AnimalInfo | null = null;
   private heroImage: string | null = null;
-  private explanation: ExplanationState = { status: 'idle' };
+
+  private chat: ChatState = { status: 'idle' };
+  private chatAbort: AbortController | null = null;
+
+  private sound: SoundState = { status: 'idle' };
+  private audio = new Audio();
+
+  private tts: { url: string; dispose?: () => void } | null = null;
+  private ttsAudio = new Audio();
 
   constructor() {
     this.container = document.createElement('div');
     this.container.className = 'animal-panel';
     document.body.appendChild(this.container);
+
+    this.audio.addEventListener('ended', () => {
+      if (this.sound.status === 'playing') {
+        this.sound = { status: 'idle' };
+        this.render();
+      }
+    });
   }
 
   show(info: AnimalInfo) {
+    const isSame = this.current?.id === info.id;
     this.current = info;
-    // Pre-downloaded photo from public/animal-photos/ — run
-    // scripts/fetch-animal-photos.mjs to refresh.
     this.heroImage = `/animal-photos/${info.id}.jpg`;
-    this.explanation = { status: 'idle' };
+
+    if (!isSame) {
+      this.stopEverything();
+      this.chat = { status: 'idle' };
+      this.sound = { status: 'idle' };
+    }
+
     this.render();
     this.container.classList.add('is-visible');
   }
 
   hide() {
+    this.stopEverything();
     this.current = null;
     this.container.classList.remove('is-visible');
   }
 
-  private render() {
+  private stopEverything() {
+    this.chatAbort?.abort();
+    this.chatAbort = null;
+    this.audio.pause();
+    this.audio.currentTime = 0;
+    this.ttsAudio.pause();
+    this.ttsAudio.currentTime = 0;
+    if (this.tts?.dispose) this.tts.dispose();
+    this.tts = null;
+  }
+
+  // --------------------------------------------------------------------
+  // Chat (streaming)
+
+  private async runChat(userMessage: string | null) {
     const info = this.current;
-    if (!info) {
-      this.container.innerHTML = '';
+    if (!info) return;
+    const chat = getChat();
+    if (!chat) {
+      this.chat = { status: 'error', turns: [], message: '尚未接入对话模型。' };
+      this.render();
       return;
     }
+
+    const prior: ChatMessage[] = this.chat.status === 'idle'
+      ? []
+      : this.chat.status === 'streaming'
+        ? [...this.chat.turns]
+        : [...this.chat.turns];
+
+    const nextTurns: ChatMessage[] = userMessage
+      ? [...prior, { role: 'user', content: userMessage }]
+      : prior;
+
+    this.chatAbort?.abort();
+    this.chatAbort = new AbortController();
+    this.chat = { status: 'streaming', turns: nextTurns, liveText: '' };
+    this.render();
+
+    const systemMessages: ChatMessage[] = prior.length === 0
+      ? [{ role: 'system', content: '你是 Lost Planet 行星馆的讲解员，用自然、温暖、略带诗意的语气介绍一种已灭绝或濒危的生物。' }]
+      : [];
+
+    try {
+      let buffer = '';
+      for await (const chunk of chat.stream(info, [...systemMessages, ...nextTurns], this.chatAbort.signal)) {
+        if (this.current?.id !== info.id) return;
+        buffer += chunk;
+        if (this.chat.status === 'streaming') {
+          this.chat = { ...this.chat, liveText: buffer };
+          this.renderChatOnly();
+        }
+      }
+      if (this.current?.id !== info.id) return;
+      const finalTurns: ChatMessage[] = [...nextTurns, { role: 'assistant', content: buffer }];
+      this.chat = { status: 'ready', turns: finalTurns };
+      this.render();
+
+      // Optional voice playback
+      const tts = getTts();
+      if (tts) {
+        try {
+          const audio = await tts.synthesize(buffer, { signal: this.chatAbort.signal });
+          if (this.current?.id !== info.id) { audio.dispose?.(); return; }
+          this.tts = audio;
+          this.ttsAudio.src = audio.url;
+          await this.ttsAudio.play();
+        } catch {
+          // TTS failure is non-fatal; leave the text on screen.
+        }
+      }
+    } catch (err) {
+      if (this.chatAbort?.signal.aborted) return;
+      this.chat = {
+        status: 'error',
+        turns: nextTurns,
+        message: err instanceof Error ? err.message : String(err),
+      };
+      this.render();
+    }
+  }
+
+  // --------------------------------------------------------------------
+  // Sound (pre-generated static asset)
+
+  private playSound() {
+    const info = this.current;
+    if (!info) return;
+    const file = (soundManifest as SoundManifest).files[info.id];
+    if (!file) {
+      this.sound = { status: 'unavailable' };
+      this.render();
+      return;
+    }
+    this.audio.src = `/animal-sounds/${file}`;
+    void this.audio.play().then(() => {
+      this.sound = { status: 'playing' };
+      this.render();
+    }).catch(() => {
+      this.sound = { status: 'unavailable' };
+      this.render();
+    });
+  }
+
+  // --------------------------------------------------------------------
+  // Render
+
+  private render() {
+    const info = this.current;
+    if (!info) { this.container.innerHTML = ''; return; }
 
     const status = STATUS_COLORS[info.status];
     const summaryLabel = info.extinctYear ? '灭绝时间' : '现存数量';
     const summaryValue = info.extinctYear ?? info.population ?? '资料整理中';
-    const explainButtonLabel =
-      this.explanation.status === 'loading'
-        ? '讲解生成中'
-        : this.explanation.status === 'ready'
-          ? '重新讲解'
-          : 'AI 讲解';
-
-    const aiBlock = this.explanation.status === 'idle'
-      ? ''
-      : `
-        <section class="animal-panel__section">
-          <div class="animal-panel__insight">
-            ${this.renderExplanationPanel()}
-          </div>
-        </section>
-      `;
+    const soundFile = (soundManifest as SoundManifest).files[info.id];
+    const soundUnavailable = !soundFile || this.sound.status === 'unavailable';
 
     this.container.innerHTML = `
       <div class="animal-panel__shell">
@@ -158,8 +247,12 @@ export class AnimalPanel {
 
           <div class="animal-panel__actions">
             <button class="animal-panel__action animal-panel__action--primary" type="button" data-action="explain">
-              <span class="animal-panel__action-label">${escapeHtml(explainButtonLabel)}</span>
-              <span class="animal-panel__action-meta">${escapeHtml(this.getExplanationBadge())}</span>
+              <span class="animal-panel__action-label">${this.chat.status === 'idle' ? 'AI 讲解' : this.chat.status === 'streaming' ? '讲解中…' : '重新讲解'}</span>
+              <span class="animal-panel__action-meta">${this.chatBadge()}</span>
+            </button>
+            <button class="animal-panel__action animal-panel__action--primary" type="button" data-action="sound" ${soundUnavailable ? 'disabled' : ''}>
+              <span class="animal-panel__action-label">${this.sound.status === 'playing' ? '播放中…' : '听声音'}</span>
+              <span class="animal-panel__action-meta">${soundFile ? 'AUDIO' : '资产待生成'}</span>
             </button>
             <a
               class="animal-panel__action animal-panel__action--secondary"
@@ -172,86 +265,110 @@ export class AnimalPanel {
             </a>
           </div>
 
-          ${aiBlock}
+          <section class="animal-panel__chat" data-chat-root>
+            ${this.renderChat()}
+          </section>
         </div>
       </div>
     `;
 
+    this.bindEvents();
+  }
+
+  private renderChatOnly() {
+    const root = this.container.querySelector<HTMLElement>('[data-chat-root]');
+    if (!root) { this.render(); return; }
+    root.innerHTML = this.renderChat();
+    this.bindChatInput();
+  }
+
+  private renderChat(): string {
+    if (this.chat.status === 'idle') {
+      return '';
+    }
+
+    const turns = this.chat.status === 'streaming'
+      ? [...this.chat.turns]
+      : this.chat.turns;
+    const liveText = this.chat.status === 'streaming' ? this.chat.liveText : '';
+    const errorMsg = this.chat.status === 'error' ? this.chat.message : '';
+
+    const bubbles = turns.filter((t) => t.role !== 'system').map((t) => `
+      <div class="animal-panel__bubble animal-panel__bubble--${escapeHtml(t.role)}">
+        ${renderParagraphs(t.content)}
+      </div>
+    `).join('');
+
+    const liveBubble = this.chat.status === 'streaming'
+      ? `<div class="animal-panel__bubble animal-panel__bubble--assistant animal-panel__bubble--streaming">${renderParagraphs(liveText || '…')}</div>`
+      : '';
+
+    const errorBubble = errorMsg
+      ? `<div class="animal-panel__bubble animal-panel__bubble--error">${escapeHtml(errorMsg)}</div>`
+      : '';
+
+    const inputDisabled = this.chat.status === 'streaming';
+    const inputRow = `
+      <form class="animal-panel__chat-input" data-chat-form>
+        <input
+          type="text"
+          name="q"
+          placeholder="继续追问…"
+          autocomplete="off"
+          ${inputDisabled ? 'disabled' : ''}
+          data-chat-field
+        />
+        <button type="submit" ${inputDisabled ? 'disabled' : ''}>发送</button>
+      </form>
+    `;
+
+    return `
+      <div class="animal-panel__chat-thread">
+        ${bubbles}
+        ${liveBubble}
+        ${errorBubble}
+      </div>
+      ${inputRow}
+    `;
+  }
+
+  private chatBadge(): string {
+    const chat = getChat();
+    switch (this.chat.status) {
+      case 'streaming': return 'Streaming';
+      case 'ready':     return chat?.name ?? 'Connected';
+      case 'error':     return 'Retry';
+      default:          return chat?.name ?? 'Ready';
+    }
+  }
+
+  private bindEvents() {
     this.container.querySelector<HTMLElement>('[data-action="close"]')?.addEventListener('click', () => this.hide());
     this.container.querySelector<HTMLElement>('[data-action="explain"]')?.addEventListener('click', () => {
-      void this.loadExplanation();
+      if (this.chat.status === 'streaming') return;
+      void this.runChat(null);
+    });
+    this.container.querySelector<HTMLElement>('[data-action="sound"]')?.addEventListener('click', () => {
+      this.playSound();
+    });
+    this.bindChatInput();
+  }
+
+  private bindChatInput() {
+    const form = this.container.querySelector<HTMLFormElement>('[data-chat-form]');
+    if (!form) return;
+    form.addEventListener('submit', (ev) => {
+      ev.preventDefault();
+      const field = form.querySelector<HTMLInputElement>('[data-chat-field]');
+      const q = field?.value.trim();
+      if (!q) return;
+      if (field) field.value = '';
+      void this.runChat(q);
     });
   }
 
-  private renderExplanationPanel(): string {
-    if (this.explanation.status === 'loading') {
-      return `
-        <div class="animal-panel__placeholder">
-          <span class="animal-panel__loader"></span>
-          <div><strong>正在生成讲解</strong></div>
-        </div>
-      `;
-    }
-    if (this.explanation.status === 'ready') {
-      return renderParagraphs(this.explanation.text);
-    }
-    if (this.explanation.status === 'error') {
-      return `<p>${escapeHtml(this.explanation.message)}</p>`;
-    }
-    return '';
-  }
-
-  private getExplanationBadge(): string {
-    switch (this.explanation.status) {
-      case 'loading': return 'Generating';
-      case 'ready':   return this.explanation.sourceLabel;
-      case 'error':   return 'Fallback';
-      default:        return 'Ready';
-    }
-  }
-
-  private async loadExplanation() {
-    const info = this.current;
-    if (!info) return;
-
-    this.explanation = { status: 'loading' };
-    this.render();
-
-    try {
-      const explain = window.__EARTH_AI_EXPLAIN__;
-      if (typeof explain === 'function') {
-        const result = await explain(info);
-        if (!this.current || this.current.id !== info.id) return;
-        if (typeof result === 'string') {
-          this.explanation = { status: 'ready', text: result, sourceLabel: 'AI Connected' };
-        } else {
-          this.explanation = {
-            status: 'ready',
-            text: result.text,
-            sourceLabel: result.provider ?? 'AI Connected',
-          };
-        }
-      } else {
-        await new Promise((resolve) => window.setTimeout(resolve, 320));
-        if (!this.current || this.current.id !== info.id) return;
-        this.explanation = {
-          status: 'ready',
-          text: buildFallbackExplanation(info),
-          sourceLabel: 'Local Fallback',
-        };
-      }
-    } catch {
-      if (!this.current || this.current.id !== info.id) return;
-      this.explanation = {
-        status: 'error',
-        message: 'AI 讲解接口暂时不可用，建议稍后重试。',
-      };
-    }
-
-    if (this.current?.id === info.id) this.render();
-  }
-
   dispose() {
+    this.stopEverything();
     this.container.remove();
   }
 }
