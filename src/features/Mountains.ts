@@ -131,7 +131,7 @@ export class Mountains {
       const dummy = new THREE.Object3D();
       for (let i = 0; i < count; i++) {
         const point = shuffled[i];
-        dummy.position.copy(point.position);
+        dummy.position.copy(point.position).setLength(point.position.length() + 0.05);
         dummy.lookAt(0, 0, 0);
         dummy.rotateX(Math.PI / 2);
         const scale = 0.8 + Math.random() * 0.6;
@@ -159,7 +159,7 @@ export class Mountains {
       const dummy = new THREE.Object3D();
       for (let i = 0; i < count; i++) {
         const point = shuffled[i];
-        dummy.position.copy(point.position);
+        dummy.position.copy(point.position).setLength(point.position.length() + 0.05);
         dummy.lookAt(0, 0, 0);
         dummy.rotateX(Math.PI / 2);
         const scale = 0.8 + Math.random() * 0.6;

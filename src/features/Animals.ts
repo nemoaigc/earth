@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { GLOBE_RADIUS } from '../globe/terrain';
+import { sampleGroundRadius } from '../globe/terrain';
 import type { TerrainData } from '../globe/terrain';
 import { ANIMALS, type AnimalInfo } from '../data/animals';
 import { AnimalPanel } from '../ui/AnimalPanel';
@@ -102,13 +102,16 @@ export class Animals {
 
   private getPositions(def: AnimalInfo, _terrainData: TerrainData): THREE.Vector3[] {
     const positions: THREE.Vector3[] = [];
+    // Altitude above surface: ocean animals hover just above the waterline,
+    // land animals sit slightly above the trees so the sprite reads clearly.
+    const altitude = def.biome === 'ocean' ? 0.08 : 0.28;
     for (let i = 0; i < def.count; i++) {
-      // Small random offset so multiple instances don't stack exactly
       const latOff = (Math.random() - 0.5) * 2;
       const lngOff = (Math.random() - 0.5) * 2;
-      positions.push(
-        latLngToPosition(def.lat + latOff, def.lng + lngOff, GLOBE_RADIUS + 1.5),
-      );
+      const lat = def.lat + latOff;
+      const lng = def.lng + lngOff;
+      const groundR = sampleGroundRadius(lat, lng);
+      positions.push(latLngToPosition(lat, lng, groundR + altitude));
     }
     return positions;
   }
