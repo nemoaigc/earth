@@ -99,9 +99,10 @@ export class Animals {
       const latOff = (Math.random() - 0.5) * 2;
       const lngOff = (Math.random() - 0.5) * 2;
       const lat = def.lat + latOff;
-      const lng = def.lng + lngOff;
-      // Raycast onto the actual visible surface — exact ground point,
-      // accounting for flat-shaded triangle faces.
+      // The continent polygon data is stored with a mirrored longitude
+      // convention (real lng X is rendered at sphere atan2=-X), so we
+      // negate lng here to land animals on the correct continent.
+      const lng = -(def.lng + lngOff);
       const snap = this.snap(lat, lng);
       if (snap) positions.push(snap.point);
     }
