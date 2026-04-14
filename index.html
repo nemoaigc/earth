@@ -51,62 +51,6 @@
       text-transform: uppercase;
     }
 
-    .nav-links {
-      display: flex;
-      gap: 6px;
-    }
-
-    .nav-btn {
-      background: rgba(255, 255, 255, 0.1);
-      border: 1px solid rgba(255, 255, 255, 0.15);
-      color: rgba(255, 255, 255, 0.85);
-      padding: 6px 16px;
-      border-radius: 20px;
-      font-size: 13px;
-      font-weight: 500;
-      cursor: pointer;
-      transition: all 0.2s ease;
-      font-family: inherit;
-    }
-
-    .nav-btn:hover {
-      background: rgba(255, 255, 255, 0.2);
-      color: white;
-    }
-
-    /* Bottom info */
-    .bottom-bar {
-      position: fixed;
-      bottom: 24px;
-      left: 50%;
-      transform: translateX(-50%);
-      padding: 10px 24px;
-      border-radius: 16px;
-      pointer-events: auto;
-      z-index: 60;
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-
-    .bottom-text {
-      font-size: 13px;
-      font-weight: 400;
-      color: rgba(255, 255, 255, 0.7);
-      letter-spacing: 0.5px;
-    }
-
-    .bottom-text span {
-      color: rgba(255, 255, 255, 0.95);
-      font-weight: 600;
-    }
-
-    .dot {
-      width: 4px;
-      height: 4px;
-      border-radius: 50%;
-      background: rgba(255, 255, 255, 0.3);
-    }
   </style>
 </head>
 <body>
@@ -116,21 +60,8 @@
     <!-- Top navigation -->
     <div class="top-bar glass">
       <div class="logo">Lost Planet</div>
-      <div class="nav-links">
-        <button class="nav-btn">Explore</button>
-        <button class="nav-btn">Species</button>
-        <button class="nav-btn">About</button>
-      </div>
     </div>
 
-    <!-- Bottom info -->
-    <div class="bottom-bar glass">
-      <div class="bottom-text">Drag to rotate</div>
-      <div class="dot"></div>
-      <div class="bottom-text">Scroll to zoom</div>
-      <div class="dot"></div>
-      <div class="bottom-text"><span>Lost Planet</span> — Where extinct species once roamed</div>
-    </div>
   </div>
 
   <script type="module" src="/src/main.ts"></script>

@@ -5,8 +5,8 @@ import { getChat, getTts } from '../ai/registry';
 import soundManifest from '../../public/animal-sounds/manifest.json';
 
 const STATUS_COLORS = {
-  extinct:    { bg: 'rgba(120, 122, 128, 0.14)', text: '#7f8794', label: '已灭绝' },
-  endangered: { bg: 'rgba(255, 95, 87, 0.14)',   text: '#f85d54', label: '濒危'   },
+  extinct:    { bg: 'rgba(120, 122, 128, 0.14)', text: '#7f8794', label: 'EXTINCT'    },
+  endangered: { bg: 'rgba(255, 95, 87, 0.14)',   text: '#f85d54', label: 'ENDANGERED' },
 } as const;
 
 type ChatState =
@@ -199,8 +199,8 @@ export class AnimalPanel {
     if (!info) { this.container.innerHTML = ''; return; }
 
     const status = STATUS_COLORS[info.status];
-    const summaryLabel = info.extinctYear ? '灭绝时间' : '现存数量';
-    const summaryValue = info.extinctYear ?? info.population ?? '资料整理中';
+    const summaryLabel = info.extinctYear ? 'Extinct since' : 'Population';
+    const summaryValue = info.extinctYear ?? info.population ?? 'Data pending';
     const soundFile = (soundManifest as SoundManifest).files[info.id];
     const soundUnavailable = !soundFile || this.sound.status === 'unavailable';
 
@@ -218,14 +218,14 @@ export class AnimalPanel {
             <span class="animal-panel__badge" style="background:${status.bg}; color:${status.text};">
               ${status.label}
             </span>
-            <button class="animal-panel__close" type="button" data-action="close" aria-label="关闭">×</button>
+            <button class="animal-panel__close" type="button" data-action="close" aria-label="Close">×</button>
           </div>
         </section>
 
         <div class="animal-panel__body">
           <header class="animal-panel__header">
-            <h2 class="animal-panel__title">${escapeHtml(info.nameCn)}</h2>
-            <div class="animal-panel__subtitle">${escapeHtml(info.name)} · <span class="animal-panel__scientific">${escapeHtml(info.scientificName)}</span></div>
+            <h2 class="animal-panel__title">${escapeHtml(info.name)}</h2>
+            <div class="animal-panel__subtitle"><span class="animal-panel__scientific">${escapeHtml(info.scientificName)}</span></div>
           </header>
 
           <section class="animal-panel__meta-grid">
@@ -234,11 +234,11 @@ export class AnimalPanel {
               <div class="animal-panel__meta-value">${escapeHtml(summaryValue)}</div>
             </article>
             <article class="animal-panel__meta-card">
-              <div class="animal-panel__meta-label">分布</div>
+              <div class="animal-panel__meta-label">Range</div>
               <div class="animal-panel__meta-value">${escapeHtml(info.region)}</div>
             </article>
             <article class="animal-panel__meta-card animal-panel__meta-card--wide">
-              <div class="animal-panel__meta-label">威胁因素</div>
+              <div class="animal-panel__meta-label">Threats</div>
               <div class="animal-panel__meta-value">${escapeHtml(info.cause)}</div>
             </article>
           </section>
@@ -247,20 +247,20 @@ export class AnimalPanel {
 
           <div class="animal-panel__actions">
             <button class="animal-panel__action animal-panel__action--primary" type="button" data-action="explain">
-              <span class="animal-panel__action-label">${this.chat.status === 'idle' ? 'AI 讲解' : this.chat.status === 'streaming' ? '讲解中…' : '重新讲解'}</span>
+              <span class="animal-panel__action-label">${this.chat.status === 'idle' ? 'Narrate' : this.chat.status === 'streaming' ? 'Narrating…' : 'Replay'}</span>
               <span class="animal-panel__action-meta">${this.chatBadge()}</span>
             </button>
             <button class="animal-panel__action animal-panel__action--primary" type="button" data-action="sound" ${soundUnavailable ? 'disabled' : ''}>
-              <span class="animal-panel__action-label">${this.sound.status === 'playing' ? '播放中…' : '听声音'}</span>
-              <span class="animal-panel__action-meta">${soundFile ? 'AUDIO' : '资产待生成'}</span>
+              <span class="animal-panel__action-label">${this.sound.status === 'playing' ? 'Playing…' : 'Hear Voice'}</span>
+              <span class="animal-panel__action-meta">${soundFile ? 'AUDIO' : 'Pending'}</span>
             </button>
             <a
               class="animal-panel__action animal-panel__action--secondary"
-              href="https://zh.wikipedia.org/wiki/${encodeURIComponent(info.wikiTitleZh ?? info.wikiTitle)}"
+              href="https://en.wikipedia.org/wiki/${encodeURIComponent(info.wikiTitle)}"
               target="_blank"
               rel="noreferrer"
             >
-              <span class="animal-panel__action-label">更多资料</span>
+              <span class="animal-panel__action-label">Read More</span>
               <span class="animal-panel__action-meta">Wikipedia</span>
             </a>
           </div>
@@ -313,12 +313,12 @@ export class AnimalPanel {
         <input
           type="text"
           name="q"
-          placeholder="继续追问…"
+          placeholder="Ask a follow-up…"
           autocomplete="off"
           ${inputDisabled ? 'disabled' : ''}
           data-chat-field
         />
-        <button type="submit" ${inputDisabled ? 'disabled' : ''}>发送</button>
+        <button type="submit" ${inputDisabled ? 'disabled' : ''}>Send</button>
       </form>
     `;
 

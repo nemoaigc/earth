@@ -93,18 +93,59 @@ export class Animals {
     }
   }
 
+  // Minimum angular separation between any two animals, in degrees.
+  // Below this they start to overlap visually. Sprite angular size at
+  // the default camera distance sits around 2–3°, so 5° gives breathing
+  // room while still keeping species regionally grouped.
+  private static readonly MIN_SEPARATION_DEG = 5;
+
+  private angularDistance(a: THREE.Vector3, b: THREE.Vector3): number {
+    const an = a.clone().normalize();
+    const bn = b.clone().normalize();
+    const dot = Math.min(1, Math.max(-1, an.dot(bn)));
+    return (Math.acos(dot) * 180) / Math.PI;
+  }
+
+  // Positions already reserved during constructor-time getPositions calls.
+  // We can't rely on this.placed because the texture loader populates it
+  // asynchronously — by the time the callback fires, all animals have
+  // already called getPositions, so the list would be empty.
+  private reservedPositions: THREE.Vector3[] = [];
+
   private getPositions(def: AnimalInfo, _terrainData: TerrainData): THREE.Vector3[] {
     const positions: THREE.Vector3[] = [];
+    const MAX_ATTEMPTS = 16;
+
     for (let i = 0; i < def.count; i++) {
-      const latOff = (Math.random() - 0.5) * 2;
-      const lngOff = (Math.random() - 0.5) * 2;
-      const lat = def.lat + latOff;
-      // The continent polygon data is stored with a mirrored longitude
-      // convention (real lng X is rendered at sphere atan2=-X), so we
-      // negate lng here to land animals on the correct continent.
-      const lng = -(def.lng + lngOff);
-      const snap = this.snap(lat, lng);
-      if (snap) positions.push(snap.point);
+      let best: { point: THREE.Vector3; gap: number } | null = null;
+
+      for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
+        // Widen jitter with each miss so we escape crowded regions.
+        const spread = 1 + attempt * 0.6;
+        const latOff = (Math.random() - 0.5) * 2 * spread;
+        const lngOff = (Math.random() - 0.5) * 2 * spread;
+        const lat = def.lat + latOff;
+        const lng = -(def.lng + lngOff);
+        const snap = this.snap(lat, lng);
+        if (!snap) continue;
+
+        let minGap = Infinity;
+        for (const other of this.reservedPositions) {
+          const gap = this.angularDistance(snap.point, other);
+          if (gap < minGap) minGap = gap;
+        }
+
+        if (minGap >= Animals.MIN_SEPARATION_DEG) {
+          positions.push(snap.point);
+          this.reservedPositions.push(snap.point);
+          break;
+        }
+        if (!best || minGap > best.gap) best = { point: snap.point, gap: minGap };
+        if (attempt === MAX_ATTEMPTS - 1 && best) {
+          positions.push(best.point);
+          this.reservedPositions.push(best.point);
+        }
+      }
     }
     return positions;
   }
