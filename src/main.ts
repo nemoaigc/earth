@@ -80,6 +80,9 @@ const labels = new Labels();
 scene.add(labels.group);
 const animals = new Animals(globe.terrainData, renderer.domElement, globe.snapToSurface);
 scene.add(animals.group);
+animals.onSelect = (_info, position) => {
+  cameraController.focusOn(position);
+};
 
 if (import.meta.env.DEV) {
   (window as unknown as { __earth: unknown }).__earth = { scene, globe, animals, cameraController };

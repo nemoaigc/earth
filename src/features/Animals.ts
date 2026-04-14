@@ -126,10 +126,13 @@ export class Animals {
     }
   };
 
+  onSelect: ((info: AnimalInfo, position: THREE.Vector3) => void) | null = null;
+
   private select(animal: PlacedAnimal) {
     this.selectedAnimal = animal;
     this.panel.show(animal.info);
     this.tooltip.style.display = 'none';
+    this.onSelect?.(animal.info, animal.sprite.position);
   }
 
   deselect() {
