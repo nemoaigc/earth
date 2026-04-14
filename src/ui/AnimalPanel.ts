@@ -106,7 +106,7 @@ export class AnimalPanel {
     if (!info) return;
     const chat = getChat();
     if (!chat) {
-      this.chat = { status: 'error', turns: [], message: '尚未接入对话模型。' };
+      this.chat = { status: 'error', turns: [], message: 'No chat provider registered.' };
       this.render();
       return;
     }
@@ -127,7 +127,7 @@ export class AnimalPanel {
     this.render();
 
     const systemMessages: ChatMessage[] = prior.length === 0
-      ? [{ role: 'system', content: '你是 Lost Planet 行星馆的讲解员，用自然、温暖、略带诗意的语气介绍一种已灭绝或濒危的生物。' }]
+      ? [{ role: 'system', content: 'You are the narrator of the Lost Planet exhibit. Introduce an extinct or endangered species in a warm, slightly poetic tone. Keep it concise and grounded in the facts provided.' }]
       : [];
 
     try {
@@ -210,7 +210,7 @@ export class AnimalPanel {
           <img
             class="animal-panel__hero-image"
             src="${escapeHtml(this.heroImage ?? '')}"
-            alt="${escapeHtml(info.nameCn)}"
+            alt="${escapeHtml(info.name)}"
             onerror="this.style.display='none'"
           />
           <div class="animal-panel__hero-veil"></div>

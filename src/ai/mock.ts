@@ -13,12 +13,12 @@ import type { ChatMessage, StreamChatProvider } from './types';
  */
 function buildNarration(info: AnimalInfo): string {
   const opening = info.status === 'extinct'
-    ? `${info.nameCn}已经从地球上消失。`
-    : `${info.nameCn}仍在这个星球上，但处境非常脆弱。`;
-  const profile = `它主要生活在${info.habitat}，分布于${info.region}。${info.blurb}`;
+    ? `The ${info.name} is gone from this world.`
+    : `The ${info.name} still clings on — but barely.`;
+  const profile = `It lived in ${info.habitat.toLowerCase()}, across ${info.region}. ${info.blurb}`;
   const pressure = info.status === 'extinct'
-    ? `核心诱因是${info.cause}。`
-    : `最主要的压力来自${info.cause}。`;
+    ? `The thread that undid it: ${info.cause.toLowerCase()}.`
+    : `The pressure it faces today: ${info.cause.toLowerCase()}.`;
   return `${opening}\n\n${profile}\n\n${pressure}`;
 }
 
@@ -45,8 +45,8 @@ export const mockChatProvider: StreamChatProvider = {
 
     const q = lastUser?.content?.trim() ?? '';
     const reply = q
-      ? `关于“${q}”——目前这还是本地离线回答。正式上线时我们会把你的问题送到真正的大模型，然后拿到更自然的流式回应。`
-      : `（无输入）这里是占位回答，等你接入真正的对话模型后就会换成流式结果。`;
+      ? `About "${q}" — this is still an offline placeholder. Once you wire up a real LLM, the same streaming pipeline will carry the model's answer instead.`
+      : `(empty prompt) This is a placeholder reply; it will be replaced by a streamed model response once a chat provider is registered.`;
     yield* streamText(reply, signal);
   },
 };
