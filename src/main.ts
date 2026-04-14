@@ -81,8 +81,9 @@ scene.add(labels.group);
 const animals = new Animals(globe.terrainData, renderer.domElement, globe.snapToSurface);
 scene.add(animals.group);
 
-// Debug hooks
-(window as any).__earth = { scene, globe, animals, cameraController };
+if (import.meta.env.DEV) {
+  (window as unknown as { __earth: unknown }).__earth = { scene, globe, animals, cameraController };
+}
 
 // --- Sky elements ---
 const skyDome = new SkyDome();
