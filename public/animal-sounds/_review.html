@@ -63,30 +63,15 @@
   </div>
 
 <script type="module">
-const PROMPTS = {
-  dodo: 'Large flightless pigeon call, deep throaty coo',
-  thylacine: 'Canine-like bark and hissing growl',
-  moa: 'Deep ratite vocalisation, low resonant honk',
-  passengerpigeon: 'Flock of pigeons cooing and wings clapping',
-  greatauk: 'Auk squawk, gull-like seabird call',
-  stellerseacow: 'Sirenian low moaning underwater vocal',
-  quagga: 'Zebra-like whinny, higher than a horse',
-  caspiantiger: 'Large tiger roar, deep chuff',
-  barbarylion: 'Lion roar with dense desert reverb',
-  formosanleopard: 'Leopard growl and chuff, forest ambience',
-  japanesewolf: 'Small wolf howl, melancholy and high-pitched',
-  goldentoad: 'Toad trill, cloud-forest background',
-  caribbeanmonkseal: 'Monk seal bark, shallow-water splash',
-  westernblackrhino: 'Rhino huff and trumpet, savanna ambience',
-  chinesepaddlefish: 'Large river fish splash, underwater rumble',
-  baijidolphin: 'Freshwater dolphin click and whistle',
-  pyreneanibex: 'Ibex bleat with alpine echo',
-  bluebuck: 'Antelope snort and grunt',
-  carolinaparakeet: 'Parakeet flock chatter, sharp bright calls',
-  ivorybill: 'Woodpecker double rap and nasal trumpet',
-};
-
+// The canonical prompt text now lives in manifest.json (written by
+// scripts/generate-animal-sounds.mjs). We read it from there instead
+// of duplicating it here so the two can't drift.
 const manifest = await (await fetch('./manifest.json')).json();
+const PROMPTS = Object.fromEntries(
+  Object.entries(manifest.files ?? {}).map(([id, v]) => [
+    id, (v && typeof v === 'object' && v.prompt) ? v.prompt : '',
+  ])
+);
 // Normalise legacy schema { files: { id: 'foo.mp3' } } to structured entries.
 const entries = Object.keys(PROMPTS).map(id => {
   const raw = manifest.files?.[id];

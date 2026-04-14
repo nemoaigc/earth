@@ -28,27 +28,38 @@ const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const OUT_DIR = resolve(ROOT, 'public/animal-sounds');
 const MANIFEST_PATH = resolve(OUT_DIR, 'manifest.json');
 
+// Prompts researched against:
+//  - 2021 Natural History Museum dodo trachea reconstruction
+//  - 1935 Cornell Lab ivory-billed woodpecker recordings
+//  - Baiji acoustic literature (whistle/echolocation click ranges)
+//  - Historical descriptions for thylacine, passenger pigeon, great auk
+//  - Sirenian research on dugong/manatee (for Steller's sea cow)
+//  - Rhino vocalisation research (no vocal cords — nasal only)
+//  - Hawaiian monk seal repertoire (closest to Caribbean monk seal)
+// Each prompt names the target vocalisation, closest living reference,
+// and the environment. Explicitly excludes mis-synthesis traps
+// (musical instruments for "trumpet", etc.).
 const ANIMALS = [
-  { id: 'dodo',              name: 'Dodo',                        prompt: 'Large flightless pigeon call, deep throaty coo' },
-  { id: 'thylacine',         name: 'Thylacine',                   prompt: 'Canine-like bark and hissing growl' },
-  { id: 'moa',               name: 'Moa',                         prompt: 'Deep ratite vocalisation, low resonant honk' },
-  { id: 'passengerpigeon',   name: 'Passenger Pigeon',            prompt: 'Flock of pigeons cooing and wings clapping' },
-  { id: 'greatauk',          name: 'Great Auk',                   prompt: 'Auk squawk, gull-like seabird call' },
-  { id: 'stellerseacow',     name: "Steller's Sea Cow",           prompt: 'Sirenian low moaning underwater vocal' },
-  { id: 'quagga',            name: 'Quagga',                      prompt: 'Zebra-like whinny, higher than a horse' },
-  { id: 'caspiantiger',      name: 'Caspian Tiger',               prompt: 'Large tiger roar, deep chuff' },
-  { id: 'barbarylion',       name: 'Barbary Lion',                prompt: 'Lion roar with dense desert reverb' },
-  { id: 'formosanleopard',   name: 'Formosan Clouded Leopard',    prompt: 'Leopard growl and chuff, forest ambience' },
-  { id: 'japanesewolf',      name: 'Japanese Wolf',               prompt: 'Small wolf howl, melancholy and high-pitched' },
-  { id: 'goldentoad',        name: 'Golden Toad',                 prompt: 'Toad trill, cloud-forest background' },
-  { id: 'caribbeanmonkseal', name: 'Caribbean Monk Seal',         prompt: 'Monk seal bark, shallow-water splash' },
-  { id: 'westernblackrhino', name: 'Western Black Rhinoceros',    prompt: 'Rhino huff and trumpet, savanna ambience' },
-  { id: 'chinesepaddlefish', name: 'Chinese Paddlefish',          prompt: 'Large river fish splash, underwater rumble' },
-  { id: 'baijidolphin',      name: 'Baiji',                       prompt: 'Freshwater dolphin click and whistle' },
-  { id: 'pyreneanibex',      name: 'Pyrenean Ibex',               prompt: 'Ibex bleat with alpine echo' },
-  { id: 'bluebuck',          name: 'Bluebuck',                    prompt: 'Antelope snort and grunt' },
-  { id: 'carolinaparakeet',  name: 'Carolina Parakeet',           prompt: 'Parakeet flock chatter, sharp bright calls' },
-  { id: 'ivorybill',         name: 'Ivory-billed Woodpecker',     prompt: 'Woodpecker double rap and nasal trumpet' },
+  { id: 'dodo',              name: 'Dodo',                        prompt: 'Deep throaty two-syllable pigeon coo, low "oom-woom" around 180 Hz, resonant and slow, similar to a large Nicobar pigeon but deeper and louder; no music' },
+  { id: 'thylacine',         name: 'Thylacine',                   prompt: 'Marsupial carnivore calls: a short terrier-like "yip yip" and a coarse dry cough-bark used as warning; eucalyptus forest night ambience; no music' },
+  { id: 'moa',               name: 'Moa',                         prompt: 'Giant flightless bird deep resonant booming call through an elongated looped trachea, similar to a trumpeter swan or sandhill crane mixed with a cassowary\'s low moan; New Zealand forest ambience; no musical instruments' },
+  { id: 'passengerpigeon',   name: 'Passenger Pigeon',            prompt: 'Huge pigeon flock overhead: a mix of low "keck keck" calls, rapid "kee-kee-kee-kee" scolding, soft "keeho" coos, and thousands of wings beating; deciduous forest; no music' },
+  { id: 'greatauk',          name: 'Great Auk',                   prompt: 'Large flightless seabird low hoarse croaking and gurgling call, razorbill-like but deeper and louder, occasional bellowing cry; waves on rocky North Atlantic coast; no music' },
+  { id: 'stellerseacow',     name: "Steller's Sea Cow",           prompt: 'Giant sirenian underwater sighs and snorting exhalations, slow and breathy, with faint distant chirps and low moans similar to a dugong; cold shallow Bering Sea ambience; no music' },
+  { id: 'quagga',            name: 'Quagga',                      prompt: 'Plains-zebra whinny and bark-like "quahha" call repeating, with hoof stamps on dry grass; South African veld ambience; no music' },
+  { id: 'caspiantiger',      name: 'Caspian Tiger',               prompt: 'Large tiger deep chuffing exhale and a rolling roar, reed bed and river ambience; no music' },
+  { id: 'barbarylion',       name: 'Barbary Lion',                prompt: 'Big male lion full-throated roar sequence followed by grunts, Atlas mountain forest night ambience; no music' },
+  { id: 'formosanleopard',   name: 'Formosan Clouded Leopard',    prompt: 'Clouded leopard low growl, soft chuff and purr, dripping broadleaf rainforest ambience; no music' },
+  { id: 'japanesewolf',      name: 'Japanese Wolf',               prompt: 'Small wolf high-pitched mournful howl rising and falling, distant mountain wind, cedar forest; no music' },
+  { id: 'goldentoad',        name: 'Golden Toad',                 prompt: 'Small toad sharp rapid chirrup trill, cloud-forest insect and drip background at night; no music' },
+  { id: 'caribbeanmonkseal', name: 'Caribbean Monk Seal',         prompt: 'Monk seal deep guttural belch-like underwater call with occasional whine, similar to Hawaiian monk seal; shallow Caribbean reef ambience; no music' },
+  { id: 'westernblackrhino', name: 'Western Black Rhinoceros',    prompt: 'African rhinoceros nasal grunts, snorts, snuffs and high-pitched squeaks (rhinos have no vocal cords — sound comes from the nasal passages, never a trumpet); heavy footsteps on dry savanna; no musical instruments' },
+  { id: 'chinesepaddlefish', name: 'Chinese Paddlefish',          prompt: 'Large river fish surfacing, a wide body slapping muddy water and powerful tail thrash, gurgling underwater rumble, Yangtze river ambience; no music' },
+  { id: 'baijidolphin',      name: 'Baiji',                       prompt: 'Yangtze river dolphin short upswept whistle around 5 kHz followed by a burst of echolocation clicks, muffled turbid river ambience with distant boat hum; no music' },
+  { id: 'pyreneanibex',      name: 'Pyrenean Ibex',               prompt: 'Wild mountain goat sharp bleat and snort, hoofs on loose rock, alpine wind echo in the Pyrenees; no music' },
+  { id: 'bluebuck',          name: 'Bluebuck',                    prompt: 'Large antelope short nasal snort and low grunt, hoof thud on dry grass, South African plains ambience; no music' },
+  { id: 'carolinaparakeet',  name: 'Carolina Parakeet',           prompt: 'Small parakeet flock sharp bright rapid chatter and occasional harsh screech, eastern US riverine forest ambience; no music' },
+  { id: 'ivorybill',         name: 'Ivory-billed Woodpecker',     prompt: 'Large woodpecker nasal single "kent" note repeated — described as like blowing on a clarinet mouthpiece — plus a sharp double-rap drum on a dead hardwood trunk; swamp forest ambience; no musical instruments' },
 ];
 
 const PROVIDER = process.env.LOST_PLANET_SOUND_PROVIDER ?? '';
@@ -109,7 +120,14 @@ for (const animal of ANIMALS) {
   const outPath = resolve(OUT_DIR, `${animal.id}.mp3`);
   if (existsSync(outPath)) {
     console.log(`— ${animal.id}  already present, keeping`);
-    manifest.files[animal.id] = `${animal.id}.mp3`;
+    manifest.files[animal.id] = {
+      file: `${animal.id}.mp3`,
+      version: 1,
+      accepted: null,
+      generated: true,
+      prompt: animal.prompt,
+      provider: PROVIDER,
+    };
     continue;
   }
   if (!adapter) {
@@ -121,15 +139,22 @@ for (const animal of ANIMALS) {
     const buf = await adapter(animal);
     if (!buf) {
       console.warn(`! ${animal.id}: provider returned null`);
-      manifest.files[animal.id] = null;
+      manifest.files[animal.id] = { file: null, accepted: null, prompt: animal.prompt };
       continue;
     }
     await writeFile(outPath, buf);
-    manifest.files[animal.id] = `${animal.id}.mp3`;
+    manifest.files[animal.id] = {
+      file: `${animal.id}.mp3`,
+      version: 1,
+      accepted: null,
+      generated: true,
+      prompt: animal.prompt,
+      provider: PROVIDER,
+    };
     console.log(`✓ ${animal.id}.mp3  (${(buf.byteLength / 1024).toFixed(0)} KB)`);
   } catch (err) {
     console.error(`✗ ${animal.id}: ${err.message}`);
-    manifest.files[animal.id] = null;
+    manifest.files[animal.id] = { file: null, accepted: null, prompt: animal.prompt, error: err.message };
   }
 }
 

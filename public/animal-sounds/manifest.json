@@ -1,26 +1,166 @@
 {
   "provider": "elevenlabs",
-  "generatedAt": "2026-04-14T06:45:09.765Z",
+  "generatedAt": "2026-04-14T07:24:03.385Z",
   "files": {
-    "dodo": "dodo.mp3",
-    "thylacine": "thylacine.mp3",
-    "moa": "moa.mp3",
-    "passengerpigeon": "passengerpigeon.mp3",
-    "greatauk": "greatauk.mp3",
-    "stellerseacow": "stellerseacow.mp3",
-    "quagga": "quagga.mp3",
-    "caspiantiger": "caspiantiger.mp3",
-    "barbarylion": "barbarylion.mp3",
-    "formosanleopard": "formosanleopard.mp3",
-    "japanesewolf": "japanesewolf.mp3",
-    "goldentoad": "goldentoad.mp3",
-    "caribbeanmonkseal": "caribbeanmonkseal.mp3",
-    "westernblackrhino": "westernblackrhino.mp3",
-    "chinesepaddlefish": "chinesepaddlefish.mp3",
-    "baijidolphin": "baijidolphin.mp3",
-    "pyreneanibex": "pyreneanibex.mp3",
-    "bluebuck": "bluebuck.mp3",
-    "carolinaparakeet": "carolinaparakeet.mp3",
-    "ivorybill": "ivorybill.mp3"
+    "dodo": {
+      "file": "dodo.mp3",
+      "version": 1,
+      "accepted": null,
+      "generated": true,
+      "prompt": "Deep throaty two-syllable pigeon coo, low \"oom-woom\" around 180 Hz, resonant and slow, similar to a large Nicobar pigeon but deeper and louder; no music",
+      "provider": "elevenlabs"
+    },
+    "thylacine": {
+      "file": "thylacine.mp3",
+      "version": 1,
+      "accepted": null,
+      "generated": true,
+      "prompt": "Marsupial carnivore calls: a short terrier-like \"yip yip\" and a coarse dry cough-bark used as warning; eucalyptus forest night ambience; no music",
+      "provider": "elevenlabs"
+    },
+    "moa": {
+      "file": "moa.mp3",
+      "version": 1,
+      "accepted": null,
+      "generated": true,
+      "prompt": "Giant flightless bird deep resonant booming call through an elongated looped trachea, similar to a trumpeter swan or sandhill crane mixed with a cassowary's low moan; New Zealand forest ambience; no musical instruments",
+      "provider": "elevenlabs"
+    },
+    "passengerpigeon": {
+      "file": "passengerpigeon.mp3",
+      "version": 1,
+      "accepted": null,
+      "generated": true,
+      "prompt": "Huge pigeon flock overhead: a mix of low \"keck keck\" calls, rapid \"kee-kee-kee-kee\" scolding, soft \"keeho\" coos, and thousands of wings beating; deciduous forest; no music",
+      "provider": "elevenlabs"
+    },
+    "greatauk": {
+      "file": "greatauk.mp3",
+      "version": 1,
+      "accepted": null,
+      "generated": true,
+      "prompt": "Large flightless seabird low hoarse croaking and gurgling call, razorbill-like but deeper and louder, occasional bellowing cry; waves on rocky North Atlantic coast; no music",
+      "provider": "elevenlabs"
+    },
+    "stellerseacow": {
+      "file": "stellerseacow.mp3",
+      "version": 1,
+      "accepted": null,
+      "generated": true,
+      "prompt": "Giant sirenian underwater sighs and snorting exhalations, slow and breathy, with faint distant chirps and low moans similar to a dugong; cold shallow Bering Sea ambience; no music",
+      "provider": "elevenlabs"
+    },
+    "quagga": {
+      "file": "quagga.mp3",
+      "version": 1,
+      "accepted": null,
+      "generated": true,
+      "prompt": "Plains-zebra whinny and bark-like \"quahha\" call repeating, with hoof stamps on dry grass; South African veld ambience; no music",
+      "provider": "elevenlabs"
+    },
+    "caspiantiger": {
+      "file": "caspiantiger.mp3",
+      "version": 1,
+      "accepted": null,
+      "generated": true,
+      "prompt": "Large tiger deep chuffing exhale and a rolling roar, reed bed and river ambience; no music",
+      "provider": "elevenlabs"
+    },
+    "barbarylion": {
+      "file": "barbarylion.mp3",
+      "version": 1,
+      "accepted": null,
+      "generated": true,
+      "prompt": "Big male lion full-throated roar sequence followed by grunts, Atlas mountain forest night ambience; no music",
+      "provider": "elevenlabs"
+    },
+    "formosanleopard": {
+      "file": "formosanleopard.mp3",
+      "version": 1,
+      "accepted": null,
+      "generated": true,
+      "prompt": "Clouded leopard low growl, soft chuff and purr, dripping broadleaf rainforest ambience; no music",
+      "provider": "elevenlabs"
+    },
+    "japanesewolf": {
+      "file": "japanesewolf.mp3",
+      "version": 1,
+      "accepted": null,
+      "generated": true,
+      "prompt": "Small wolf high-pitched mournful howl rising and falling, distant mountain wind, cedar forest; no music",
+      "provider": "elevenlabs"
+    },
+    "goldentoad": {
+      "file": "goldentoad.mp3",
+      "version": 1,
+      "accepted": null,
+      "generated": true,
+      "prompt": "Small toad sharp rapid chirrup trill, cloud-forest insect and drip background at night; no music",
+      "provider": "elevenlabs"
+    },
+    "caribbeanmonkseal": {
+      "file": "caribbeanmonkseal.mp3",
+      "version": 1,
+      "accepted": null,
+      "generated": true,
+      "prompt": "Monk seal deep guttural belch-like underwater call with occasional whine, similar to Hawaiian monk seal; shallow Caribbean reef ambience; no music",
+      "provider": "elevenlabs"
+    },
+    "westernblackrhino": {
+      "file": "westernblackrhino.mp3",
+      "version": 1,
+      "accepted": null,
+      "generated": true,
+      "prompt": "African rhinoceros nasal grunts, snorts, snuffs and high-pitched squeaks (rhinos have no vocal cords — sound comes from the nasal passages, never a trumpet); heavy footsteps on dry savanna; no musical instruments",
+      "provider": "elevenlabs"
+    },
+    "chinesepaddlefish": {
+      "file": "chinesepaddlefish.mp3",
+      "version": 1,
+      "accepted": null,
+      "generated": true,
+      "prompt": "Large river fish surfacing, a wide body slapping muddy water and powerful tail thrash, gurgling underwater rumble, Yangtze river ambience; no music",
+      "provider": "elevenlabs"
+    },
+    "baijidolphin": {
+      "file": "baijidolphin.mp3",
+      "version": 1,
+      "accepted": null,
+      "generated": true,
+      "prompt": "Yangtze river dolphin short upswept whistle around 5 kHz followed by a burst of echolocation clicks, muffled turbid river ambience with distant boat hum; no music",
+      "provider": "elevenlabs"
+    },
+    "pyreneanibex": {
+      "file": "pyreneanibex.mp3",
+      "version": 1,
+      "accepted": null,
+      "generated": true,
+      "prompt": "Wild mountain goat sharp bleat and snort, hoofs on loose rock, alpine wind echo in the Pyrenees; no music",
+      "provider": "elevenlabs"
+    },
+    "bluebuck": {
+      "file": "bluebuck.mp3",
+      "version": 1,
+      "accepted": null,
+      "generated": true,
+      "prompt": "Large antelope short nasal snort and low grunt, hoof thud on dry grass, South African plains ambience; no music",
+      "provider": "elevenlabs"
+    },
+    "carolinaparakeet": {
+      "file": "carolinaparakeet.mp3",
+      "version": 1,
+      "accepted": null,
+      "generated": true,
+      "prompt": "Small parakeet flock sharp bright rapid chatter and occasional harsh screech, eastern US riverine forest ambience; no music",
+      "provider": "elevenlabs"
+    },
+    "ivorybill": {
+      "file": "ivorybill.mp3",
+      "version": 1,
+      "accepted": null,
+      "generated": true,
+      "prompt": "Large woodpecker nasal single \"kent\" note repeated — described as like blowing on a clarinet mouthpiece — plus a sharp double-rap drum on a dead hardwood trunk; swamp forest ambience; no musical instruments",
+      "provider": "elevenlabs"
+    }
   }
 }
