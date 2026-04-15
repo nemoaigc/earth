@@ -11,6 +11,7 @@
 
 import https from 'https';
 import { writeFileSync, readFileSync, existsSync } from 'fs';
+import { execSync } from 'child_process';
 import { resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
 
@@ -107,13 +108,14 @@ async function downloadAsset(assetId) {
   }
   if (dl.status !== 200) throw new Error(`CDN download failed with status ${dl.status}`);
 
-  // 3. Validate PNG magic bytes before touching disk.
+  // 3. Convert to PNG if Scenario returned JPEG (common with their CDN).
   const PNG_MAGIC = Buffer.from([0x89, 0x50, 0x4e, 0x47]);
   if (!dl.body.slice(0, 4).equals(PNG_MAGIC)) {
-    throw new Error(
-      `Downloaded content is not a PNG (got ${dl.body.slice(0, 4).toString('hex')}). ` +
-      `Refusing to overwrite sprite.`
-    );
+    const tmpJpeg = `/tmp/_scenario_${Date.now()}.jpg`;
+    const tmpPng  = `/tmp/_scenario_${Date.now()}.png`;
+    writeFileSync(tmpJpeg, dl.body);
+    execSync(`sips -s format png "${tmpJpeg}" --out "${tmpPng}"`, { stdio: 'ignore' });
+    dl.body = readFileSync(tmpPng);
   }
 
   return dl.body;
@@ -140,8 +142,17 @@ for (const animal of ANIMALS) {
   const assetId = await waitJob(jobId);
   const buf     = await downloadAsset(assetId);
 
-  writeFileSync(resolve(ROOT, `public/animals/${animal.id}.png`), buf);
-  console.log(` ✓ ${(buf.length / 1024).toFixed(0)} KB`);
+  const outPath = resolve(ROOT, `public/animals/${animal.id}.png`);
+  writeFileSync(outPath, buf);
+
+  // Remove background — requires: pip3 install "rembg[cpu,cli]" --break-system-packages
+  try {
+    execSync(`rembg i "${outPath}" "${outPath}"`, { stdio: 'ignore' });
+    const final = readFileSync(outPath);
+    console.log(` ✓ ${(final.length / 1024).toFixed(0)} KB (RGBA, bg removed)`);
+  } catch {
+    console.log(` ✓ ${(buf.length / 1024).toFixed(0)} KB (rembg not available — background NOT removed)`);
+  }
 
   // Record provenance so the style can be reproduced in future batches.
   sources[animal.id] = {
