@@ -4,8 +4,30 @@ import { mockChatProvider } from './mock';
 /**
  * Single mutable registry. The UI reads from here when it needs to
  * stream a narration or synthesise voice. Providers can be swapped
- * freely at runtime (useful for A/B-ing different LLMs).
+ * freely at runtime.
+ *
+ * One-command cloud activation (Vercel dashboard):
+ *   VITE_LLM_PROXY=1   →  enables /api/chat proxy (set LLM_PROVIDER +
+ *                          the corresponding API key on the server side)
+ *   VITE_TTS_PROXY=1   →  enables /api/tts proxy (set TTS_PROVIDER +
+ *                          ELEVENLABS_API_KEY or OPENAI_API_KEY server-side)
+ *
+ * Without these flags the mock chat provider is used and TTS is silent.
  */
+
+// Lazily import the proxy providers only when the feature flags are set,
+// so their fetch() calls don't appear in the bundle when disabled.
+async function loadProxies() {
+  if (import.meta.env.VITE_LLM_PROXY === '1') {
+    const { httpChatProvider } = await import('./providers/http-chat');
+    registerAi({ chat: httpChatProvider });
+  }
+  if (import.meta.env.VITE_TTS_PROXY === '1') {
+    const { httpTtsProvider } = await import('./providers/http-tts');
+    registerAi({ tts: httpTtsProvider });
+  }
+}
+
 const registry: AiRegistry = {
   chat: mockChatProvider,
   tts: undefined,
@@ -19,14 +41,12 @@ export function registerAi(patch: Partial<AiRegistry>): void {
 export function getChat(): StreamChatProvider | undefined { return registry.chat; }
 export function getTts(): TextToSpeechProvider | undefined { return registry.tts; }
 
-// Let callers attach providers from devtools / bookmarklets without
-// rebuilding (window.__EARTH_AI__ = { chat: ..., tts: ... })
+// Allow runtime injection from devtools / bookmarklets.
 declare global {
-  interface Window {
-    __EARTH_AI__?: Partial<AiRegistry>;
-  }
+  interface Window { __EARTH_AI__?: Partial<AiRegistry>; }
 }
 
-if (typeof window !== 'undefined' && window.__EARTH_AI__) {
-  registerAi(window.__EARTH_AI__);
+if (typeof window !== 'undefined') {
+  if (window.__EARTH_AI__) registerAi(window.__EARTH_AI__);
+  void loadProxies();
 }
