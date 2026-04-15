@@ -1,0 +1,100 @@
+{
+  "stellerseacow": {
+    "tool": "scenario",
+    "model": "model_cox2ghwocuxq1GErcbcXb4aK",
+    "modelName": "Animated Feature 2.0",
+    "prompt": "Steller's Sea Cow, huge manatee-like prehistoric sea creature, massive dark grey barrel-shaped body, wide flat tail flukes, tiny stubby front flippers, round chubby face, Pixar 3D cartoon style, no clothing no costume no accessories, isolated on dark background, game asset character sprite, full body visible",
+    "negative": "clothing, costume, jacket, vest, accessories, dolphin, whale, fish, realistic, photo",
+    "negativePromptStrength": 0.8,
+    "guidance": 8,
+    "numInferenceSteps": 40,
+    "width": 512,
+    "height": 512,
+    "generatedAt": "2026-04-15T08:18:00.000Z"
+  },
+  "greatauk": {
+    "tool": "scenario",
+    "model": "model_cox2ghwocuxq1GErcbcXb4aK",
+    "modelName": "Animated Feature 2.0",
+    "prompt": "Great Auk, large extinct flightless seabird, black back white belly, large hooked beak with white spot, short vestigial wings, upright standing posture, looks like a bigger razorbill, Pixar 3D cartoon style, dark background, game asset character sprite, full body",
+    "negative": "penguin, realistic, photo, clothing, Emperor penguin",
+    "negativePromptStrength": 0.8,
+    "guidance": 8,
+    "numInferenceSteps": 40,
+    "width": 512,
+    "height": 512,
+    "generatedAt": "2026-04-15T08:18:00.000Z"
+  },
+  "baijidolphin": {
+    "tool": "unknown",
+    "note": "Pre-existing asset — no generation record"
+  },
+  "barbarylion": {
+    "tool": "unknown",
+    "note": "Pre-existing asset — no generation record"
+  },
+  "bluebuck": {
+    "tool": "unknown",
+    "note": "Pre-existing asset — no generation record"
+  },
+  "caribbeanmonkseal": {
+    "tool": "unknown",
+    "note": "Pre-existing asset — no generation record"
+  },
+  "carolinaparakeet": {
+    "tool": "unknown",
+    "note": "Pre-existing asset — no generation record"
+  },
+  "caspiantiger": {
+    "tool": "unknown",
+    "note": "Pre-existing asset — no generation record"
+  },
+  "chinesepaddlefish": {
+    "tool": "unknown",
+    "note": "Pre-existing asset — no generation record"
+  },
+  "dodo": {
+    "tool": "unknown",
+    "note": "Pre-existing asset — no generation record"
+  },
+  "formosanleopard": {
+    "tool": "unknown",
+    "note": "Pre-existing asset — no generation record"
+  },
+  "goldentoad": {
+    "tool": "unknown",
+    "note": "Pre-existing asset — no generation record"
+  },
+  "ivorybill": {
+    "tool": "unknown",
+    "note": "Pre-existing asset — no generation record"
+  },
+  "japanesewolf": {
+    "tool": "unknown",
+    "note": "Pre-existing asset — no generation record"
+  },
+  "moa": {
+    "tool": "unknown",
+    "note": "Pre-existing asset — no generation record"
+  },
+  "passengerpigeon": {
+    "tool": "unknown",
+    "note": "Pre-existing asset — no generation record"
+  },
+  "pyreneanibex": {
+    "tool": "unknown",
+    "note": "Pre-existing asset — no generation record"
+  },
+  "quagga": {
+    "tool": "unknown",
+    "note": "Pre-existing asset — no generation record"
+  },
+  "thylacine": {
+    "tool": "unknown",
+    "note": "Pre-existing asset — no generation record"
+  },
+  "westernblackrhino": {
+    "tool": "unknown",
+    "note": "Pre-existing asset — no generation record"
+  }
+}
