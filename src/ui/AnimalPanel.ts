@@ -161,11 +161,12 @@ export class AnimalPanel {
       this.chat = { status: 'ready', turns: finalTurns };
       this.render();
 
-      // Optional voice playback
+      // Optional voice playback (skipped gracefully if TTS not configured)
       const tts = getTts();
       if (tts) {
         try {
           const audio = await tts.synthesize(buffer, { signal: this.chatAbort.signal });
+          if (!audio.url) { audio.dispose?.(); return; } // 204 no-op
           if (this.current?.id !== info.id) { audio.dispose?.(); return; }
           this.tts = audio;
           this.ttsAudio.src = audio.url;
