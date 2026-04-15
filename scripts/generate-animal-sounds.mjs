@@ -109,6 +109,23 @@ const ADAPTERS = {
 
 await mkdir(OUT_DIR, { recursive: true });
 
+// Load the previous manifest so we can preserve reviewed accepted/rejected
+// decisions even when the generator re-runs (e.g. to add a new species
+// or swap a prompt).
+let prevManifest = { files: {} };
+if (existsSync(MANIFEST_PATH)) {
+  try {
+    prevManifest = JSON.parse(await readFile(MANIFEST_PATH, 'utf-8'));
+  } catch {}
+}
+
+function prevAccepted(id) {
+  const e = prevManifest.files?.[id];
+  if (!e || typeof e !== 'object') return null;
+  // Only preserve a definitive human decision (true/false), not null.
+  return typeof e.accepted === 'boolean' ? e.accepted : null;
+}
+
 const adapter = ADAPTERS[PROVIDER];
 const manifest = {
   provider: PROVIDER || 'none',
@@ -123,7 +140,7 @@ for (const animal of ANIMALS) {
     manifest.files[animal.id] = {
       file: `${animal.id}.mp3`,
       version: 1,
-      accepted: null,
+      accepted: prevAccepted(animal.id), // ← preserve prior review decision
       generated: true,
       prompt: animal.prompt,
       provider: PROVIDER,
@@ -156,16 +173,6 @@ for (const animal of ANIMALS) {
     console.error(`✗ ${animal.id}: ${err.message}`);
     manifest.files[animal.id] = { file: null, accepted: null, prompt: animal.prompt, error: err.message };
   }
-}
-
-// Merge with any existing manifest so we don't wipe pre-populated entries.
-if (existsSync(MANIFEST_PATH)) {
-  try {
-    const prev = JSON.parse(await readFile(MANIFEST_PATH, 'utf-8'));
-    for (const [id, file] of Object.entries(prev.files ?? {})) {
-      if (file && manifest.files[id] == null) manifest.files[id] = file;
-    }
-  } catch {}
 }
 
 await writeFile(MANIFEST_PATH, JSON.stringify(manifest, null, 2));

@@ -221,6 +221,9 @@ export class AnimalPanel {
     const soundFile = soundEntry?.file ?? null;
     const soundUnavailable = !soundFile || this.sound.status === 'unavailable';
     const soundIsAi = soundEntry?.generated ?? false;
+    // null = not yet reviewed; true = approved; false = rejected (resolveSound
+    // returns null for false so we never reach here in that case).
+    const soundReviewed = soundEntry?.accepted === true;
 
     this.container.innerHTML = `
       <div class="animal-panel__shell">
@@ -270,7 +273,11 @@ export class AnimalPanel {
             </button>
             <button class="animal-panel__action animal-panel__action--primary" type="button" data-action="sound" ${soundUnavailable ? 'disabled' : ''}>
               <span class="animal-panel__action-label">${this.sound.status === 'playing' ? 'Playing…' : 'Hear Voice'}</span>
-              <span class="animal-panel__action-meta">${soundFile ? (soundIsAi ? 'AI RECONSTRUCTION' : 'ARCHIVE') : 'Pending'}</span>
+              <span class="animal-panel__action-meta">${soundFile
+                ? (soundIsAi
+                    ? (soundReviewed ? 'AI RECONSTRUCTION' : 'AI · UNREVIEWED')
+                    : 'ARCHIVE RECORDING')
+                : 'Pending'}</span>
             </button>
             <a
               class="animal-panel__action animal-panel__action--secondary"

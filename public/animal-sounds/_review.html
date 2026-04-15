@@ -119,10 +119,12 @@ document.getElementById('download').addEventListener('click', () => {
     ...manifest,
     reviewedAt: new Date().toISOString(),
     files: Object.fromEntries(entries.map(e => [e.id, {
-      file: e.file,
-      version: e.version,
+      // Spread the full entry (preserves provider, version, etc.)
+      // then override the mutable review fields so nothing is lost.
+      ...e,
+      // Drop local-only review UI state (id is the map key, not a field)
+      id: undefined,
       accepted: e.accepted,
-      generated: e.generated,
       prompt: e.prompt ?? PROMPTS[e.id],
     }])),
   };
