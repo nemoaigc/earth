@@ -9,26 +9,34 @@ interface BiomeConfig {
   widthRange: [number, number];
   geoType: 'tropical' | 'temperate' | 'boreal' | 'acacia' | 'cactus'
     | 'oak' | 'bamboo' | 'eucalyptus' | 'baobab' | 'spruce' | 'cherry' | 'olive' | 'sequoia';
+  /** max terrain heightNorm — trees don't appear above this elevation */
+  maxHeight?: number;
 }
 
 // Counts roughly halved from previous density — continents were carpeted
 // with overlapping trees, making the globe read as "texture" instead of
 // individual plant life.
+// maxHeight = terrain heightNorm ceiling. Trees above this elevation are
+// excluded so bare ridges and rocky peaks look natural.
+// Low-ground species (tropical, palm, bamboo) stop below 0.45.
+// Mid-elevation forest (temperate, oak, cherry) stop at 0.55.
+// Subalpine (boreal, spruce) survive up to 0.65.
+// Desert species grow only in low/mid arid terrain.
 const BIOME_CONFIGS: BiomeConfig[] = [
-  { biome: 'tropical',  count: 120, heightRange: [0.11, 0.18], widthRange: [0.065, 0.095], geoType: 'tropical' },
-  { biome: 'temperate', count: 120, heightRange: [0.10, 0.15], widthRange: [0.055, 0.085], geoType: 'temperate' },
-  { biome: 'boreal',    count: 120, heightRange: [0.11, 0.18], widthRange: [0.038, 0.055], geoType: 'boreal' },
-  { biome: 'desert',    count: 10,  heightRange: [0.065, 0.095], widthRange: [0.038, 0.055], geoType: 'temperate' },
-  { biome: 'desert',    count: 20,  heightRange: [0.075, 0.105], widthRange: [0.045, 0.065], geoType: 'acacia' },
-  { biome: 'desert',    count: 12,  heightRange: [0.038, 0.055], widthRange: [0.015, 0.023], geoType: 'cactus' },
-  { biome: 'temperate', count: 60,  heightRange: [0.12, 0.16], widthRange: [0.07, 0.095],  geoType: 'oak' },
-  { biome: 'tropical',  count: 30,  heightRange: [0.14, 0.20], widthRange: [0.025, 0.04],  geoType: 'bamboo' },
-  { biome: 'temperate', count: 40,  heightRange: [0.13, 0.18], widthRange: [0.04, 0.06],   geoType: 'eucalyptus' },
-  { biome: 'desert',    count: 12,  heightRange: [0.10, 0.14], widthRange: [0.07, 0.10],   geoType: 'baobab' },
-  { biome: 'boreal',    count: 75,  heightRange: [0.12, 0.19], widthRange: [0.03, 0.045],  geoType: 'spruce' },
-  { biome: 'temperate', count: 20,  heightRange: [0.10, 0.14], widthRange: [0.06, 0.085],  geoType: 'cherry' },
-  { biome: 'desert',    count: 15,  heightRange: [0.08, 0.12], widthRange: [0.05, 0.075],  geoType: 'olive' },
-  { biome: 'temperate', count: 8,   heightRange: [0.16, 0.22], widthRange: [0.05, 0.07],   geoType: 'sequoia' },
+  { biome: 'tropical',  count: 120, heightRange: [0.11, 0.18], widthRange: [0.065, 0.095], geoType: 'tropical',   maxHeight: 0.45 },
+  { biome: 'temperate', count: 120, heightRange: [0.10, 0.15], widthRange: [0.055, 0.085], geoType: 'temperate',  maxHeight: 0.55 },
+  { biome: 'boreal',    count: 120, heightRange: [0.11, 0.18], widthRange: [0.038, 0.055], geoType: 'boreal',     maxHeight: 0.65 },
+  { biome: 'desert',    count: 10,  heightRange: [0.065, 0.095], widthRange: [0.038, 0.055], geoType: 'temperate', maxHeight: 0.40 },
+  { biome: 'desert',    count: 20,  heightRange: [0.075, 0.105], widthRange: [0.045, 0.065], geoType: 'acacia',   maxHeight: 0.45 },
+  { biome: 'desert',    count: 12,  heightRange: [0.038, 0.055], widthRange: [0.015, 0.023], geoType: 'cactus',   maxHeight: 0.35 },
+  { biome: 'temperate', count: 60,  heightRange: [0.12, 0.16], widthRange: [0.07, 0.095],  geoType: 'oak',        maxHeight: 0.55 },
+  { biome: 'tropical',  count: 30,  heightRange: [0.14, 0.20], widthRange: [0.025, 0.04],  geoType: 'bamboo',     maxHeight: 0.40 },
+  { biome: 'temperate', count: 40,  heightRange: [0.13, 0.18], widthRange: [0.04, 0.06],   geoType: 'eucalyptus', maxHeight: 0.50 },
+  { biome: 'desert',    count: 12,  heightRange: [0.10, 0.14], widthRange: [0.07, 0.10],   geoType: 'baobab',     maxHeight: 0.40 },
+  { biome: 'boreal',    count: 75,  heightRange: [0.12, 0.19], widthRange: [0.03, 0.045],  geoType: 'spruce',     maxHeight: 0.65 },
+  { biome: 'temperate', count: 20,  heightRange: [0.10, 0.14], widthRange: [0.06, 0.085],  geoType: 'cherry',     maxHeight: 0.50 },
+  { biome: 'desert',    count: 15,  heightRange: [0.08, 0.12], widthRange: [0.05, 0.075],  geoType: 'olive',      maxHeight: 0.45 },
+  { biome: 'temperate', count: 8,   heightRange: [0.16, 0.22], widthRange: [0.05, 0.07],   geoType: 'sequoia',    maxHeight: 0.55 },
 ];
 
 /* ---------- helpers ---------- */
@@ -485,7 +493,9 @@ export class Trees {
 
     for (const config of BIOME_CONFIGS) {
       const biomePoints = terrainData.landPoints.filter(
-        (p) => p.biome === config.biome && p.height > 0.05
+        (p) => p.biome === config.biome
+          && p.height > 0.05
+          && p.height < (config.maxHeight ?? 1.0)
       );
       if (biomePoints.length === 0) continue;
 

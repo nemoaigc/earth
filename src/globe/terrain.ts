@@ -11,7 +11,10 @@ export interface TerrainData {
   oceanRatio: number;
 }
 
-const LAND_HEIGHT_SCALE = 0.7;
+// Height scale for terrain displacement. Higher = more dramatic elevation.
+// At 1.1 the Himalaya peaks reach ~0.8 units above base — clearly visible
+// as ridges while remaining stylised (not photo-realistic).
+const LAND_HEIGHT_SCALE = 1.1;
 
 // Vibrant colors matching reference screenshots
 const BIOME_COLORS: Record<string, { low: THREE.Color; mid: THREE.Color; high: THREE.Color; snow: THREE.Color }> = {
