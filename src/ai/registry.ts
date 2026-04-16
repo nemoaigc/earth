@@ -24,15 +24,11 @@ async function loadProxies() {
   }
 
   if (import.meta.env.VITE_TTS_PROXY === '1') {
-    // Production: key stays server-side in edge function.
+    // Production: TTS via edge function (/api/tts), key stays server-side.
     const { httpTtsProvider } = await import('./providers/http-tts');
     registerAi({ tts: httpTtsProvider });
-  } else if (import.meta.env.VITE_ELEVENLABS_API_KEY) {
-    // Dev: call ElevenLabs directly (key visible in browser — dev only).
-    const { elevenLabsTtsProvider } = await import('./providers/elevenlabs-tts');
-    registerAi({ tts: elevenLabsTtsProvider });
   } else {
-    // Free fallback: browser-native SpeechSynthesis (no key required).
+    // Default: browser-native SpeechSynthesis — free, no key required.
     const { webSpeechTtsProvider } = await import('./providers/web-speech-tts');
     registerAi({ tts: webSpeechTtsProvider });
   }
