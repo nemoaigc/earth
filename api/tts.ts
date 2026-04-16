@@ -19,26 +19,27 @@ export const config = { runtime: 'edge' };
 const TTS_PROVIDER    = process.env.TTS_PROVIDER ?? '';
 const EL_KEY          = process.env.ELEVENLABS_API_KEY ?? '';
 const OPENAI_KEY      = process.env.OPENAI_API_KEY ?? '';
-const DEFAULT_VOICE   = process.env.TTS_VOICE_ID ?? 'onwK4e9ZLuTAKqWW03F9'; // "Daniel" – neutral, warm
+// Fallback chain in case a specific voice ID is deprecated by ElevenLabs.
+// The operator should set TTS_VOICE_ID in Vercel env vars to a known-good voice.
+const DEFAULT_VOICE = process.env.TTS_VOICE_ID ?? 'onwK4e9ZLuTAKqWW03F9'; // "Daniel"
+const FALLBACK_VOICES = ['nPczCjzI2devNBz1zQrb', 'pNInz6obpgDQGcFmaJgB']; // "Brian", "Adam"
 
 async function synthesizeElevenLabs(text: string, voiceId: string): Promise<Response> {
-  const res = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}/stream`, {
-    method: 'POST',
-    headers: {
-      'xi-api-key': EL_KEY,
-      'Content-Type': 'application/json',
-      'Accept': 'audio/mpeg',
-    },
-    body: JSON.stringify({
-      text,
-      model_id: 'eleven_turbo_v2',
-      voice_settings: { stability: 0.5, similarity_boost: 0.75 },
-    }),
-  });
-  if (!res.ok) throw new Error(`ElevenLabs ${res.status}`);
-  return new Response(res.body, {
-    headers: { 'Content-Type': 'audio/mpeg', 'Cache-Control': 'no-cache', 'Access-Control-Allow-Origin': '*' },
-  });
+  const voices = [voiceId, ...FALLBACK_VOICES.filter(v => v !== voiceId)];
+  let lastStatus = 0;
+  for (const vid of voices) {
+    const res = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${vid}/stream`, {
+      method: 'POST',
+      headers: { 'xi-api-key': EL_KEY, 'Content-Type': 'application/json', 'Accept': 'audio/mpeg' },
+      body: JSON.stringify({ text, model_id: 'eleven_turbo_v2', voice_settings: { stability: 0.5, similarity_boost: 0.75 } }),
+    });
+    if (res.ok) return new Response(res.body, {
+      headers: { 'Content-Type': 'audio/mpeg', 'Cache-Control': 'no-cache', 'Access-Control-Allow-Origin': '*' },
+    });
+    lastStatus = res.status;
+    console.error(`ElevenLabs voice ${vid} failed with ${res.status}; trying fallback`);
+  }
+  throw new Error(`ElevenLabs: all voices failed (last status ${lastStatus})`);
 }
 
 async function synthesizeOpenAI(text: string): Promise<Response> {

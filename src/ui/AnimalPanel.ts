@@ -69,6 +69,9 @@ export class AnimalPanel {
   private tts: { url: string; dispose?: () => void } | null = null;
   private ttsAudio = new Audio();
 
+  /** Called when the panel closes for any reason (× button or Escape). */
+  onHide: (() => void) | null = null;
+
   constructor() {
     this.container = document.createElement('div');
     this.container.className = 'animal-panel';
@@ -101,6 +104,7 @@ export class AnimalPanel {
     this.stopEverything();
     this.current = null;
     this.container.classList.remove('is-visible');
+    this.onHide?.();
   }
 
   private stopEverything() {
@@ -166,7 +170,13 @@ export class AnimalPanel {
       if (tts) {
         try {
           const audio = await tts.synthesize(buffer, { signal: this.chatAbort.signal });
-          if (!audio.url) { audio.dispose?.(); return; } // 204 no-op
+          if (!audio.url) {
+            audio.dispose?.();
+            // TTS not configured — stop any previously playing audio and clear src.
+            this.ttsAudio.pause();
+            this.ttsAudio.removeAttribute('src');
+            return;
+          } // 204 no-op
           if (this.current?.id !== info.id) { audio.dispose?.(); return; }
           // Dispose the previous Blob URL before overwriting to avoid leaks
           // when the user clicks Narrate again while audio is still playing.

@@ -18,7 +18,7 @@ export class Animals {
   private hoveredAnimal: PlacedAnimal | null = null;
   private selectedAnimal: PlacedAnimal | null = null;
   private tooltip: HTMLDivElement;
-  private panel: AnimalPanel;
+  panel: AnimalPanel;
   private domElement: HTMLElement;
   private snap: SurfaceSnap;
 

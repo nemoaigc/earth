@@ -83,6 +83,12 @@ scene.add(animals.group);
 animals.onSelect = (_info, position) => {
   cameraController.focusOn(position);
 };
+// When the panel is closed via the × button, mirror the deselect back to
+// Animals so the selected sprite returns to normal scale and tooltips work.
+animals.panel.onHide = () => {
+  animals.deselect();
+  cameraController.clearFocus();
+};
 
 if (import.meta.env.DEV) {
   (window as unknown as { __earth: unknown }).__earth = { scene, globe, animals, cameraController };
