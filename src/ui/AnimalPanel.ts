@@ -144,7 +144,14 @@ export class AnimalPanel {
     this.chatAbort?.abort();
     this.chatAbort = new AbortController();
     this.chat = { status: 'streaming', turns: nextTurns, liveText: '' };
-    this.render();
+    // Use renderChatOnly for user-initiated messages so the shell's scroll
+    // position is preserved — a full render() replaces the DOM node and
+    // resets scrollTop to 0 before layout, losing the user's read position.
+    if (userMessage !== null) {
+      this.renderChatOnly();
+    } else {
+      this.render();
+    }
 
     const systemMessages: ChatMessage[] = prior.length === 0
       ? [{ role: 'system', content: 'You are the narrator of the Lost Planet exhibit. Introduce an extinct or endangered species in a warm, slightly poetic tone. Keep it concise and grounded in the facts provided.' }]
@@ -163,7 +170,13 @@ export class AnimalPanel {
       if (this.current?.id !== info.id) return;
       const finalTurns: ChatMessage[] = [...nextTurns, { role: 'assistant', content: buffer }];
       this.chat = { status: 'ready', turns: finalTurns };
-      this.render();
+      // Same logic: follow-up messages use renderChatOnly; first narration
+      // uses full render to update the button label (Replay vs Narrate).
+      if (userMessage !== null) {
+        this.renderChatOnly();
+      } else {
+        this.render();
+      }
 
       // Optional voice playback (skipped gracefully if TTS not configured)
       const tts = getTts();
@@ -228,6 +241,9 @@ export class AnimalPanel {
   private render() {
     const info = this.current;
     if (!info) { this.container.innerHTML = ''; return; }
+    // Preserve scroll position so the shell doesn't snap to top on re-render.
+    const shell = this.container.querySelector<HTMLElement>('.animal-panel__shell');
+    const savedScroll = shell?.scrollTop ?? 0;
 
     const status = STATUS_COLORS[info.status];
     const summaryLabel = info.extinctYear ? 'Extinct since' : 'Population';
@@ -313,12 +329,26 @@ export class AnimalPanel {
     `;
 
     this.bindEvents();
+
+    // Restore scroll — after full re-render the shell is a new DOM node.
+    const newShell = this.container.querySelector<HTMLElement>('.animal-panel__shell');
+    if (newShell) {
+      newShell.scrollTop = savedScroll;
+      // After sending a message, scroll thread to bottom so new content is visible.
+      if (this.chat.status !== 'idle') {
+        const thread = newShell.querySelector<HTMLElement>('.animal-panel__chat-thread');
+        if (thread) thread.scrollTop = thread.scrollHeight;
+      }
+    }
   }
 
   private renderChatOnly() {
     const root = this.container.querySelector<HTMLElement>('[data-chat-root]');
     if (!root) { this.render(); return; }
     root.innerHTML = this.renderChat();
+    // Scroll thread to bottom to follow live streaming text.
+    const thread = root.querySelector<HTMLElement>('.animal-panel__chat-thread');
+    if (thread) thread.scrollTop = thread.scrollHeight;
     this.bindChatInput();
   }
 
