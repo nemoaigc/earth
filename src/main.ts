@@ -111,6 +111,21 @@ scene.add(ambientLight);
 
 // --- Animation loop ---
 const clock = new THREE.Clock();
+let firstFrameRendered = false;
+
+function dismissLoadingScreen() {
+  const el = document.getElementById('loading-screen');
+  if (!el) return;
+  // Per animation-principles: min display 500ms, then 100ms overlap with content.
+  const elapsed = performance.now();
+  const MIN_DISPLAY = 500;
+  const delay = Math.max(0, MIN_DISPLAY - elapsed);
+  setTimeout(() => {
+    el.classList.add('fade-out');
+    // Remove from DOM after transition completes (0.9s) to free memory.
+    el.addEventListener('transitionend', () => el.remove(), { once: true });
+  }, delay);
+}
 
 function animate(): void {
   requestAnimationFrame(animate);
@@ -166,6 +181,12 @@ function animate(): void {
   renderer.render(scene, cameraController.camera);
   labels.update(cameraController.camera);
   labelRenderer.render(scene, cameraController.camera);
+
+  // Dismiss loading screen after the first real frame is painted.
+  if (!firstFrameRendered) {
+    firstFrameRendered = true;
+    dismissLoadingScreen();
+  }
 }
 
 animate();
