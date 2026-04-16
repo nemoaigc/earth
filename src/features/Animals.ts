@@ -177,6 +177,7 @@ export class Animals {
   }
 
   deselect() {
+    if (!this.selectedAnimal) return; // guard against re-entrant calls via onHide
     this.selectedAnimal = null;
     this.panel.hide();
   }
