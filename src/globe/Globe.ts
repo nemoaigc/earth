@@ -34,8 +34,9 @@ export class Globe {
     this.terrainData = generateTerrain();
     this.terrainMaterial = new THREE.MeshPhongMaterial({
       vertexColors: true,
-      shininess: 8,
-      flatShading: true,
+      shininess: 12,
+      // smooth shading — computeVertexNormals() in terrain.ts already built
+      // per-vertex averaged normals; removing flatShading uses them.
     });
     const timeUniform = this.timeUniform;
     this.terrainMaterial.onBeforeCompile = (shader) => {
@@ -83,10 +84,8 @@ export class Globe {
     this.group.add(this.terrain);
     this.group.add(this.atmosphere.mesh);
 
-    // Build a raycaster bound to the terrain mesh for exact surface snapping.
-    // Shoots from outside the globe inward so the FrontSide material is hit
-    // (a ray from the centre outward would hit back-facing triangles, which
-    // are ignored by default).
+    // Build a raycaster for exact surface snapping (outside→inward so
+    // FrontSide material is hit; inside-out ray misses front-facing tris).
     const raycaster = new THREE.Raycaster();
     raycaster.near = 0;
     raycaster.far = GLOBE_RADIUS * 2 + 10;

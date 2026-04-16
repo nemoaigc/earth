@@ -59,7 +59,9 @@ const COLOR_OCEAN_DEEP = new THREE.Color('#22aadd');
 const COLOR_OCEAN_SHALLOW = new THREE.Color('#55ccee');
 
 export function generateTerrain(): TerrainData {
-  const geometry = new THREE.SphereGeometry(GLOBE_RADIUS, 256, 256);
+  // 320 segments → ~0.56°/vertex (~62 km), noticeably smoother coastlines
+  // without going to 400+ which doubles generation time.
+  const geometry = new THREE.SphereGeometry(GLOBE_RADIUS, 320, 320);
   const posAttr = geometry.getAttribute('position');
   const vertexCount = posAttr.count;
 
@@ -141,20 +143,37 @@ export function generateTerrain(): TerrainData {
 
       posAttr.setXYZ(i, nx * newRadius, ny * newRadius, nz * newRadius);
 
-      // Blend colors across biomes using weights (smooth transitions)
+      // ── Color is decoupled from height ────────────────────────────────
+      // Previously colorNorm === heightNorm, which pushed interior land
+      // (high coastDist + centralBoost) deep into olive/brown territory.
+      // Now: base color = raw noise only (keeps land vivid and biome-true).
+      // Mountain ridges (regionBoost > 1.0) blend toward high/snow on top
+      // of the base, so only real peaks get rocky colours.
+      const baseColorNorm = Math.min(0.38, noise * 0.9);  // 0→0.38: low→mid
+      const mountainBlend = Math.max(0, (regionBoost - 1.0) / 1.5);   // 0→1 for peaks
+      const colorNorm = baseColorNorm + mountainBlend * (1.0 - baseColorNorm);
+
+      // Smooth-step color bands — avoids the hard threshold "steps" that
+      // create visible colour blocks on the terrain surface.
+      const smoothstep = (e0: number, e1: number, x: number) => {
+        const t = Math.max(0, Math.min(1, (x - e0) / (e1 - e0)));
+        return t * t * (3 - 2 * t);
+      };
+
       const weights = mask.getBiomeWeights(lat, lng);
       color.setRGB(0, 0, 0);
       for (const [biomeName, weight] of Object.entries(weights) as [keyof BiomeWeights, number][]) {
         if (weight < 0.01) continue;
         const palette = BIOME_COLORS[biomeName];
         if (!palette) continue;
-        if (heightNorm < 0.2) {
-          tmpC.lerpColors(palette.low, palette.mid, heightNorm / 0.2);
-        } else if (heightNorm < 0.5) {
-          tmpC.lerpColors(palette.mid, palette.high, (heightNorm - 0.2) / 0.3);
-        } else {
-          tmpC.lerpColors(palette.high, palette.snow, (heightNorm - 0.5) / 0.5);
-        }
+        // Continuous triple-lerp: low→mid→high→snow, fully smooth.
+        const t01 = smoothstep(0.0, 0.35, colorNorm);
+        const t12 = smoothstep(0.30, 0.65, colorNorm);
+        const t23 = smoothstep(0.60, 1.00, colorNorm);
+        tmpC.copy(palette.low)
+          .lerp(palette.mid,  t01)
+          .lerp(palette.high, t12)
+          .lerp(palette.snow, t23);
         color.r += tmpC.r * weight;
         color.g += tmpC.g * weight;
         color.b += tmpC.b * weight;
