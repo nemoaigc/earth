@@ -31,6 +31,10 @@ async function loadProxies() {
     // Dev: call ElevenLabs directly (key visible in browser — dev only).
     const { elevenLabsTtsProvider } = await import('./providers/elevenlabs-tts');
     registerAi({ tts: elevenLabsTtsProvider });
+  } else {
+    // Free fallback: browser-native SpeechSynthesis (no key required).
+    const { webSpeechTtsProvider } = await import('./providers/web-speech-tts');
+    registerAi({ tts: webSpeechTtsProvider });
   }
 }
 
