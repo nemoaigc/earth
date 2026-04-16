@@ -111,11 +111,21 @@ async function downloadAsset(assetId) {
   // 3. Convert to PNG if Scenario returned JPEG (common with their CDN).
   const PNG_MAGIC = Buffer.from([0x89, 0x50, 0x4e, 0x47]);
   if (!dl.body.slice(0, 4).equals(PNG_MAGIC)) {
-    const tmpJpeg = `/tmp/_scenario_${Date.now()}.jpg`;
-    const tmpPng  = `/tmp/_scenario_${Date.now()}.png`;
+    const ts = Date.now();
+    const tmpJpeg = `/tmp/_scenario_${ts}.jpg`;
+    const tmpPng  = `/tmp/_scenario_${ts}_out.png`; // distinct name avoids Date.now() collision
     writeFileSync(tmpJpeg, dl.body);
-    execSync(`sips -s format png "${tmpJpeg}" --out "${tmpPng}"`, { stdio: 'ignore' });
-    dl.body = readFileSync(tmpPng);
+    try {
+      execSync(`sips -s format png "${tmpJpeg}" --out "${tmpPng}"`, { stdio: 'pipe' });
+      dl.body = readFileSync(tmpPng); // update body only on success
+    } catch {
+      // sips is macOS-only; on other platforms install ImageMagick and replace
+      // with: execSync(`convert "${tmpJpeg}" "${tmpPng}"`)
+      throw new Error(
+        `Downloaded image is not PNG and sips conversion failed. ` +
+        `On macOS ensure sips is available; on Linux/Windows install ImageMagick.`
+      );
+    }
   }
 
   return dl.body;

@@ -26,15 +26,12 @@ const ANTHROPIC_KEY = process.env.ANTHROPIC_API_KEY ?? '';
 const OPENAI_KEY    = process.env.OPENAI_API_KEY ?? '';
 const DEEPSEEK_KEY  = process.env.DEEPSEEK_API_KEY ?? '';
 
-// Rate limiting: max 20 requests / minute / IP (in-memory, resets on cold start)
-const ratemap = new Map<string, number[]>();
-function isRateLimited(ip: string): boolean {
-  const now = Date.now();
-  const hits = (ratemap.get(ip) ?? []).filter(t => now - t < 60_000);
-  hits.push(now);
-  ratemap.set(ip, hits);
-  return hits.length > 20;
-}
+// Rate limiting: Edge functions are stateless — in-memory Maps reset on every
+// cold start and are not shared between isolates. For real rate limiting, use
+// Upstash Redis + @upstash/ratelimit (set UPSTASH_REDIS_REST_URL +
+// UPSTASH_REDIS_REST_TOKEN in Vercel env vars, then wrap the handler).
+// Until that is wired up, rate limiting is intentionally skipped.
+function isRateLimited(_ip: string): boolean { return false; }
 
 // ---- Provider adapters --------------------------------------------------
 

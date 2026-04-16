@@ -168,6 +168,10 @@ export class AnimalPanel {
           const audio = await tts.synthesize(buffer, { signal: this.chatAbort.signal });
           if (!audio.url) { audio.dispose?.(); return; } // 204 no-op
           if (this.current?.id !== info.id) { audio.dispose?.(); return; }
+          // Dispose the previous Blob URL before overwriting to avoid leaks
+          // when the user clicks Narrate again while audio is still playing.
+          this.ttsAudio.pause();
+          this.tts?.dispose?.();
           this.tts = audio;
           this.ttsAudio.src = audio.url;
           await this.ttsAudio.play();
