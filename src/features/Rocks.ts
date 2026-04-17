@@ -1,123 +1,171 @@
 import * as THREE from 'three';
 import type { TerrainData } from '../globe/terrain';
 
-const ROCK_COUNT = 120;
+const ROCK_COUNT = 400;
 
-// Rounded boulder
+// ─── Geometry builders ──────────────────────────────────────────────────────
+
 function createBoulderGeometry(): THREE.BufferGeometry {
-  const geo = new THREE.DodecahedronGeometry(0.05, 1);
-  const pos = geo.getAttribute('position');
-  // Gentle perturbation for organic feel
+  const geo = new THREE.IcosahedronGeometry(0.048, 1);
+  const pos = geo.getAttribute('position') as THREE.BufferAttribute;
   for (let i = 0; i < pos.count; i++) {
-    pos.setX(i, pos.getX(i) + (Math.random() - 0.5) * 0.012);
-    pos.setY(i, pos.getY(i) * (0.6 + Math.random() * 0.3) + (Math.random() - 0.5) * 0.008);
-    pos.setZ(i, pos.getZ(i) + (Math.random() - 0.5) * 0.012);
+    const r = 0.85 + Math.random() * 0.3;
+    pos.setX(i, pos.getX(i) * r + (Math.random() - 0.5) * 0.018);
+    pos.setY(i, pos.getY(i) * (0.6 + Math.random() * 0.35));
+    pos.setZ(i, pos.getZ(i) * r + (Math.random() - 0.5) * 0.018);
   }
-  // Vertex colors: base gray-brown, top slightly green (moss)
-  const colors = new Float32Array(pos.count * 3);
-  const baseCol = new THREE.Color('#B0A898');
-  const mossCol = new THREE.Color('#8A9A78');
-  const tmp = new THREE.Color();
-  for (let i = 0; i < pos.count; i++) {
-    const y = pos.getY(i);
-    const t = Math.max(0, Math.min(1, (y + 0.05) / 0.1));
-    tmp.lerpColors(baseCol, mossCol, t * 0.4);
-    colors[i * 3] = tmp.r;
-    colors[i * 3 + 1] = tmp.g;
-    colors[i * 3 + 2] = tmp.b;
-  }
-  geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+  pos.needsUpdate = true;
   geo.computeVertexNormals();
   return geo;
 }
 
-// Jagged pointy rock
-function createJaggedRockGeometry(): THREE.BufferGeometry {
-  const geo = new THREE.TetrahedronGeometry(0.045, 0);
-  const pos = geo.getAttribute('position');
+function createCraggyGeometry(): THREE.BufferGeometry {
+  const geo = new THREE.OctahedronGeometry(0.052, 0);
+  const pos = geo.getAttribute('position') as THREE.BufferAttribute;
+  for (let i = 0; i < pos.count; i++) {
+    pos.setX(i, pos.getX(i) * (0.8 + Math.random() * 0.6) + (Math.random() - 0.5) * 0.024);
+    pos.setY(i, pos.getY(i) * (0.9 + Math.random() * 0.8));
+    pos.setZ(i, pos.getZ(i) * (0.8 + Math.random() * 0.6) + (Math.random() - 0.5) * 0.024);
+  }
+  pos.needsUpdate = true;
+  geo.computeVertexNormals();
+  return geo;
+}
+
+function createSlabGeometry(): THREE.BufferGeometry {
+  const geo = new THREE.IcosahedronGeometry(0.062, 1);
+  const pos = geo.getAttribute('position') as THREE.BufferAttribute;
+  for (let i = 0; i < pos.count; i++) {
+    pos.setX(i, pos.getX(i) * (1.1 + Math.random() * 0.3) + (Math.random() - 0.5) * 0.015);
+    pos.setY(i, pos.getY(i) * (0.18 + Math.random() * 0.14));
+    pos.setZ(i, pos.getZ(i) * (1.1 + Math.random() * 0.3) + (Math.random() - 0.5) * 0.015);
+  }
+  pos.needsUpdate = true;
+  geo.computeVertexNormals();
+  return geo;
+}
+
+function createSpireGeometry(): THREE.BufferGeometry {
+  const geo = new THREE.ConeGeometry(0.026, 0.1, 5, 1);
+  const pos = geo.getAttribute('position') as THREE.BufferAttribute;
   for (let i = 0; i < pos.count; i++) {
     pos.setX(i, pos.getX(i) + (Math.random() - 0.5) * 0.018);
-    pos.setY(i, pos.getY(i) * 1.2 + (Math.random() - 0.5) * 0.01);
     pos.setZ(i, pos.getZ(i) + (Math.random() - 0.5) * 0.018);
   }
-  const colors = new Float32Array(pos.count * 3);
-  const col = new THREE.Color('#9A9088');
-  for (let i = 0; i < pos.count; i++) {
-    colors[i * 3] = col.r + (Math.random() - 0.5) * 0.06;
-    colors[i * 3 + 1] = col.g + (Math.random() - 0.5) * 0.06;
-    colors[i * 3 + 2] = col.b + (Math.random() - 0.5) * 0.04;
-  }
-  geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+  pos.needsUpdate = true;
   geo.computeVertexNormals();
   return geo;
 }
 
-// Flat slab rock
-function createSlabRockGeometry(): THREE.BufferGeometry {
-  const geo = new THREE.DodecahedronGeometry(0.055, 0);
+const SHAPE_FACTORIES = [
+  createBoulderGeometry,
+  createCraggyGeometry,
+  createSlabGeometry,
+  createSpireGeometry,
+];
+
+// ─── Biome-aware palettes ────────────────────────────────────────────────────
+
+interface RockPalette { base: string; shadow: string; highlight: string; moss?: string }
+
+const BIOME_PALETTES: Record<string, RockPalette> = {
+  tropical:  { base: '#7A7060', shadow: '#4A4438', highlight: '#A89880', moss: '#688055' },
+  temperate: { base: '#8A8880', shadow: '#585650', highlight: '#B8B0A0', moss: '#7A9268' },
+  boreal:    { base: '#707878', shadow: '#484E50', highlight: '#A0A8A8', moss: '#607860' },
+  desert:    { base: '#C8A870', shadow: '#907848', highlight: '#E8C890' },
+  polar:     { base: '#B8C4D0', shadow: '#7888A0', highlight: '#D8E4F0' },
+};
+
+function applyRockColors(geo: THREE.BufferGeometry, palette: RockPalette): void {
   const pos = geo.getAttribute('position');
-  for (let i = 0; i < pos.count; i++) {
-    pos.setY(i, pos.getY(i) * 0.3); // flatten
-    pos.setX(i, pos.getX(i) * (1 + (Math.random() - 0.5) * 0.3));
-    pos.setZ(i, pos.getZ(i) * (1 + (Math.random() - 0.5) * 0.3));
-  }
   const colors = new Float32Array(pos.count * 3);
-  const col = new THREE.Color('#B8AA95');
+  const shadow = new THREE.Color(palette.shadow);
+  const base   = new THREE.Color(palette.base);
+  const top    = new THREE.Color(palette.moss ?? palette.highlight);
+  const tmp    = new THREE.Color();
+
+  let yMin = Infinity, yMax = -Infinity;
   for (let i = 0; i < pos.count; i++) {
-    colors[i * 3] = col.r + (Math.random() - 0.5) * 0.05;
-    colors[i * 3 + 1] = col.g + (Math.random() - 0.5) * 0.05;
-    colors[i * 3 + 2] = col.b + (Math.random() - 0.5) * 0.04;
+    const y = pos.getY(i);
+    if (y < yMin) yMin = y;
+    if (y > yMax) yMax = y;
+  }
+  const yRange = (yMax - yMin) || 0.001;
+
+  for (let i = 0; i < pos.count; i++) {
+    const t = (pos.getY(i) - yMin) / yRange;
+    if (t < 0.45) {
+      tmp.lerpColors(shadow, base, t / 0.45);
+    } else {
+      tmp.lerpColors(base, top, (t - 0.45) / 0.55);
+    }
+    const n = (Math.random() - 0.5) * 0.045;
+    colors[i * 3]     = Math.max(0, Math.min(1, tmp.r + n));
+    colors[i * 3 + 1] = Math.max(0, Math.min(1, tmp.g + n));
+    colors[i * 3 + 2] = Math.max(0, Math.min(1, tmp.b + n));
   }
   geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
-  geo.computeVertexNormals();
-  return geo;
 }
 
-const ROCK_GEOMETRIES = [createBoulderGeometry, createJaggedRockGeometry, createSlabRockGeometry];
+// ─── Main class ─────────────────────────────────────────────────────────────
 
 export class Rocks {
   group: THREE.Group;
-  private meshes: THREE.InstancedMesh[] = [];
 
   constructor(terrainData: TerrainData) {
     this.group = new THREE.Group();
 
     const material = new THREE.MeshPhongMaterial({
       vertexColors: true,
-      shininess: 15,
+      shininess: 6,
       flatShading: true,
     });
-    material.color.set(0xffffff);
 
-    const eligible = terrainData.landPoints;
-    const perType = Math.floor(Math.min(ROCK_COUNT, eligible.length) / ROCK_GEOMETRIES.length);
+    const eligible = terrainData.landPoints.filter(p => p.height > 0.05 && p.height < 0.78);
+    const shuffled = [...eligible].sort(() => Math.random() - 0.5);
+    const count = Math.min(ROCK_COUNT, shuffled.length);
 
-    for (let t = 0; t < ROCK_GEOMETRIES.length; t++) {
-      const geo = ROCK_GEOMETRIES[t]();
-      const shuffled = [...eligible].sort(() => Math.random() - 0.5);
-      const count = Math.min(perType, shuffled.length);
-      const mesh = new THREE.InstancedMesh(geo, material, count);
-      mesh.castShadow = true;
-      mesh.receiveShadow = true;
+    type BucketKey = string;
+    const buckets = new Map<BucketKey, { geo: THREE.BufferGeometry; matrices: THREE.Matrix4[] }>();
+    const dummy = new THREE.Object3D();
 
-      const dummy = new THREE.Object3D();
-      for (let i = 0; i < count; i++) {
-        const point = shuffled[i];
-        dummy.position.copy(point.position);
-        dummy.lookAt(0, 0, 0);
-        dummy.rotateX(Math.PI / 2);
+    for (let i = 0; i < count; i++) {
+      const pt      = shuffled[i];
+      const biome   = pt.biome;
+      const shapeBias = pt.height > 0.45 ? [1, 1, 3, 3] : [0, 0, 0, 1, 2];
+      const shapeIdx  = shapeBias[Math.floor(Math.random() * shapeBias.length)];
+      const key       = `${biome}_${shapeIdx}`;
 
-        const scale = 0.5 + Math.random() * 0.8;
-        dummy.scale.set(scale, scale * (0.6 + Math.random() * 0.5), scale);
-        dummy.rotateX(Math.random() * 0.5);
-        dummy.rotateY(Math.random() * Math.PI * 2);
-        dummy.rotateZ(Math.random() * 0.5);
-
-        dummy.updateMatrix();
-        mesh.setMatrixAt(i, dummy.matrix);
+      if (!buckets.has(key)) {
+        const geo = SHAPE_FACTORIES[shapeIdx]();
+        const palette = BIOME_PALETTES[biome] ?? BIOME_PALETTES.temperate;
+        applyRockColors(geo, palette);
+        buckets.set(key, { geo, matrices: [] });
       }
+
+      dummy.position.copy(pt.position);
+      dummy.lookAt(0, 0, 0);
+      dummy.rotateX(Math.PI / 2);
+
+      const s  = 0.45 + Math.random() * 1.1;
+      const sy = s * (0.5 + Math.random() * 0.7);
+      dummy.scale.set(
+        s  * (0.75 + Math.random() * 0.5),
+        sy,
+        s  * (0.75 + Math.random() * 0.5),
+      );
+      dummy.rotateY(Math.random() * Math.PI * 2);
+      dummy.rotateZ((Math.random() - 0.5) * 0.7);
+      dummy.updateMatrix();
+      buckets.get(key)!.matrices.push(dummy.matrix.clone());
+    }
+
+    for (const { geo, matrices } of buckets.values()) {
+      if (matrices.length === 0) continue;
+      const mesh = new THREE.InstancedMesh(geo, material, matrices.length);
+      mesh.castShadow = true;
+      for (let i = 0; i < matrices.length; i++) mesh.setMatrixAt(i, matrices[i]);
       mesh.instanceMatrix.needsUpdate = true;
-      this.meshes.push(mesh);
       this.group.add(mesh);
     }
   }
