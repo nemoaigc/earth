@@ -1,7 +1,5 @@
 import * as THREE from 'three';
 import { GLOBE_RADIUS } from './terrain';
-import { createWorldMask } from './worldmap';
-
 export class Ocean {
   mesh: THREE.Mesh;
   material: THREE.MeshPhongMaterial;
@@ -9,42 +7,14 @@ export class Ocean {
 
   constructor() {
     const geometry = new THREE.IcosahedronGeometry(GLOBE_RADIUS - 0.005, 80);
-    const mask = createWorldMask();
 
-    // Add vertex colors: shallow near coast, deep far from coast
     const posAttr = geometry.getAttribute('position');
     const count = posAttr.count;
     const colors = new Float32Array(count * 3);
-    const shallow = new THREE.Color('#4dd8e8'); // bright cyan
-    const mid = new THREE.Color('#2899cc');      // medium blue
-    const deep = new THREE.Color('#1a6699');      // deep blue
+    const deep = new THREE.Color('#1a6699');
 
-    const c = new THREE.Color();
     for (let i = 0; i < count; i++) {
-      const x = posAttr.getX(i), y = posAttr.getY(i), z = posAttr.getZ(i);
-      const len = Math.sqrt(x*x + y*y + z*z);
-      const nx = x/len, ny = y/len, nz = z/len;
-      const lat = Math.asin(Math.max(-1, Math.min(1, ny))) * 180 / Math.PI;
-      const lng = Math.atan2(nz, nx) * 180 / Math.PI;
-
-      // Check distance to nearest land
-      let nearCoast = false;
-      let veryNearCoast = false;
-      if (mask.isLand(lat+2, lng) || mask.isLand(lat-2, lng) ||
-          mask.isLand(lat, lng+2) || mask.isLand(lat, lng-2)) {
-        veryNearCoast = true;
-      } else if (mask.isLand(lat+5, lng) || mask.isLand(lat-5, lng) ||
-          mask.isLand(lat, lng+5) || mask.isLand(lat, lng-5)) {
-        nearCoast = true;
-      }
-
-      if (veryNearCoast) c.copy(shallow);
-      else if (nearCoast) c.copy(mid);
-      else c.copy(deep);
-
-      colors[i*3] = c.r;
-      colors[i*3+1] = c.g;
-      colors[i*3+2] = c.b;
+      colors[i*3] = deep.r; colors[i*3+1] = deep.g; colors[i*3+2] = deep.b;
     }
     geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
 

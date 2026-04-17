@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { createShallowWaterMesh, generateTerrain, GLOBE_RADIUS } from './terrain';
+import { generateTerrain, GLOBE_RADIUS } from './terrain';
 import type { TerrainData } from './terrain';
 import { Ocean } from './Ocean';
 import { Atmosphere } from './Atmosphere';
@@ -75,12 +75,9 @@ export class Globe {
     );
 
     this.ocean = new Ocean();
-    const shallows = createShallowWaterMesh();
     this.atmosphere = new Atmosphere();
 
-    // Order: ocean first, then shallows, then terrain on top, atmosphere last
     this.group.add(this.ocean.mesh);
-    this.group.add(shallows);
     this.group.add(this.terrain);
     this.group.add(this.atmosphere.mesh);
 
