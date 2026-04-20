@@ -180,16 +180,6 @@ export function generateTerrain(): TerrainData {
         color.b += tmpC.b * weight;
       }
 
-      // Secondary noise: add color patches (like original Tiny Skies)
-      if (biome !== 'desert' && biome !== 'polar') {
-        const patchNoise = noise3D(nx * 4 + 100, ny * 4 + 100, nz * 4 + 100);
-        if (patchNoise > 0.2) {
-          const patchStrength = Math.min(1, (patchNoise - 0.2) * 2.5) * 0.6;
-          const patchIdx = Math.floor(Math.abs(patchNoise * 7)) % PATCH_COLORS.length;
-          const patchColor = PATCH_COLORS[patchIdx];
-          color.lerp(patchColor, patchStrength);
-        }
-      }
 
       colors[i * 3] = color.r;
       colors[i * 3 + 1] = color.g;
