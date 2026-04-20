@@ -1220,7 +1220,7 @@ const P181: [number,number][] = [
   [159.2,-79.5]
 ];
 const P182: [number,number][] = [
-  [-121.8,24.4],[-121.2,22.8],[-120.7,22.0],[-120.2,22.8],[-120.1,23.6],[-120.7,24.5],[-121.5,25.3],[-122.0,25.0],[-121.8,24.4]
+  [-122.2,24.9],[-121.3,22.5],[-120.6,21.3],[-119.8,22.5],[-119.7,23.7],[-120.6,25.0],[-121.8,26.2],[-122.5,25.8],[-122.2,24.9]
 ];
 const P183: [number,number][] = [
   [-51.1,80.5],[-49.8,80.4],[-48.9,80.3],[-48.8,80.2],[-47.6,80.0],[-46.5,80.2],[-47.1,80.6],[-44.8,80.6],[-46.8,80.8],[-48.3,80.8],
@@ -1318,7 +1318,10 @@ export interface BiomeWeights {
 
 export interface WorldMask {
   isLand: (lat: number, lng: number) => boolean;
+  sampleLand: (lat: number, lng: number) => number;
+  sampleLandBlur: (lat: number, lng: number, radiusDeg: number) => number;
   getBiome: (lat: number, lng: number) => string;
+  getLandBiome: (lat: number, lng: number) => string;
   getBiomeWeights: (lat: number, lng: number) => BiomeWeights;
 }
 
@@ -1353,18 +1356,75 @@ export function createWorldMask(): WorldMask {
     }
   }
 
-  function isLand(lat: number, lng: number): boolean {
-    const ix = Math.floor(((lng + 180) / 360) * BW) % BW;
-    const iy = Math.floor(((90 - lat) / 180) * BH);
-    return bitmap[Math.max(0, Math.min(BH - 1, iy)) * BW + ix] === 1;
+  function wrapLng(lng: number): number {
+    return ((((lng + 180) % 360) + 360) % 360) - 180;
   }
 
-  function getBiome(lat: number, lng: number): string {
-    if (!isLand(lat, lng)) return 'ocean';
+  function readBitmap(ix: number, iy: number): number {
+    const x = ((ix % BW) + BW) % BW;
+    const y = Math.max(0, Math.min(BH - 1, iy));
+    return bitmap[y * BW + x];
+  }
+
+  function sampleLand(lat: number, lng: number): number {
+    const wrappedLng = wrapLng(lng);
+    const x = ((wrappedLng + 180) / 360) * BW;
+    const y = ((90 - lat) / 180) * BH;
+    const x0 = Math.floor(x);
+    const y0 = Math.floor(y);
+    const x1 = x0 + 1;
+    const y1 = y0 + 1;
+    const tx = x - x0;
+    const ty = y - y0;
+    const v00 = readBitmap(x0, y0);
+    const v10 = readBitmap(x1, y0);
+    const v01 = readBitmap(x0, y1);
+    const v11 = readBitmap(x1, y1);
+    const top = v00 * (1 - tx) + v10 * tx;
+    const bottom = v01 * (1 - tx) + v11 * tx;
+    return top * (1 - ty) + bottom * ty;
+  }
+
+  function sampleLandBlur(lat: number, lng: number, radiusDeg: number): number {
+    if (radiusDeg <= 0) return sampleLand(lat, lng);
+    const cardinalWeight = 0.12;
+    const diagonalWeight = 0.08;
+    let total = 0;
+    let weight = 0;
+    const add = (sampleLat: number, sampleLng: number, w: number) => {
+      total += sampleLand(sampleLat, sampleLng) * w;
+      weight += w;
+    };
+
+    add(lat, lng, 0.44);
+    add(lat + radiusDeg, lng, cardinalWeight);
+    add(lat - radiusDeg, lng, cardinalWeight);
+    add(lat, lng + radiusDeg, cardinalWeight);
+    add(lat, lng - radiusDeg, cardinalWeight);
+
+    const diagonal = radiusDeg * 0.7071067811865476;
+    add(lat + diagonal, lng + diagonal, diagonalWeight);
+    add(lat + diagonal, lng - diagonal, diagonalWeight);
+    add(lat - diagonal, lng + diagonal, diagonalWeight);
+    add(lat - diagonal, lng - diagonal, diagonalWeight);
+
+    return total / weight;
+  }
+
+  function isLand(lat: number, lng: number): boolean {
+    return sampleLand(lat, lng) >= 0.5;
+  }
+
+  function getLandBiome(lat: number, lng: number): string {
     const w = getBiomeWeights(lat, lng);
     let max = 0; let best = 'temperate';
     for (const [k, v] of Object.entries(w)) { if (v > max) { max = v; best = k; } }
     return best;
+  }
+
+  function getBiome(lat: number, lng: number): string {
+    if (!isLand(lat, lng)) return 'ocean';
+    return getLandBiome(lat, lng);
   }
 
   function getBiomeWeights(lat: number, lng: number): BiomeWeights {
@@ -1381,6 +1441,6 @@ export function createWorldMask(): WorldMask {
     return { tropical, temperate, boreal, desert, polar };
   }
 
-  _cachedMask = { isLand, getBiome, getBiomeWeights };
+  _cachedMask = { isLand, sampleLand, sampleLandBlur, getBiome, getLandBiome, getBiomeWeights };
   return _cachedMask;
 }

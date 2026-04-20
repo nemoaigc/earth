@@ -133,7 +133,6 @@ function animate(): void {
   const deltaTime = clock.getDelta();
   const elapsed = clock.getElapsedTime();
 
-  dayNight.update(deltaTime);
   const state = dayNight.state;
 
   // --- Light driven by sky brightness ---
