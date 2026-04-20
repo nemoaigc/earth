@@ -7,9 +7,7 @@ export class Ocean {
   private uniforms: { oceanTime: { value: number } };
 
   constructor() {
-    // Raised above terrain coast level: IcosahedronGeometry's triangular mesh
-    // defines the visible coastline edge, hiding the SphereGeometry staircase.
-    const geometry = new THREE.IcosahedronGeometry(GLOBE_RADIUS + 0.015, 80);
+    const geometry = new THREE.IcosahedronGeometry(GLOBE_RADIUS - 0.005, 80);
 
     this.uniforms = {
       oceanTime: { value: 0 },
