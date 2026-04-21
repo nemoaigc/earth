@@ -1,7 +1,7 @@
 import './animal-panel.css';
 import type { AnimalInfo } from '../data/animals';
 import type { ChatMessage } from '../ai/types';
-import { getChat, getTts } from '../ai/registry';
+import { getChat } from '../ai/registry';
 import soundManifest from '../../public/animal-sounds/manifest.json';
 
 const STATUS_COLORS = {
@@ -178,30 +178,6 @@ export class AnimalPanel {
         this.render();
       }
 
-      // Optional voice playback (skipped gracefully if TTS not configured)
-      const tts = getTts();
-      if (tts) {
-        try {
-          const audio = await tts.synthesize(buffer, { signal: this.chatAbort.signal });
-          if (!audio.url) {
-            audio.dispose?.();
-            // TTS not configured — stop any previously playing audio and clear src.
-            this.ttsAudio.pause();
-            this.ttsAudio.removeAttribute('src');
-            return;
-          } // 204 no-op
-          if (this.current?.id !== info.id) { audio.dispose?.(); return; }
-          // Dispose the previous Blob URL before overwriting to avoid leaks
-          // when the user clicks Narrate again while audio is still playing.
-          this.ttsAudio.pause();
-          this.tts?.dispose?.();
-          this.tts = audio;
-          this.ttsAudio.src = audio.url;
-          await this.ttsAudio.play();
-        } catch {
-          // TTS failure is non-fatal; leave the text on screen.
-        }
-      }
     } catch (err) {
       if (this.chatAbort?.signal.aborted) return;
       this.chat = {
@@ -349,6 +325,9 @@ export class AnimalPanel {
     // Scroll thread to bottom to follow live streaming text.
     const thread = root.querySelector<HTMLElement>('.animal-panel__chat-thread');
     if (thread) thread.scrollTop = thread.scrollHeight;
+    // Also scroll the outer shell so the chat section stays visible.
+    const shell = this.container.querySelector<HTMLElement>('.animal-panel__shell');
+    if (shell) shell.scrollTop = shell.scrollHeight;
     this.bindChatInput();
   }
 

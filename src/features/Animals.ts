@@ -164,6 +164,8 @@ export class Animals {
   private onClick = () => {
     if (this.hoveredAnimal) {
       this.select(this.hoveredAnimal);
+    } else if (this.selectedAnimal) {
+      this.deselect();
     }
   };
 

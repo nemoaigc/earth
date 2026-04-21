@@ -214,17 +214,26 @@ export function generateTerrain(): TerrainData {
         });
       }
     } else {
-      // OCEAN — push just below ocean mesh to avoid gap
-      const newRadius = GLOBE_RADIUS - 0.02;
-      posAttr.setXYZ(i, nx * newRadius, ny * newRadius, nz * newRadius);
+      // Inland water bodies (Caspian, Aral, lakes): land in all 4 directions → treat as land
+      const isInland =
+        mask.isLand(lat + 15, lng) && mask.isLand(lat - 15, lng) &&
+        mask.isLand(lat, lng + 15) && mask.isLand(lat, lng - 15);
 
-      // Check proximity to land for shallow color
-      const nearLand = mask.isLand(lat + 3, lng) || mask.isLand(lat - 3, lng) ||
-                       mask.isLand(lat, lng + 3) || mask.isLand(lat, lng - 3);
-      if (nearLand) {
-        color.copy(COLOR_OCEAN_SHALLOW);
+      if (isInland) {
+        // Push above ocean mesh so sparkle doesn't bleed through; color as neutral terrain
+        posAttr.setXYZ(i, nx * (GLOBE_RADIUS + 0.002), ny * (GLOBE_RADIUS + 0.002), nz * (GLOBE_RADIUS + 0.002));
+        color.set('#7ab8cc'); // muted inland water — no animated sparkle
       } else {
-        color.copy(COLOR_OCEAN_DEEP);
+        // True ocean — stay close to ocean mesh so coast triangles don't dip below it
+        posAttr.setXYZ(i, nx * (GLOBE_RADIUS - 0.008), ny * (GLOBE_RADIUS - 0.008), nz * (GLOBE_RADIUS - 0.008));
+
+        const nearLand = mask.isLand(lat + 3, lng) || mask.isLand(lat - 3, lng) ||
+                         mask.isLand(lat, lng + 3) || mask.isLand(lat, lng - 3);
+        if (nearLand) {
+          color.copy(COLOR_OCEAN_SHALLOW);
+        } else {
+          color.copy(COLOR_OCEAN_DEEP);
+        }
       }
 
       colors[i * 3] = color.r;
