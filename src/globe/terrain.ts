@@ -121,24 +121,29 @@ export function generateTerrain(): TerrainData {
       // But our polygons are negated. So lng itself IS the negated value.
       // Use lng directly (which is already in our negated coord system)
       let regionBoost = 1.0;
-      // Himalayas / Tibet
+      // Himalayas / Tibet Plateau
       if (lat > 25 && lat < 42 && lng > -102 && lng < -68)
-        regionBoost = 1.0 + 0.9 * Math.max(0, 1 - Math.abs(lat - 33) / 9) * Math.max(0, 1 - Math.abs(lng + 85) / 17);
-      // Andes
+        regionBoost = 1.0 + 1.3 * Math.max(0, 1 - Math.abs(lat - 33) / 9) * Math.max(0, 1 - Math.abs(lng + 85) / 17);
+      // Andes (west coast of S. America — needs effectiveCoastFactor to show)
       if (lat > -55 && lat < 10 && lng > 60 && lng < 80)
-        regionBoost = Math.max(regionBoost, 1.0 + 0.7 * Math.max(0, 1 - Math.abs(lng - 70) / 10));
-      // Rockies — reduced to avoid crazy spires
+        regionBoost = Math.max(regionBoost, 1.0 + 1.1 * Math.max(0, 1 - Math.abs(lng - 70) / 10));
+      // Rockies
       if (lat > 35 && lat < 60 && lng > 105 && lng < 120)
-        regionBoost = Math.max(regionBoost, 1.0 + 0.5 * Math.max(0, 1 - Math.abs(lng - 112) / 8));
+        regionBoost = Math.max(regionBoost, 1.0 + 0.75 * Math.max(0, 1 - Math.abs(lng - 112) / 8));
       // Alps
       if (lat > 43 && lat < 49 && lng > -17 && lng < -4)
-        regionBoost = Math.max(regionBoost, 1.25);
-      // East Africa
-      if (lat > -6 && lat < 6 && lng > -42 && lng < -28)
-        regionBoost = Math.max(regionBoost, 1.2);
+        regionBoost = Math.max(regionBoost, 1.45);
+      // Scandinavian mountains
+      if (lat > 57 && lat < 71 && lng > -12 && lng < -5)
+        regionBoost = Math.max(regionBoost, 1.20);
+      // Caucasus
+      if (lat > 41 && lat < 44 && lng > -50 && lng < -38)
+        regionBoost = Math.max(regionBoost, 1.30);
 
-      // Hard cap so no single combination explodes into skyward spires.
-      const heightNorm = Math.min(noise * coastFactor * centralBoost * regionBoost, 0.72);
+      const mountainBlendFactor = Math.max(0, (regionBoost - 1.0) / 1.5);
+      // regionBoost fades to 1.0 at coast, rises to full value inland — no cliffs
+      const effectiveRegionBoost = 1.0 + (regionBoost - 1.0) * Math.pow(coastDist, 0.6);
+      const heightNorm = Math.min(noise * coastFactor * centralBoost * effectiveRegionBoost, 0.72);
       const height = heightNorm * LAND_HEIGHT_SCALE;
       const newRadius = GLOBE_RADIUS + height;
 
@@ -150,8 +155,9 @@ export function generateTerrain(): TerrainData {
       // Now: base color = raw noise only (keeps land vivid and biome-true).
       // Mountain ridges (regionBoost > 1.0) blend toward high/snow on top
       // of the base, so only real peaks get rocky colours.
-      const baseColorNorm = Math.min(0.38, noise * 0.9);  // 0→0.38: low→mid
-      const mountainBlend = Math.max(0, (regionBoost - 1.0) / 1.5);   // 0→1 for peaks
+      const microVar = noise3D(nx * 1.9, ny * 1.9, nz * 1.9) * 0.03;
+      const baseColorNorm = Math.min(0.55, noise * 0.9 + microVar);
+      const mountainBlend = mountainBlendFactor;
       const colorNorm = baseColorNorm + mountainBlend * (1.0 - baseColorNorm);
 
       // Smooth-step color bands — avoids the hard threshold "steps" that
