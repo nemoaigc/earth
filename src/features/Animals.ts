@@ -75,7 +75,7 @@ export class Animals {
           });
 
           const sprite = new THREE.Sprite(material);
-          const s = info.scale * 0.9 * (0.9 + Math.random() * 0.2);
+          const s = info.scale * 1.5 * (0.9 + Math.random() * 0.2);
           sprite.scale.set(s, s, s);
 
           // Offset sprite center by half-height along normal so the
