@@ -56,77 +56,75 @@
       position: fixed;
       inset: 0;
       z-index: 9999;
+      background: #080810;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      gap: 20px;
-      background: #060810;
-      /* fade-out class triggers the exit transition */
-      transition: opacity 0.9s cubic-bezier(0.22, 1, 0.36, 1),
-                  visibility 0.9s;
+      transition: opacity 1s ease, visibility 1s;
     }
     #loading-screen.fade-out {
       opacity: 0;
       visibility: hidden;
     }
-
-    .ls-title {
-      font-size: clamp(28px, 5vw, 52px);
-      font-weight: 700;
-      letter-spacing: 0.22em;
-      text-transform: uppercase;
-      color: rgba(255,255,255,0.92);
-      /* breathe: scale 0.98→1.02 per Disney principle */
-      animation: ls-breathe 3s ease-in-out infinite;
-    }
-    .ls-sub {
-      font-size: clamp(11px, 1.5vw, 14px);
-      font-weight: 400;
-      letter-spacing: 0.28em;
-      text-transform: uppercase;
-      color: rgba(255,255,255,0.35);
-    }
-    .ls-dots {
-      display: flex;
-      gap: 8px;
-      margin-top: 12px;
-    }
-    .ls-dot {
-      width: 6px;
-      height: 6px;
-      border-radius: 50%;
-      background: rgba(255,255,255,0.55);
-      animation: ls-pulse 1.5s ease-in-out infinite;
-    }
-    .ls-dot:nth-child(2) { animation-delay: 0.3s; }
-    .ls-dot:nth-child(3) { animation-delay: 0.6s; }
-
-    /* subtle top-edge glow */
+    /* subtle aurora gradient in background */
     #loading-screen::before {
       content: '';
       position: absolute;
-      top: 0; left: 10%; right: 10%;
+      width: 600px;
+      height: 600px;
+      border-radius: 50%;
+      background: radial-gradient(circle,
+        rgba(60, 100, 200, 0.12) 0%,
+        transparent 70%);
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      pointer-events: none;
+    }
+    .ls-content {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 14px;
+      text-align: center;
+    }
+    .ls-eyebrow {
+      font-size: 11px;
+      font-weight: 400;
+      letter-spacing: 0.35em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.28);
+    }
+    .ls-title {
+      font-size: clamp(48px, 8vw, 112px);
+      font-weight: 200;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.92);
+      line-height: 1;
+    }
+    .ls-sub {
+      font-size: 12px;
+      font-weight: 300;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.3);
+      margin-top: 2px;
+    }
+    /* thin loading line at very bottom */
+    .ls-bar {
+      position: absolute;
+      bottom: 0;
+      left: 0;
       height: 1px;
-      background: linear-gradient(90deg,
-        transparent,
-        rgba(120,170,255,0.4) 40%,
-        rgba(80,200,220,0.5) 60%,
-        transparent);
-      animation: ls-glow 3s ease-in-out infinite;
+      width: 0%;
+      background: rgba(255,255,255,0.25);
+      animation: ls-bar-fill 2.5s ease-out forwards;
     }
-
-    @keyframes ls-breathe {
-      0%, 100% { transform: scale(1);    opacity: 0.92; }
-      50%       { transform: scale(1.02); opacity: 1;    }
-    }
-    @keyframes ls-pulse {
-      0%, 100% { opacity: 0.25; transform: scale(0.85); }
-      50%       { opacity: 1;    transform: scale(1.15); }
-    }
-    @keyframes ls-glow {
-      0%, 100% { opacity: 0.4; }
-      50%       { opacity: 1;   }
+    @keyframes ls-bar-fill {
+      to { width: 85%; }
     }
 
   </style>
@@ -134,13 +132,12 @@
 <body>
   <!-- Loading screen — removed by main.ts once globe is ready -->
   <div id="loading-screen" aria-label="Loading Lost Planet">
-    <div class="ls-title">Lost Planet</div>
-    <div class="ls-sub">Where extinct species once roamed</div>
-    <div class="ls-dots">
-      <div class="ls-dot"></div>
-      <div class="ls-dot"></div>
-      <div class="ls-dot"></div>
+    <div class="ls-content">
+      <div class="ls-eyebrow">An Extinction Record</div>
+      <div class="ls-title">Lost Planet</div>
+      <div class="ls-sub">Species that vanished from Earth</div>
     </div>
+    <div class="ls-bar"></div>
   </div>
 
   <div id="app"></div>

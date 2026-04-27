@@ -1,124 +1,111 @@
 import * as THREE from 'three';
 import type { TerrainData } from '../globe/terrain';
 
-const ROCK_COUNT = 120;
+// 4 shape variants so not every rock looks identical.
+// Each is a squashed IcosahedronGeometry(1, 0) — 20 angular faces, clearly a rock.
+// Geometry Y is strongly flattened so rocks sit wide & low on terrain.
+const VARIANTS = 4;
+const PER_VARIANT = 18; // 4 × 18 = 72 rocks total
 
-// Rounded boulder
-function createBoulderGeometry(): THREE.BufferGeometry {
-  const geo = new THREE.DodecahedronGeometry(0.05, 1);
-  const pos = geo.getAttribute('position');
-  // Gentle perturbation for organic feel
+const BIOME_COLORS: Record<string, THREE.Color> = {
+  tropical:  new THREE.Color('#8A7A6A'),
+  temperate: new THREE.Color('#8A8272'),
+  boreal:    new THREE.Color('#727268'),
+  desert:    new THREE.Color('#C8A870'),
+  polar:     new THREE.Color('#B0BCC8'),
+};
+const DEFAULT_COLOR = new THREE.Color('#8A8070');
+
+/**
+ * One boulder geometry: IcosahedronGeometry(1,0) with each vertex non-uniformly
+ * scaled so it looks chunky and irregular, but Y is heavily squashed so it reads
+ * as a flat stone sitting on the ground, not a pillar.
+ * Geometry radius ≈ 1 so the caller controls size via dummy.scale.
+ */
+function buildVariant(seed: number): THREE.BufferGeometry {
+  // Clone from a fresh icosahedron each time
+  const geo = new THREE.IcosahedronGeometry(1, 0);
+  const pos = geo.getAttribute('position') as THREE.BufferAttribute;
+  const rng = (i: number) => Math.abs(Math.sin(seed * 127.1 + i * 311.7));
+
   for (let i = 0; i < pos.count; i++) {
-    pos.setX(i, pos.getX(i) + (Math.random() - 0.5) * 0.012);
-    pos.setY(i, pos.getY(i) * (0.6 + Math.random() * 0.3) + (Math.random() - 0.5) * 0.008);
-    pos.setZ(i, pos.getZ(i) + (Math.random() - 0.5) * 0.012);
+    const sx = 0.70 + rng(i * 3)     * 0.60; // 0.70 – 1.30 in X
+    const sy = 0.18 + rng(i * 3 + 1) * 0.22; // 0.18 – 0.40 in Y  ← very flat
+    const sz = 0.70 + rng(i * 3 + 2) * 0.60; // 0.70 – 1.30 in Z
+    pos.setXYZ(i, pos.getX(i) * sx, pos.getY(i) * sy, pos.getZ(i) * sz);
   }
-  // Vertex colors: base gray-brown, top slightly green (moss)
-  const colors = new Float32Array(pos.count * 3);
-  const baseCol = new THREE.Color('#B0A898');
-  const mossCol = new THREE.Color('#8A9A78');
-  const tmp = new THREE.Color();
-  for (let i = 0; i < pos.count; i++) {
-    const y = pos.getY(i);
-    const t = Math.max(0, Math.min(1, (y + 0.05) / 0.1));
-    tmp.lerpColors(baseCol, mossCol, t * 0.4);
-    colors[i * 3] = tmp.r;
-    colors[i * 3 + 1] = tmp.g;
-    colors[i * 3 + 2] = tmp.b;
-  }
-  geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+  pos.needsUpdate = true;
   geo.computeVertexNormals();
   return geo;
 }
-
-// Jagged pointy rock
-function createJaggedRockGeometry(): THREE.BufferGeometry {
-  const geo = new THREE.TetrahedronGeometry(0.045, 0);
-  const pos = geo.getAttribute('position');
-  for (let i = 0; i < pos.count; i++) {
-    pos.setX(i, pos.getX(i) + (Math.random() - 0.5) * 0.018);
-    pos.setY(i, pos.getY(i) * 1.2 + (Math.random() - 0.5) * 0.01);
-    pos.setZ(i, pos.getZ(i) + (Math.random() - 0.5) * 0.018);
-  }
-  const colors = new Float32Array(pos.count * 3);
-  const col = new THREE.Color('#9A9088');
-  for (let i = 0; i < pos.count; i++) {
-    colors[i * 3] = col.r + (Math.random() - 0.5) * 0.06;
-    colors[i * 3 + 1] = col.g + (Math.random() - 0.5) * 0.06;
-    colors[i * 3 + 2] = col.b + (Math.random() - 0.5) * 0.04;
-  }
-  geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
-  geo.computeVertexNormals();
-  return geo;
-}
-
-// Flat slab rock
-function createSlabRockGeometry(): THREE.BufferGeometry {
-  const geo = new THREE.DodecahedronGeometry(0.055, 0);
-  const pos = geo.getAttribute('position');
-  for (let i = 0; i < pos.count; i++) {
-    pos.setY(i, pos.getY(i) * 0.3); // flatten
-    pos.setX(i, pos.getX(i) * (1 + (Math.random() - 0.5) * 0.3));
-    pos.setZ(i, pos.getZ(i) * (1 + (Math.random() - 0.5) * 0.3));
-  }
-  const colors = new Float32Array(pos.count * 3);
-  const col = new THREE.Color('#B8AA95');
-  for (let i = 0; i < pos.count; i++) {
-    colors[i * 3] = col.r + (Math.random() - 0.5) * 0.05;
-    colors[i * 3 + 1] = col.g + (Math.random() - 0.5) * 0.05;
-    colors[i * 3 + 2] = col.b + (Math.random() - 0.5) * 0.04;
-  }
-  geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
-  geo.computeVertexNormals();
-  return geo;
-}
-
-const ROCK_GEOMETRIES = [createBoulderGeometry, createJaggedRockGeometry, createSlabRockGeometry];
 
 export class Rocks {
   group: THREE.Group;
-  private meshes: THREE.InstancedMesh[] = [];
 
   constructor(terrainData: TerrainData) {
     this.group = new THREE.Group();
 
+    // White base so instance color is the sole source of hue.
+    // No vertexColors — that was causing vertex-color × instance-color
+    // double-multiplication that turned everything black.
     const material = new THREE.MeshPhongMaterial({
-      vertexColors: true,
-      shininess: 15,
+      color: new THREE.Color('#ffffff'),
       flatShading: true,
+      shininess: 12,
     });
-    material.color.set(0xffffff);
 
-    const eligible = terrainData.landPoints;
-    const perType = Math.floor(Math.min(ROCK_COUNT, eligible.length) / ROCK_GEOMETRIES.length);
+    const eligible = terrainData.landPoints.filter(
+      p => p.height > 0.08 && p.height < 0.58,
+    );
+    if (eligible.length === 0) return;
 
-    for (let t = 0; t < ROCK_GEOMETRIES.length; t++) {
-      const geo = ROCK_GEOMETRIES[t]();
-      const shuffled = [...eligible].sort(() => Math.random() - 0.5);
-      const count = Math.min(perType, shuffled.length);
-      const mesh = new THREE.InstancedMesh(geo, material, count);
-      mesh.castShadow = true;
-      mesh.receiveShadow = true;
+    const shuffled = [...eligible].sort(() => Math.random() - 0.5);
+    const total = Math.min(VARIANTS * PER_VARIANT, shuffled.length);
 
-      const dummy = new THREE.Object3D();
-      for (let i = 0; i < count; i++) {
-        const point = shuffled[i];
-        dummy.position.copy(point.position);
-        dummy.lookAt(0, 0, 0);
-        dummy.rotateX(Math.PI / 2);
-
-        const scale = 0.5 + Math.random() * 0.8;
-        dummy.scale.set(scale, scale * (0.6 + Math.random() * 0.5), scale);
-        dummy.rotateX(Math.random() * 0.5);
-        dummy.rotateY(Math.random() * Math.PI * 2);
-        dummy.rotateZ(Math.random() * 0.5);
-
-        dummy.updateMatrix();
-        mesh.setMatrixAt(i, dummy.matrix);
-      }
-      mesh.instanceMatrix.needsUpdate = true;
-      this.meshes.push(mesh);
+    // Build variant meshes
+    const meshes: THREE.InstancedMesh[] = [];
+    for (let v = 0; v < VARIANTS; v++) {
+      const geo = buildVariant(v + 1);
+      const mesh = new THREE.InstancedMesh(geo, material, PER_VARIANT);
+      mesh.count = 0;
+      meshes.push(mesh);
       this.group.add(mesh);
+    }
+
+    const dummy = new THREE.Object3D();
+
+    for (let i = 0; i < total; i++) {
+      const p = shuffled[i];
+      const mesh = meshes[i % VARIANTS];
+      if (mesh.count >= PER_VARIANT) continue;
+
+      const color = BIOME_COLORS[p.biome] ?? DEFAULT_COLOR;
+
+      dummy.position.copy(p.position);
+      // Orient so geometry +Y points away from globe centre (= up from terrain)
+      dummy.lookAt(0, 0, 0);
+      dummy.rotateX(Math.PI / 2);
+      // Random spin around the surface normal for variety
+      dummy.rotateY(Math.random() * Math.PI * 2);
+      // Slight random tilt — rocks aren't perfectly level
+      dummy.rotateX((Math.random() - 0.5) * 0.25);
+
+      // s controls world-unit radius of the rock.
+      // Trees are 0.10-0.22 tall; rocks should be smaller footprint.
+      // Geometry radius≈1, so s = world radius in units.
+      // 0.06-0.12 → diameter 0.12-0.24 (clearly visible, clearly smaller than trees)
+      const s = 0.06 + Math.random() * 0.06;
+      dummy.scale.set(s, s, s);
+      dummy.updateMatrix();
+
+      mesh.setMatrixAt(mesh.count, dummy.matrix);
+      mesh.setColorAt(mesh.count, color);
+      mesh.count++;
+    }
+
+    for (const mesh of meshes) {
+      mesh.instanceMatrix.needsUpdate = true;
+      if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
     }
   }
 

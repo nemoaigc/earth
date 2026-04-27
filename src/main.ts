@@ -2,10 +2,9 @@ import * as THREE from 'three';
 import { Globe } from './globe/Globe';
 import { Trees } from './features/Trees';
 import { PalmTrees } from './features/PalmTrees';
-import { Rocks } from './features/Rocks';
-import { Mountains } from './features/Mountains';
+// Mountains removed
 // Balloons removed
-import { Icebergs } from './features/Icebergs';
+// Icebergs removed
 import { Reefs } from './features/Reefs';
 import { Flowers } from './features/Flowers';
 import { Grass } from './features/Grass';
@@ -62,13 +61,7 @@ const trees = new Trees(globe.terrainData);
 scene.add(trees.group);
 const palmTrees = new PalmTrees(globe.terrainData);
 scene.add(palmTrees.group);
-const rocks = new Rocks(globe.terrainData);
-scene.add(rocks.group);
-const mountains = new Mountains(globe.terrainData);
-scene.add(mountains.group);
 // Balloons removed
-const icebergs = new Icebergs(globe.terrainData);
-scene.add(icebergs.group);
 const reefs = new Reefs(globe.terrainData);
 scene.add(reefs.group);
 const flowers = new Flowers(globe.terrainData);
@@ -167,10 +160,7 @@ function animate(): void {
   // --- Terrain features ---
   trees.update(elapsed);
   palmTrees.update(elapsed);
-  rocks.update(elapsed);
-  mountains.update(elapsed);
   // Balloons removed
-  icebergs.update(elapsed);
   reefs.update(elapsed);
   flowers.update(elapsed);
   grass.update(elapsed);
