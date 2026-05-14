@@ -286,15 +286,14 @@ export class AnimalPanel {
                     : 'ARCHIVE RECORDING')
                 : 'Pending'}</span>
             </button>
-            <a
+            <button
               class="animal-panel__action animal-panel__action--secondary"
-              href="https://en.wikipedia.org/wiki/${encodeURIComponent(info.wikiTitle)}"
-              target="_blank"
-              rel="noreferrer"
+              type="button"
+              data-action="wiki"
             >
               <span class="animal-panel__action-label">Read More</span>
               <span class="animal-panel__action-meta">Wikipedia</span>
-            </a>
+            </button>
           </div>
 
           <section class="animal-panel__chat" data-chat-root>
@@ -400,7 +399,59 @@ export class AnimalPanel {
     this.container.querySelector<HTMLElement>('[data-action="sound"]')?.addEventListener('click', () => {
       this.playSound();
     });
+    this.container.querySelector<HTMLElement>('[data-action="wiki"]')?.addEventListener('click', () => {
+      const info = this.current;
+      if (info) this.openWiki(info.wikiTitle, info.name);
+    });
     this.bindChatInput();
+  }
+
+  // --------------------------------------------------------------------
+  // Wikipedia modal (iframe instead of new tab)
+
+  private wikiOverlay: HTMLDivElement | null = null;
+
+  private openWiki(title: string, displayName: string) {
+    this.closeWiki();
+    const overlay = document.createElement('div');
+    overlay.className = 'wiki-overlay';
+    // en.m.wikipedia.org renders cleaner inside an iframe (mobile layout,
+    // no sidebar). Wikipedia does not set X-Frame-Options on the public
+    // article namespace, so framing works.
+    const wikiUrl = `https://en.m.wikipedia.org/wiki/${encodeURIComponent(title)}`;
+    overlay.innerHTML = `
+      <div class="wiki-overlay__backdrop" data-wiki-close></div>
+      <div class="wiki-overlay__shell">
+        <div class="wiki-overlay__topbar">
+          <div class="wiki-overlay__title">${escapeHtml(displayName)} <span class="wiki-overlay__source">Wikipedia</span></div>
+          <div class="wiki-overlay__actions">
+            <a class="wiki-overlay__btn" href="https://en.wikipedia.org/wiki/${encodeURIComponent(title)}" target="_blank" rel="noreferrer" title="Open in new tab">↗</a>
+            <button class="wiki-overlay__btn" type="button" data-wiki-close aria-label="Close">×</button>
+          </div>
+        </div>
+        <iframe class="wiki-overlay__frame" src="${wikiUrl}" referrerpolicy="no-referrer"></iframe>
+      </div>
+    `;
+    document.body.appendChild(overlay);
+    this.wikiOverlay = overlay;
+
+    overlay.querySelectorAll<HTMLElement>('[data-wiki-close]').forEach((el) => {
+      el.addEventListener('click', () => this.closeWiki());
+    });
+    const esc = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') { this.closeWiki(); window.removeEventListener('keydown', esc); }
+    };
+    window.addEventListener('keydown', esc);
+
+    requestAnimationFrame(() => overlay.classList.add('is-visible'));
+  }
+
+  private closeWiki() {
+    if (!this.wikiOverlay) return;
+    const el = this.wikiOverlay;
+    el.classList.remove('is-visible');
+    this.wikiOverlay = null;
+    setTimeout(() => el.remove(), 220);
   }
 
   private bindChatInput() {

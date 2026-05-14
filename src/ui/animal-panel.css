@@ -1,20 +1,21 @@
 .animal-panel {
-  --panel-bg: rgba(255, 255, 255, 0.12);
+  --panel-bg: rgba(255, 255, 255, 0.14);
   --panel-border: rgba(255, 255, 255, 0.28);
   --panel-card-bg: rgba(255, 255, 255, 0.07);
   --panel-card-border: rgba(255, 255, 255, 0.16);
-  --panel-text: rgba(255, 255, 255, 0.95);
-  --panel-text-dim: rgba(255, 255, 255, 0.68);
-  --panel-text-faint: rgba(255, 255, 255, 0.42);
+  --panel-text: rgba(255, 255, 255, 0.96);
+  --panel-text-dim: rgba(255, 255, 255, 0.7);
+  --panel-text-faint: rgba(255, 255, 255, 0.46);
+  --panel-divider: rgba(255, 255, 255, 0.14);
   position: fixed;
   top: 50%;
-  right: 24px;
+  right: 20px;
   z-index: 220;
-  width: min(380px, calc(100vw - 32px));
-  max-height: calc(100vh - 80px);
+  width: min(320px, calc(100vw - 28px));
+  max-height: calc(100vh - 56px);
   opacity: 0;
   pointer-events: none;
-  transform: translate3d(40px, -50%, 0) scale(0.985);
+  transform: translate3d(28px, -50%, 0) scale(0.985);
   transition:
     transform 0.46s cubic-bezier(0.22, 1, 0.36, 1),
     opacity 0.28s ease;
@@ -27,7 +28,7 @@
     sans-serif;
   color: var(--panel-text);
   overflow: hidden;
-  border-radius: 28px;
+  border-radius: 20px;
   -webkit-font-smoothing: antialiased;
 }
 
@@ -50,10 +51,11 @@
   background: var(--panel-bg);
   border: 1px solid var(--panel-border);
   box-shadow:
-    0 24px 60px rgba(0, 0, 0, 0.28),
-    inset 0 1px 0 rgba(255, 255, 255, 0.18);
-  backdrop-filter: blur(32px) saturate(140%);
-  -webkit-backdrop-filter: blur(32px) saturate(140%);
+    0 18px 48px rgba(0, 0, 0, 0.4),
+    0 2px 8px rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(28px) saturate(160%);
+  -webkit-backdrop-filter: blur(28px) saturate(160%);
 }
 
 .animal-panel__shell::before {
@@ -61,16 +63,15 @@
   position: absolute;
   inset: 0;
   background:
-    radial-gradient(circle at 20% 0%, rgba(255, 255, 255, 0.22), transparent 42%),
-    radial-gradient(circle at 100% 100%, rgba(255, 255, 255, 0.06), transparent 40%);
+    radial-gradient(circle at 20% 0%, rgba(255, 255, 255, 0.05), transparent 38%);
   pointer-events: none;
 }
 
 .animal-panel__hero {
   position: relative;
-  height: clamp(180px, 26vh, 240px);
+  height: clamp(120px, 18vh, 150px);
   overflow: hidden;
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(255, 255, 255, 0.03);
 }
 
 .animal-panel__hero-image,
@@ -111,11 +112,11 @@
 
 .animal-panel__hero-topbar {
   position: absolute;
-  left: 22px;
-  right: 22px;
+  left: 14px;
+  right: 14px;
   display: flex;
   align-items: center;
-  top: 18px;
+  top: 12px;
   justify-content: space-between;
 }
 
@@ -123,42 +124,42 @@
 .animal-panel__chip {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  padding: 7px 13px;
+  gap: 6px;
+  padding: 4px 9px;
   border-radius: 999px;
-  border: 1px solid rgba(255, 255, 255, 0.32);
-  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(0, 0, 0, 0.32);
   color: var(--panel-text);
-  backdrop-filter: blur(18px) saturate(140%);
-  -webkit-backdrop-filter: blur(18px) saturate(140%);
+  backdrop-filter: blur(14px) saturate(150%);
+  -webkit-backdrop-filter: blur(14px) saturate(150%);
 }
 
 .animal-panel__badge {
-  font-size: 12px;
+  font-size: 10px;
   font-weight: 700;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.12em;
 }
 
 .animal-panel__close {
-  width: 34px;
-  height: 34px;
-  border: 1px solid rgba(255, 255, 255, 0.32);
+  width: 26px;
+  height: 26px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.14);
+  background: rgba(0, 0, 0, 0.35);
   color: var(--panel-text);
-  font-size: 22px;
+  font-size: 17px;
   line-height: 1;
   cursor: pointer;
-  backdrop-filter: blur(18px) saturate(140%);
-  -webkit-backdrop-filter: blur(18px) saturate(140%);
+  backdrop-filter: blur(14px) saturate(150%);
+  -webkit-backdrop-filter: blur(14px) saturate(150%);
   transition:
     transform 0.18s ease,
     background 0.18s ease;
 }
 
 .animal-panel__close:hover {
-  transform: scale(1.04);
-  background: rgba(255, 255, 255, 0.22);
+  transform: scale(1.06);
+  background: rgba(0, 0, 0, 0.5);
 }
 
 .animal-panel__body {
@@ -166,35 +167,34 @@
   display: flex;
   flex-direction: column;
   gap: 12px;
-  padding: 16px 16px 18px;
+  padding: 14px 16px 16px;
   background: transparent;
 }
 
 .animal-panel__header {
   display: flex;
-  flex-wrap: wrap;
-  justify-content: space-between;
-  gap: 18px;
-  align-items: flex-start;
+  flex-direction: column;
+  gap: 2px;
 }
 
 .animal-panel__title {
-  font-size: clamp(32px, 3.5vw, 42px);
-  line-height: 0.98;
-  letter-spacing: -0.05em;
-  margin-bottom: 8px;
+  font-size: 22px;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  margin: 0;
+  font-weight: 600;
   color: var(--panel-text);
 }
 
 .animal-panel__subtitle {
-  font-size: 17px;
-  color: var(--panel-text-dim);
-  margin-bottom: 4px;
-  font-weight: 500;
+  font-size: 12px;
+  color: var(--panel-text-faint);
+  margin: 0;
+  font-weight: 400;
 }
 
 .animal-panel__scientific {
-  font-size: 13px;
+  font-size: 12px;
   color: var(--panel-text-faint);
   font-style: italic;
 }
@@ -216,7 +216,7 @@
 .animal-panel__actions {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 12px;
+  gap: 6px;
 }
 
 .animal-panel__action {
@@ -224,24 +224,25 @@
   display: flex;
   flex-direction: column;
   justify-content: center;
-  align-items: flex-start;
-  min-height: 64px;
-  padding: 14px 16px;
-  border-radius: 18px;
+  align-items: center;
+  text-align: center;
+  min-height: 44px;
+  padding: 7px 8px;
+  border-radius: 11px;
   text-decoration: none;
   color: inherit;
   border: 1px solid var(--panel-card-border);
   background: var(--panel-card-bg);
   transition:
-    transform 0.18s ease,
-    border-color 0.18s ease,
-    background 0.18s ease;
+    transform 0.16s ease,
+    border-color 0.16s ease,
+    background 0.16s ease;
 }
 
 .animal-panel__action:hover {
-  transform: translateY(-2px);
-  border-color: rgba(255, 255, 255, 0.42);
-  background: rgba(255, 255, 255, 0.14);
+  transform: translateY(-1px);
+  border-color: rgba(255, 255, 255, 0.24);
+  background: rgba(255, 255, 255, 0.08);
 }
 
 .animal-panel__action--primary {
@@ -249,55 +250,81 @@
 }
 
 .animal-panel__action-label {
-  font-size: 16px;
-  font-weight: 700;
-  letter-spacing: -0.03em;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
   color: var(--panel-text);
 }
 
 .animal-panel__action-meta {
-  margin-top: 4px;
-  font-size: 11px;
-  line-height: 1.4;
-  letter-spacing: 0.08em;
+  margin-top: 1px;
+  font-size: 9px;
+  line-height: 1.3;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--panel-text-faint);
 }
 
+/* meta-grid: inline label/value rows instead of card grid */
 .animal-panel__meta-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
-}
-
-.animal-panel__meta-card,
-.animal-panel__section {
-  border-radius: 14px;
-  border: 1px solid var(--panel-card-border);
-  background: var(--panel-card-bg);
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  border-top: 1px solid var(--panel-divider);
+  border-bottom: 1px solid var(--panel-divider);
+  padding: 2px 0;
 }
 
 .animal-panel__meta-card {
-  padding: 14px 16px 15px;
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 14px;
+  padding: 8px 0;
+  border: none;
+  border-top: 1px solid var(--panel-divider);
+  background: transparent;
+  border-radius: 0;
+}
+
+.animal-panel__meta-card:first-child {
+  border-top: none;
 }
 
 .animal-panel__meta-card--wide {
-  grid-column: 1 / -1;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 3px;
 }
 
 .animal-panel__meta-label {
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.16em;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--panel-text-faint);
-  margin-bottom: 8px;
+  margin: 0;
+  flex-shrink: 0;
 }
 
 .animal-panel__meta-value {
-  font-size: 15px;
-  line-height: 1.5;
+  font-size: 13px;
+  line-height: 1.4;
   color: var(--panel-text);
+  text-align: right;
+  font-weight: 500;
+}
+
+.animal-panel__meta-card--wide .animal-panel__meta-value {
+  text-align: left;
+  font-weight: 400;
+  color: var(--panel-text-dim);
+}
+
+.animal-panel__section {
+  border-radius: 12px;
+  border: 1px solid var(--panel-card-border);
+  background: var(--panel-card-bg);
 }
 
 .animal-panel__section {
@@ -318,8 +345,8 @@
 .animal-panel__summary,
 .animal-panel__insight,
 .animal-panel__sound-surface {
-  font-size: 15px;
-  line-height: 1.7;
+  font-size: 13px;
+  line-height: 1.6;
   color: var(--panel-text-dim);
 }
 
@@ -380,17 +407,17 @@
 .animal-panel__chat-thread {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  max-height: 260px;
+  gap: 6px;
+  max-height: 220px;
   overflow-y: auto;
   padding-right: 4px;
 }
 
 .animal-panel__bubble {
-  padding: 10px 14px;
-  border-radius: 14px;
-  font-size: 14px;
-  line-height: 1.6;
+  padding: 8px 12px;
+  border-radius: 12px;
+  font-size: 13px;
+  line-height: 1.55;
   border: 1px solid var(--panel-card-border);
   background: var(--panel-card-bg);
   color: var(--panel-text);
@@ -435,12 +462,12 @@
 
 .animal-panel__chat-input input {
   flex: 1;
-  padding: 10px 14px;
-  border-radius: 12px;
+  padding: 8px 12px;
+  border-radius: 10px;
   border: 1px solid var(--panel-card-border);
   background: var(--panel-card-bg);
   color: var(--panel-text);
-  font-size: 14px;
+  font-size: 13px;
   font-family: inherit;
   outline: none;
   transition: border-color 0.18s ease, background 0.18s ease;
@@ -459,12 +486,12 @@
 }
 
 .animal-panel__chat-input button {
-  padding: 10px 16px;
-  border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.42);
-  background: rgba(255, 255, 255, 0.18);
+  padding: 8px 14px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.1);
   color: var(--panel-text);
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
   font-family: inherit;
   cursor: pointer;
@@ -534,4 +561,117 @@
     transition: none;
     animation: none;
   }
+}
+
+/* ── Wikipedia iframe overlay ─────────────────────────────────────── */
+.wiki-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 240;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.22s ease;
+  pointer-events: none;
+  font-family:
+    "SF Pro Display",
+    "SF Pro Text",
+    -apple-system,
+    BlinkMacSystemFont,
+    "Helvetica Neue",
+    sans-serif;
+}
+
+.wiki-overlay.is-visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.wiki-overlay__backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(8, 10, 18, 0.62);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
+.wiki-overlay__shell {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: min(1080px, 92vw);
+  height: min(820px, 86vh);
+  background: rgba(18, 20, 28, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  border-radius: 18px;
+  box-shadow:
+    0 24px 70px rgba(0, 0, 0, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  overflow: hidden;
+  transform: translateY(8px) scale(0.992);
+  transition: transform 0.32s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.wiki-overlay.is-visible .wiki-overlay__shell {
+  transform: translateY(0) scale(1);
+}
+
+.wiki-overlay__topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.94);
+}
+
+.wiki-overlay__title {
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.wiki-overlay__source {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.wiki-overlay__actions {
+  display: flex;
+  gap: 6px;
+}
+
+.wiki-overlay__btn {
+  width: 28px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.05);
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 15px;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background 0.16s ease;
+  font-family: inherit;
+}
+
+.wiki-overlay__btn:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.wiki-overlay__frame {
+  flex: 1;
+  width: 100%;
+  border: 0;
+  background: #ffffff;
 }

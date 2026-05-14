@@ -56,7 +56,8 @@
       position: fixed;
       inset: 0;
       z-index: 9999;
-      background: #080810;
+      background: transparent;
+      pointer-events: none;
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -66,21 +67,6 @@
     #loading-screen.fade-out {
       opacity: 0;
       visibility: hidden;
-    }
-    /* subtle aurora gradient in background */
-    #loading-screen::before {
-      content: '';
-      position: absolute;
-      width: 600px;
-      height: 600px;
-      border-radius: 50%;
-      background: radial-gradient(circle,
-        rgba(60, 100, 200, 0.12) 0%,
-        transparent 70%);
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      pointer-events: none;
     }
     .ls-content {
       position: relative;
@@ -132,11 +118,6 @@
 <body>
   <!-- Loading screen — removed by main.ts once globe is ready -->
   <div id="loading-screen" aria-label="Loading Lost Planet">
-    <div class="ls-content">
-      <div class="ls-eyebrow">An Extinction Record</div>
-      <div class="ls-title">Lost Planet</div>
-      <div class="ls-sub">Species that vanished from Earth</div>
-    </div>
     <div class="ls-bar"></div>
   </div>
 
