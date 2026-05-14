@@ -1356,6 +1356,52 @@ export function createWorldMask(): WorldMask {
     }
   }
 
+  // Connected-component hole fill. We label every ocean pixel by its
+  // 4-connected component (with lng wrap), then fill components smaller
+  // than MAX_HOLE_PX. This kills small polygon gaps (e.g. the 2-3px
+  // squares inside Africa) while preserving real semi-enclosed seas
+  // (Mediterranean, Red, Persian Gulf, Caspian) and large lakes.
+  // Threshold tuned so: small polygon gaps (<10 px) filled; Caspian
+  // (~250 px @ 0.5°) preserved; all named seas preserved.
+  const MAX_HOLE_PX = 40;
+  const compId = new Int32Array(BW * BH);
+  const queue = new Int32Array(BW * BH);
+  let nextId = 1;
+  const compSize: number[] = [0];
+  for (let start = 0; start < bitmap.length; start++) {
+    if (bitmap[start] !== 0 || compId[start] !== 0) continue;
+    const id = nextId++;
+    let qHead = 0, qTail = 0;
+    queue[qTail++] = start;
+    compId[start] = id;
+    let size = 0;
+    while (qHead < qTail) {
+      const i = queue[qHead++];
+      size++;
+      const y = Math.floor(i / BW);
+      const x = i % BW;
+      const tryAdd = (nx: number, ny: number) => {
+        if (ny < 0 || ny >= BH) return;
+        const xw = ((nx % BW) + BW) % BW;
+        const ni = ny * BW + xw;
+        if (bitmap[ni] === 0 && compId[ni] === 0) {
+          compId[ni] = id;
+          queue[qTail++] = ni;
+        }
+      };
+      tryAdd(x + 1, y);
+      tryAdd(x - 1, y);
+      tryAdd(x, y + 1);
+      tryAdd(x, y - 1);
+    }
+    compSize.push(size);
+  }
+  for (let i = 0; i < bitmap.length; i++) {
+    if (bitmap[i] === 0 && compSize[compId[i]] <= MAX_HOLE_PX) {
+      bitmap[i] = 1;
+    }
+  }
+
   function wrapLng(lng: number): number {
     return ((((lng + 180) % 360) + 360) % 360) - 180;
   }

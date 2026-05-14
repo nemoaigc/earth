@@ -1,3 +1,9 @@
+import { mulberry32 } from './utils/noise';
+// Make every Math.random() call deterministic so the planet (tree
+// positions, animal jitter, sprite scales, etc.) looks identical on
+// every page load. Must run before any other module touches Math.random.
+Math.random = mulberry32(0x5C0F_E2A1);
+
 import * as THREE from 'three';
 import { Globe } from './globe/Globe';
 import { Trees } from './features/Trees';

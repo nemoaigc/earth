@@ -187,9 +187,21 @@ export class Animals {
   update(_time: number, camera: THREE.Camera): void {
     if (this.placed.length === 0) return;
 
+    // Backface culling. The globe mesh is FrontSide-only, so it doesn't
+    // write depth on the hemisphere facing away from the camera, leaving
+    // back-side sprites unoccluded — they appear painted on top of the
+    // visible front. Hide any sprite whose surface normal points away
+    // from the camera. 0.0 threshold means "any sprite past the limb is
+    // hidden"; slight margin (0.05) avoids jitter exactly at the rim.
+    const camDir = camera.position.clone().normalize();
+    for (const p of this.placed) {
+      const spriteDir = p.sprite.position.clone().normalize();
+      p.sprite.visible = spriteDir.dot(camDir) > 0.05;
+    }
+
     // Raycast
     this.raycaster.setFromCamera(this.mouse, camera);
-    const sprites = this.placed.map((p) => p.sprite);
+    const sprites = this.placed.filter((p) => p.sprite.visible).map((p) => p.sprite);
     const intersects = this.raycaster.intersectObjects(sprites, false);
 
     let newHover: PlacedAnimal | null = null;

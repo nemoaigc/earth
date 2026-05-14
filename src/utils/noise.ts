@@ -1,6 +1,21 @@
 import { createNoise3D } from 'simplex-noise';
 
-const noise3D = createNoise3D();
+// Deterministic seed so terrain looks identical on every page load.
+// Mulberry32 PRNG seeded with a fixed constant; simplex-noise uses it to
+// build its permutation table once at module load.
+export function mulberry32(seed: number): () => number {
+  let s = seed >>> 0;
+  return () => {
+    s = (s + 0x6D2B79F5) >>> 0;
+    let t = s;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+const TERRAIN_SEED = 0xEA12_7D_03; // fixed
+const noise3D = createNoise3D(mulberry32(TERRAIN_SEED));
 
 export function sampleNoise(
   x: number, y: number, z: number,
