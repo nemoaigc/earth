@@ -1,8 +1,9 @@
 import * as THREE from 'three';
-import { sampleNoise, noise3D } from '../utils/noise';
+import { sampleNoise } from '../utils/noise';
 import { createWorldMask, type BiomeWeights } from './worldmap';
 
 export const GLOBE_RADIUS = 5;
+const LAND_HEIGHT_SCALE = 1.0;
 
 export interface TerrainData {
   geometry: THREE.BufferGeometry;
@@ -11,352 +12,274 @@ export interface TerrainData {
   oceanRatio: number;
 }
 
-const LAND_HEIGHT_SCALE = 1.0;
+// ═══════════════════════════════════════════════════════════════════
+// Palette — single source of truth for every land/ocean colour.
+// ═══════════════════════════════════════════════════════════════════
 
-// Vibrant colors matching reference screenshots
-const BIOME_COLORS: Record<string, { low: THREE.Color; mid: THREE.Color; high: THREE.Color; snow: THREE.Color }> = {
-  tropical: {
-    low: new THREE.Color('#86D468'),  // bright grass green
-    mid: new THREE.Color('#55A645'),  // forest green
-    high: new THREE.Color('#6B8B3A'), // olive (not brown — kept subtle)
-    snow: new THREE.Color('#F5F5F5'), // near-white peak
-  },
-  temperate: {
-    low: new THREE.Color('#7ACC55'),  // vivid green
-    mid: new THREE.Color('#55A645'),  // forest
-    high: new THREE.Color('#8B9944'), // yellow-green olive (original)
-    snow: new THREE.Color('#F8F8F8'), // snow peak
-  },
-  boreal: {
-    low: new THREE.Color('#3A8833'),  // dark green
-    mid: new THREE.Color('#2A6622'),  // deep forest
-    high: new THREE.Color('#556644'), // grey-green
-    snow: new THREE.Color('#FFFFFF'), // pure snow
-  },
-  desert: {
-    low: new THREE.Color('#DDCC88'),  // sand
-    mid: new THREE.Color('#CCBB77'),  // darker sand
-    high: new THREE.Color('#AA9955'), // brown
-    snow: new THREE.Color('#E8DDC8'), // pale dune crest
-  },
-  polar: {
-    low: new THREE.Color('#DDEEFF'),  // ice blue
-    mid: new THREE.Color('#CCDDEE'),  // lighter
-    high: new THREE.Color('#BBCCDD'), // grey-blue
-    snow: new THREE.Color('#FFFFFF'), // white
-  },
+const C_DEEP_OCEAN    = new THREE.Color('#1E5FA0');
+const C_SHALLOW_OCEAN = new THREE.Color('#46B5C8');
+const C_TURQUOISE     = new THREE.Color('#7CD3D9');
+const C_ROCKY         = new THREE.Color('#7A6A50');
+const C_SNOW          = new THREE.Color('#FBFBFB');
+
+const BIOME_BASE: Record<string, THREE.Color> = {
+  polar:     new THREE.Color('#D8E2E8'),
+  boreal:    new THREE.Color('#3E5A3A'),   // taiga
+  temperate: new THREE.Color('#5BA84A'),
+  tropical:  new THREE.Color('#2E8B2E'),
+  desert:    new THREE.Color('#D9B26A'),
 };
 
-// Secondary noise: darker vegetation patches
-const PATCH_COLORS = [
-  new THREE.Color('#3A7A2A'), // dark green patch
-  new THREE.Color('#7A8844'), // olive patch
-  new THREE.Color('#998855'), // brown-green patch
+// ═══════════════════════════════════════════════════════════════════
+// Mountain regions — table driven. Each region is an ellipse on the
+// lat/lng grid with a smooth cosine falloff. Adding new mountains is
+// just adding a row. Heights stack (clamped later).
+//
+// lng convention: codebase east = negative (real-world east longitude
+// is stored as a negative number here, see worldmap.ts).
+// ═══════════════════════════════════════════════════════════════════
+
+interface MountainRegion {
+  name: string;
+  lat: number;
+  lng: number;
+  latRange: number;  // half-extent N-S, degrees
+  lngRange: number;  // half-extent E-W, degrees
+  peakHeight: number;
+}
+
+const MOUNTAINS: MountainRegion[] = [
+  // Asia
+  { name: 'Himalaya',     lat:  33, lng:  -85, latRange:  8,  lngRange: 14, peakHeight: 1.10 },
+  { name: 'Tian Shan',    lat:  42, lng:  -78, latRange:  4,  lngRange:  8, peakHeight: 0.55 },
+  { name: 'Japanese Alps',lat:  36, lng: -138, latRange:  2,  lngRange:  2, peakHeight: 0.35 },
+  { name: 'Urals',        lat:  60, lng:  -60, latRange:  9,  lngRange:  3, peakHeight: 0.30 },
+  // Americas
+  { name: 'Andes',        lat: -22, lng:   70, latRange: 32,  lngRange:  4, peakHeight: 1.00 },
+  { name: 'Rockies',      lat:  47, lng:  113, latRange: 13,  lngRange:  5, peakHeight: 0.80 },
+  { name: 'Appalachians', lat:  38, lng:   80, latRange:  6,  lngRange:  4, peakHeight: 0.35 },
+  { name: 'Sierra Madre', lat:  25, lng:  103, latRange:  5,  lngRange:  3, peakHeight: 0.35 },
+  { name: 'Brazilian H.', lat: -15, lng:   47, latRange:  7,  lngRange:  7, peakHeight: 0.20 },
+  // Europe
+  { name: 'Alps',         lat:  46, lng:  -10, latRange:  3,  lngRange:  6, peakHeight: 0.55 },
+  { name: 'Pyrenees',     lat:  43, lng:    0, latRange:  1.5,lngRange:  3, peakHeight: 0.40 },
+  { name: 'Apennines',    lat:  43, lng:  -13, latRange:  4,  lngRange:  2, peakHeight: 0.25 },
+  { name: 'Carpathians',  lat:  47, lng:  -22, latRange:  3,  lngRange:  4, peakHeight: 0.30 },
+  { name: 'Caucasus',     lat:42.5, lng:  -44, latRange:  2,  lngRange:  4, peakHeight: 0.45 },
+  { name: 'Scandinavian', lat:  64, lng:   -8, latRange:  7,  lngRange:  3, peakHeight: 0.30 },
+  // Africa
+  { name: 'Atlas',        lat:  33, lng:   -1, latRange:  3,  lngRange: 10, peakHeight: 0.40 },
+  { name: 'Ethiopian H.', lat:  10, lng:  -38, latRange:  5,  lngRange:  4, peakHeight: 0.45 },
+  { name: 'Drakensberg',  lat: -30, lng:  -29, latRange:  3,  lngRange:  3, peakHeight: 0.30 },
+  // Oceania
+  { name: 'Great Divide', lat: -33, lng: -148, latRange:  5,  lngRange:  3, peakHeight: 0.25 },
+  { name: 'NZ Southern',  lat: -43, lng: -170, latRange:  2,  lngRange:  3, peakHeight: 0.40 },
+  // Polar ice plateaus (visual mass for Greenland / Antarctica peaks)
+  { name: 'Greenland',    lat:  72, lng:   37, latRange:  8,  lngRange: 12, peakHeight: 0.55 },
 ];
 
-// Ocean colors
-const COLOR_OCEAN_DEEP = new THREE.Color('#22aadd');
-const COLOR_OCEAN_SHALLOW = new THREE.Color('#55ccee');
+// ═══════════════════════════════════════════════════════════════════
+// Math helpers
+// ═══════════════════════════════════════════════════════════════════
+
+function smoothstep(e0: number, e1: number, x: number): number {
+  const t = Math.max(0, Math.min(1, (x - e0) / (e1 - e0)));
+  return t * t * (3 - 2 * t);
+}
+
+// Smooth cosine falloff inside an ellipse. Returns 1 at centre, 0 at
+// the edge of the ellipse, with a continuous derivative everywhere —
+// so adjoining regions never have a visible crease.
+function ellipseFalloff(
+  dLat: number, latRange: number,
+  dLng: number, lngRange: number,
+): number {
+  const u = dLat / latRange;
+  const v = dLng / lngRange;
+  const r2 = u * u + v * v;
+  if (r2 >= 1) return 0;
+  return Math.cos(Math.sqrt(r2) * Math.PI * 0.5);
+}
+
+// Simplex noise mapped to [0, 1] without the abs() V-fold.
+function noise01(x: number, y: number, z: number, scale: number, octaves = 2): number {
+  return (sampleNoise(x, y, z, octaves, 1.8, 0.5, scale) + 1) * 0.5;
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// Layer: elevation
+// ═══════════════════════════════════════════════════════════════════
+
+const LAND_THRESHOLD = 0.5;
+const COAST_BLUR_DEG = 1.2;   // wide blur → soft coast, no pixel stair
+const COAST_FADE_END = 0.85;  // landness at which we hit full height
+
+function mountainBoost(lat: number, lng: number): number {
+  let total = 0;
+  for (const m of MOUNTAINS) {
+    let dLng = lng - m.lng;
+    if (dLng > 180) dLng -= 360;
+    if (dLng < -180) dLng += 360;
+    const f = ellipseFalloff(Math.abs(lat - m.lat), m.latRange, Math.abs(dLng), m.lngRange);
+    if (f > 0) total += m.peakHeight * f;
+  }
+  return total;
+}
+
+function elevation(
+  nx: number, ny: number, nz: number,
+  lat: number, lng: number,
+  landness: number,
+): number {
+  if (landness < LAND_THRESHOLD) return 0;
+
+  // Smooth coast fade so the shoreline rises gradually from sea level.
+  const coastGate = smoothstep(LAND_THRESHOLD, COAST_FADE_END, landness);
+
+  // Slow rolling base noise — adjacent vertices have very similar
+  // values, so plains read as a smooth gradient (no spikes, no blocks).
+  const baseNoise = noise01(nx, ny, nz, 0.13);
+  const baseHeight = 0.06 + baseNoise * 0.22;   // [0.06, 0.28]
+
+  // Mountains (table driven)
+  let mtHeight = mountainBoost(lat, lng);
+
+  // Subtle ridge variation only inside real mountain regions, so peaks
+  // get some character without affecting plains.
+  if (mtHeight > 0.15) {
+    const ridge = noise01(nx, ny, nz, 0.30);
+    mtHeight *= 0.85 + ridge * 0.30;
+  }
+
+  return (baseHeight + mtHeight) * coastGate;
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// Layer: biome (single dominant biome per vertex)
+// ═══════════════════════════════════════════════════════════════════
+
+function dominantBiome(
+  mask: ReturnType<typeof createWorldMask>,
+  lat: number, lng: number,
+): string {
+  const weights = mask.getBiomeWeights(lat, lng);
+  let best: keyof BiomeWeights = 'temperate';
+  let bestW = -1;
+  for (const [name, w] of Object.entries(weights) as [keyof BiomeWeights, number][]) {
+    if (w > bestW) { bestW = w; best = name; }
+  }
+  return best;
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// Layer: colour
+// ═══════════════════════════════════════════════════════════════════
+
+// Snowline elevation as a function of latitude.
+// Equator: only the highest peaks (snowline ≈ 0.80).
+// 70°+:    most things are snow (snowline ≈ 0.15).
+function snowline(lat: number): number {
+  return 0.80 - smoothstep(35, 70, Math.abs(lat)) * 0.65;
+}
+
+function landColor(biome: string, elev: number, lat: number, out: THREE.Color): THREE.Color {
+  const base = BIOME_BASE[biome] ?? BIOME_BASE.temperate;
+  out.copy(base);
+
+  const sl = snowline(lat);
+  // Rocky band: just below snowline, only on appreciable elevation.
+  const rockyMix = smoothstep(Math.max(0.30, sl - 0.20), sl - 0.04, elev);
+  out.lerp(C_ROCKY, rockyMix);
+
+  // Snow above snowline (narrow transition → crisp peaks).
+  const altSnow = smoothstep(sl - 0.04, sl + 0.04, elev);
+  // Polar latitudes always wear snow regardless of elevation.
+  const polarSnow = smoothstep(68, 75, Math.abs(lat));
+  out.lerp(C_SNOW, Math.max(altSnow, polarSnow));
+
+  return out;
+}
+
+function oceanColor(landness: number, out: THREE.Color): THREE.Color {
+  const t = smoothstep(0, LAND_THRESHOLD, landness);
+  out.copy(C_DEEP_OCEAN).lerp(C_SHALLOW_OCEAN, t);
+  // Narrow turquoise band right at the shoreline.
+  const shore = smoothstep(0.35, LAND_THRESHOLD, landness);
+  out.lerp(C_TURQUOISE, shore * 0.5);
+  return out;
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// Top-level: build the geometry
+// ═══════════════════════════════════════════════════════════════════
 
 export function generateTerrain(): TerrainData {
-  // 320 segments → ~0.56°/vertex (~62 km), noticeably smoother coastlines
-  // without going to 400+ which doubles generation time.
   const geometry = new THREE.SphereGeometry(GLOBE_RADIUS, 480, 480);
   const posAttr = geometry.getAttribute('position');
   const vertexCount = posAttr.count;
-
   const colors = new Float32Array(vertexCount * 3);
   const landPoints: TerrainData['landPoints'] = [];
   const coastPoints: TerrainData['coastPoints'] = [];
   let oceanCount = 0;
 
   const mask = createWorldMask();
-  const color = new THREE.Color();
-  const tmpC = new THREE.Color();
+  const colorBuf = new THREE.Color();
 
   for (let i = 0; i < vertexCount; i++) {
     const x = posAttr.getX(i);
     const y = posAttr.getY(i);
     const z = posAttr.getZ(i);
-
-    const len = Math.sqrt(x * x + y * y + z * z);
-    const nx = x / len;
-    const ny = y / len;
-    const nz = z / len;
-
-    // Convert to lat/lng
+    const len = Math.sqrt(x * x + y * y + z * z) || 1;
+    const nx = x / len, ny = y / len, nz = z / len;
     const lat = Math.asin(Math.max(-1, Math.min(1, ny))) * 180 / Math.PI;
     const lng = Math.atan2(nz, nx) * 180 / Math.PI;
 
-    // Continuous landness. Small 0.4° blur kernel — cardinal samples land
-    // INSIDE the adjacent bitmap pixel (px = 0.5°), so it smooths the
-    // bilinear stair pattern without bridging the ~1° Taiwan Strait.
-    const landness = mask.sampleLandBlur(lat, lng, 0.55);
-    const biome = mask.getBiome(lat, lng);
-    const smoothstepFn = (e0: number, e1: number, x: number) => {
-      const t = Math.max(0, Math.min(1, (x - e0) / (e1 - e0)));
-      return t * t * (3 - 2 * t);
-    };
+    // ── Layer 1: landness (single source of truth for coast) ──
+    const landness = mask.sampleLandBlur(lat, lng, COAST_BLUR_DEG);
 
-    if (landness >= 0.5) {
-      // Check distance to coast: sample nearby points for ocean
-      let coastDist = 1.0; // 1.0 = far from coast
-      for (let step = 1; step <= 7; step++) {
-        const d = step * 2.1;
-        const nearOcean =
-          !mask.isLand(lat + d, lng) || !mask.isLand(lat - d, lng) ||
-          !mask.isLand(lat, lng + d) || !mask.isLand(lat, lng - d) ||
-          !mask.isLand(lat + d, lng + d) || !mask.isLand(lat - d, lng - d);
-        if (nearOcean) {
-          coastDist = step / 7;
-          break;
-        }
-      }
-      // Smooth ramp: height scales with distance from coast
-      const coastFactor = coastDist; // linear ramp — visible mountains inland
+    if (landness >= LAND_THRESHOLD) {
+      // ── Land vertex ──
+      const elev = elevation(nx, ny, nz, lat, lng, landness);
+      const r = GLOBE_RADIUS + elev * LAND_HEIGHT_SCALE;
+      posAttr.setXYZ(i, nx * r, ny * r, nz * r);
 
-      // Low-freq rolling hills. Two key choices for smoothness:
-      // (1) We map noise from [-1,1] to [0,1] with (n+1)*0.5 — NOT
-      //     Math.abs(n). Math.abs has a V-shaped fold at n=0, so any
-      //     vertex straddling that boundary becomes a local minimum
-      //     while its neighbours can be high — exactly the "spike /
-      //     column" artefact we saw. Linear remap removes the fold.
-      // (2) Keep scale at 0.20 (original) so plains still have visible
-      //     rolling elevation — just smoother because the abs-fold is
-      //     gone, not because the field is artificially flattened.
-      const hills = sampleNoise(nx, ny, nz, 2, 1.8, 0.5, 0.20);
-      // Texture scale lowered 0.50 -> 0.30: high-freq detail varies more
-      // slowly across the sphere, so adjacent vertices have very close
-      // height — kills the "blocky" feel where neighbouring triangles
-      // have visibly different elevation.
-      const texture = sampleNoise(nx, ny, nz, 2, 2.0, 0.4, 0.30);
-      const hillsN = (hills + 1) * 0.5;
-      const textN  = (texture + 1) * 0.5;
-      const noise = hillsN * 0.85 + textN * 0.08 + 0.07;
-      const centralBoost = 1.0 + coastDist * 0.30;
+      const biome = dominantBiome(mask, lat, lng);
+      landColor(biome, elev, lat, colorBuf);
+      colors[i * 3]     = colorBuf.r;
+      colors[i * 3 + 1] = colorBuf.g;
+      colors[i * 3 + 2] = colorBuf.b;
 
-      // Ridge noise — sharp peaks/valleys that break the smooth gaussian
-      // regionBoost into a more "mountain range" look. Only applied where
-      // mountainBlendFactor > 0 (real mountain regions).
-      const ridgeRaw = sampleNoise(nx, ny, nz, 2, 4.0, 0.5, 0.35);
-      const ridge = 1.0 - Math.abs(ridgeRaw); // [0..1], 1 = peak ridge
-
-      // Regional mountain boost
-      // lng from atan2 is raw (positive=east), negate to match our polygon system
-      // Actually: lng = atan2(nz,nx), for real-world east=positive this gives positive values
-      // But our polygons are negated. So lng itself IS the negated value.
-      // Use lng directly (which is already in our negated coord system)
-      // 2D gaussian falloff helper: center (clat, clng), half-extents (dlat, dlng).
-      // Outside the falloff radius returns 0 so we can skip the if-box entirely.
-      const peak2d = (clat: number, dlat: number, clng: number, dlng: number) => {
-        const fl = 1 - Math.abs(lat - clat) / dlat;
-        const fn = 1 - Math.abs(lng - clng) / dlng;
-        if (fl <= 0 || fn <= 0) return 0;
-        return fl * fn;
-      };
-      // 1D ridge helper for long N-S or E-W ranges
-      const ridge1dLng = (clng: number, dlng: number, latMin: number, latMax: number) => {
-        if (lat < latMin || lat > latMax) return 0;
-        return Math.max(0, 1 - Math.abs(lng - clng) / dlng);
-      };
-      // lng note: real east → negative in our system, real west → positive.
-      let regionBoost = 1.0;
-      const bump = (peakBoost: number, factor: number) => {
-        if (factor <= 0) return;
-        regionBoost = Math.max(regionBoost, 1.0 + peakBoost * factor);
-      };
-
-      // === Asia ===
-      // Himalayas / Tibet Plateau
-      bump(1.8, peak2d(33, 8, -85, 16));
-      // Japanese Alps (central Honshu)
-      bump(0.45, peak2d(36, 2, -138, 2));
-      // Urals (north-south ridge)
-      bump(0.25, ridge1dLng(-60, 4, 50, 67));
-
-      // === Americas ===
-      // Andes — narrow N-S ridge along the Pacific coast (Chile/Peru).
-      // Width tightened from 9° to 4° so the chain reads as a coastal
-      // wall rather than a slab covering half the continent.
-      bump(1.5, ridge1dLng(70, 4, -55, 10));
-      // Rockies — slightly wider N-S ridge.
-      bump(1.1, ridge1dLng(112, 5, 35, 60));
-      // Appalachians (E North America)
-      bump(0.55, ridge1dLng(78, 6, 33, 45));
-      // Sierra Madre Occidental (W Mexico)
-      bump(0.35, peak2d(27, 5, 105, 3));
-      // Brazilian Highlands (E Brazil) — low elevated plateau
-      bump(0.20, peak2d(-15, 7, 47, 7));
-
-      // === Europe ===
-      // Alps
-      bump(0.65, peak2d(46, 3, -10, 6));
-      // Scandinavian mountains (N-S ridge)
-      bump(0.30, ridge1dLng(-8, 4, 57, 71));
-      // Caucasus
-      bump(0.30, peak2d(42.5, 2, -44, 4));
-      // Pyrenees
-      bump(0.50, peak2d(43, 1.5, -0.5, 3));
-      // Apennines (Italy)
-      bump(0.30, peak2d(43, 4, -13, 3));
-      // Carpathians (Romania/Ukraine)
-      bump(0.35, peak2d(47, 3, -22, 4));
-
-      // === Africa ===
-      // Atlas Mountains (NW Africa)
-      bump(0.45, peak2d(33, 4, -1, 12));
-      // Ethiopian Highlands
-      bump(0.50, peak2d(10, 5, -38, 4));
-      // Drakensberg (SE Africa)
-      bump(0.35, peak2d(-30, 3, -29, 3));
-
-      // === Oceania & polar ===
-      // Great Dividing Range (E Australia)
-      bump(0.30, ridge1dLng(-148, 3, -38, -28));
-      // New Zealand Southern Alps
-      bump(0.55, peak2d(-43, 2, -170, 3));
-      // Greenland ice cap (high plateau)
-      bump(0.55, peak2d(72, 8, 37, 12));
-
-      const mountainBlendFactor = Math.max(0, (regionBoost - 1.0) / 1.5);
-      // regionBoost still fades to coast but less aggressively, so seaside
-      // ranges (Andes) actually rise out of the water.
-      const effectiveRegionBoost = 1.0 + (regionBoost - 1.0) * Math.pow(coastDist, 0.3);
-      // Coast softness: ramp height from 0 across a wide [0.45, 0.90] band.
-      const coastSoftness = smoothstepFn(0.50, 0.95, landness);
-      // Mountain regions: modulate by ridge noise so the smooth gaussian
-      // dome becomes a series of peaks/saddles. Outside mountains: factor=1.
-      const ridgeFactor = 1.0 + mountainBlendFactor * (ridge - 0.5) * 0.4;
-      const heightNorm = Math.min(
-        noise * coastFactor * coastSoftness * centralBoost * effectiveRegionBoost * ridgeFactor,
-        1.35,
-      );
-      const height = heightNorm * LAND_HEIGHT_SCALE;
-      const newRadius = GLOBE_RADIUS + height;
-
-      posAttr.setXYZ(i, nx * newRadius, ny * newRadius, nz * newRadius);
-
-      // ── Colour is driven by actual height, not by region presence ──
-      // Previously colorNorm was forced to 1.0 wherever a mountain bump
-      // existed at all (mountainBlendFactor → 1 across the whole bump),
-      // so every face inside Andes/Rockies hit the snow band even at
-      // mid-elevation. Driving it from heightNorm lets ridge-high faces
-      // be snow while ridge-low faces inside the same range stay
-      // biome-coloured or rocky brown — the "snow on peaks, green on
-      // slopes" look from the reference Himalaya art.
-      const microVar = noise3D(nx * 1.9, ny * 1.9, nz * 1.9) * 0.03;
-      const colorNorm = Math.min(1.0, heightNorm * 0.95 + microVar);
-
-      // Smooth-step color bands — avoids the hard threshold "steps" that
-      // create visible colour blocks on the terrain surface.
-      const smoothstep = (e0: number, e1: number, x: number) => {
-        const t = Math.max(0, Math.min(1, (x - e0) / (e1 - e0)));
-        return t * t * (3 - 2 * t);
-      };
-
-      const weights = mask.getBiomeWeights(lat, lng);
-      color.setRGB(0, 0, 0);
-      // Rocky-brown intermediate stage between olive high-elevation and snow.
-      // Only applied within real mountain regions so plains don't get brown.
-      const ROCKY = tmpC; // reuse holder
-      for (const [biomeName, weight] of Object.entries(weights) as [keyof BiomeWeights, number][]) {
-        if (weight < 0.01) continue;
-        const palette = BIOME_COLORS[biomeName];
-        if (!palette) continue;
-        // Continuous quad-lerp: low → mid → high(olive) → rocky → snow.
-        const t01 = smoothstep(0.0, 0.35, colorNorm);
-        const t12 = smoothstep(0.32, 0.62, colorNorm);
-        // Rocky band only inside mountain regions (mountainBlendFactor > 0)
-        const rockyT = smoothstep(0.55, 0.78, colorNorm) * mountainBlendFactor;
-        const t23 = smoothstep(0.78, 0.95, colorNorm);
-        ROCKY.setRGB(0.42, 0.36, 0.30); // dark rocky brown
-        tmpC.copy(palette.low)
-          .lerp(palette.mid,  t01)
-          .lerp(palette.high, t12);
-        // Blend toward rocky brown inside mountains
-        tmpC.r = tmpC.r * (1 - rockyT) + 0.42 * rockyT;
-        tmpC.g = tmpC.g * (1 - rockyT) + 0.36 * rockyT;
-        tmpC.b = tmpC.b * (1 - rockyT) + 0.30 * rockyT;
-        // Snow cap on top
-        tmpC.r = tmpC.r * (1 - t23) + palette.snow.r * t23;
-        tmpC.g = tmpC.g * (1 - t23) + palette.snow.g * t23;
-        tmpC.b = tmpC.b * (1 - t23) + palette.snow.b * t23;
-        color.r += tmpC.r * weight;
-        color.g += tmpC.g * weight;
-        color.b += tmpC.b * weight;
-      }
-      // Soft coast colour: blend toward shallow-ocean across [0.50, 0.72].
-      // Wider window erases the hard green/blue coast line.
-      const oceanBlend = 1 - smoothstepFn(0.50, 0.88, landness);
-      if (oceanBlend > 0) {
-        color.r = color.r * (1 - oceanBlend) + COLOR_OCEAN_SHALLOW.r * oceanBlend;
-        color.g = color.g * (1 - oceanBlend) + COLOR_OCEAN_SHALLOW.g * oceanBlend;
-        color.b = color.b * (1 - oceanBlend) + COLOR_OCEAN_SHALLOW.b * oceanBlend;
-      }
-
-
-      colors[i * 3] = color.r;
-      colors[i * 3 + 1] = color.g;
-      colors[i * 3 + 2] = color.b;
-
-      // Collect land points at the exact vertex position. We deliberately
-      // don't jitter the XZ here — jittering moved the point off the
-      // actual triangle face plane, which caused features to float or get
-      // buried. Visual variation comes from per-instance rotation/scale
-      // in the feature classes instead.
-      // landness >= 0.72: vertex is fully land-coloured (oceanBlend == 0).
-      // Below that, the vertex is still in the land branch but is being
-      // tinted toward shallow ocean — placing trees there reads as
-      // "trees in the sea". Skip them.
       const sampleChance = (Math.sin(i * 7.13) * 0.5 + 0.5) > 0.85;
-      if ((i % 12 === 0 || sampleChance) && landness >= 0.88) {
+      if ((i % 12 === 0 || sampleChance) && landness >= 0.65) {
         landPoints.push({
-          position: new THREE.Vector3(nx * newRadius, ny * newRadius, nz * newRadius),
+          position: new THREE.Vector3(nx * r, ny * r, nz * r),
           normal: new THREE.Vector3(nx, ny, nz),
-          height: heightNorm,
+          height: elev,
           biome,
         });
       }
-
-      // Coast points
-      if (heightNorm < 0.1) {
+      if (elev < 0.05) {
         coastPoints.push({
-          position: new THREE.Vector3(nx * newRadius, ny * newRadius, nz * newRadius),
+          position: new THREE.Vector3(nx * r, ny * r, nz * r),
           normal: new THREE.Vector3(nx, ny, nz),
         });
       }
     } else {
-      // Inland water bodies (Caspian, Aral, lakes): land in all 4 directions → treat as land
-      const isInland =
-        mask.isLand(lat + 15, lng) && mask.isLand(lat - 15, lng) &&
-        mask.isLand(lat, lng + 15) && mask.isLand(lat, lng - 15);
+      // ── Ocean vertex ──
+      // Slight depth-fade toward the coast so the static base reads
+      // shallow near land. The animated ocean shader sits on top.
+      const shoreNearness = smoothstep(0.20, LAND_THRESHOLD, landness);
+      const depth = (1 - shoreNearness) * 0.008;
+      const r = GLOBE_RADIUS - depth;
+      posAttr.setXYZ(i, nx * r, ny * r, nz * r);
 
-      if (isInland) {
-        // Push above ocean mesh so sparkle doesn't bleed through; color as neutral terrain
-        posAttr.setXYZ(i, nx * (GLOBE_RADIUS + 0.002), ny * (GLOBE_RADIUS + 0.002), nz * (GLOBE_RADIUS + 0.002));
-        color.set('#7ab8cc'); // muted inland water — no animated sparkle
-      } else {
-        // True ocean — lift toward globe surface as landness approaches 0.5
-        // so the coast doesn't have a hard 0.008-unit cliff against land.
-        const oceanLift = smoothstepFn(0.20, 0.50, landness); // 0=deep, 1=at surface
-        const depth = (1 - oceanLift) * 0.008;
-        const r = GLOBE_RADIUS - depth;
-        posAttr.setXYZ(i, nx * r, ny * r, nz * r);
-
-        // Shallow→deep gradient driven by landness instead of binary nearLand
-        // check — gives a soft turquoise halo around every coast.
-        const shallowMix = smoothstepFn(0.05, 0.45, landness);
-        color.copy(COLOR_OCEAN_DEEP).lerp(COLOR_OCEAN_SHALLOW, shallowMix);
-      }
-
-      colors[i * 3] = color.r;
-      colors[i * 3 + 1] = color.g;
-      colors[i * 3 + 2] = color.b;
-
+      oceanColor(landness, colorBuf);
+      colors[i * 3]     = colorBuf.r;
+      colors[i * 3 + 1] = colorBuf.g;
+      colors[i * 3 + 2] = colorBuf.b;
       oceanCount++;
     }
   }
-
 
   geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
   geometry.computeVertexNormals();
@@ -369,7 +292,12 @@ export function generateTerrain(): TerrainData {
   };
 }
 
-// Shallow water transition ring — only near coastlines
+// ═══════════════════════════════════════════════════════════════════
+// Shallow water ring — unchanged. The animated ocean shader you like
+// lives elsewhere; this mesh just adds a thin turquoise halo around
+// every coast.
+// ═══════════════════════════════════════════════════════════════════
+
 export function createShallowWaterMesh(): THREE.Mesh {
   const mask = createWorldMask();
   const geo = new THREE.IcosahedronGeometry(GLOBE_RADIUS - 0.001, 80);
@@ -387,26 +315,19 @@ export function createShallowWaterMesh(): THREE.Mesh {
     const lng = Math.atan2(nz, nx) * 180 / Math.PI;
 
     const onLand = mask.isLand(lat, lng);
-    // Check if near coast (within 5°)
     const nearLand = !onLand && (
       mask.isLand(lat + 1, lng) || mask.isLand(lat - 1, lng) ||
       mask.isLand(lat, lng + 1) || mask.isLand(lat, lng - 1)
     );
 
     if (nearLand) {
-      // Shallow turquoise water
       colors[i * 3] = 0.25; colors[i * 3 + 1] = 0.7; colors[i * 3 + 2] = 0.65;
-    } else if (onLand) {
-      // On land — fully transparent (land terrain shows through)
-      colors[i * 3] = 0; colors[i * 3 + 1] = 0; colors[i * 3 + 2] = 0;
     } else {
-      // Deep ocean — fully transparent (ocean mesh below handles this)
       colors[i * 3] = 0; colors[i * 3 + 1] = 0; colors[i * 3 + 2] = 0;
     }
   }
 
   geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
-
   const mat = new THREE.MeshPhongMaterial({
     vertexColors: true,
     transparent: true,
