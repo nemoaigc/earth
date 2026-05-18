@@ -88,12 +88,12 @@ const MOUNTAINS: MountainRegion[] = [
   // Polar ice plateau
   { name: 'Greenland',    lat:  72, lng:   37, latRange:  8,  lngRange: 12, peakHeight: 0.55 },
 
-  // Famous isolated peaks — small footprint, modest height, but tuned
-  // so the very tip pokes above the local snowline and shows a small
-  // white cap. Width:height ratio kept ≥ 4 so they read as gentle
-  // hills with a snowy crown, not needles.
-  { name: 'Fuji',         lat:  35.5, lng: -138.7, latRange: 2.0, lngRange: 2.0, peakHeight: 1.00 },
-  { name: 'Kilimanjaro',  lat:  -3,   lng:  -37.3, latRange: 2.0, lngRange: 2.0, peakHeight: 1.10 },
+  // NOTE: do not add single stratovolcano peaks (Fuji, Kilimanjaro,
+  // Mt Kenya, etc.) to this table. Tried multiple times — any
+  // narrow-footprint elevation looks like a needle, and worse, when
+  // it sits on a small island (Japan) or savannah it stands out
+  // disproportionately relative to nearby continental chains. They
+  // need a different rendering path (sprite/decal) to read correctly.
 ];
 
 // ═══════════════════════════════════════════════════════════════════
