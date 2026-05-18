@@ -59,12 +59,14 @@ const MOUNTAINS: MountainRegion[] = [
   { name: 'Tian Shan',    lat:  42, lng:  -78, latRange:  4,  lngRange:  8, peakHeight: 0.55 },
   { name: 'Japanese Alps',lat:  36, lng: -138, latRange:  2,  lngRange:  2, peakHeight: 0.35 },
   { name: 'Urals',        lat:  60, lng:  -60, latRange:  9,  lngRange:  3, peakHeight: 0.30 },
-  // Americas — Andes broken into 4 N-S sub-peaks (the real chain has
-  // clearly distinct massifs: Northern, Central, Southern, Patagonian).
-  { name: 'Andes N',      lat:   2, lng:   75, latRange:  6,  lngRange:  6, peakHeight: 0.75 },
-  { name: 'Andes C',      lat: -15, lng:   70, latRange:  8,  lngRange:  7, peakHeight: 1.00 },
-  { name: 'Andes S',      lat: -35, lng:   70, latRange:  9,  lngRange:  6, peakHeight: 0.85 },
-  { name: 'Patagonia',    lat: -48, lng:   72, latRange:  6,  lngRange:  5, peakHeight: 0.55 },
+  // Americas — Andes as 4 overlapping N-S sub-peaks. latRange is wider
+  // than the lat-spacing between adjacent peaks, so their fields ADD
+  // up in the overlap zones and the chain reads as one continuous
+  // ridge rather than four upright pillars.
+  { name: 'Andes N',      lat:   2, lng:   75, latRange: 12,  lngRange:  6, peakHeight: 0.70 },
+  { name: 'Andes C',      lat: -15, lng:   71, latRange: 14,  lngRange:  6, peakHeight: 0.95 },
+  { name: 'Andes S',      lat: -35, lng:   70, latRange: 14,  lngRange:  6, peakHeight: 0.85 },
+  { name: 'Patagonia',    lat: -48, lng:   72, latRange: 10,  lngRange:  5, peakHeight: 0.55 },
   { name: 'Rockies',      lat:  47, lng:  113, latRange: 13,  lngRange:  6, peakHeight: 0.80 },
   { name: 'Appalachians', lat:  38, lng:   80, latRange:  6,  lngRange:  4, peakHeight: 0.35 },
   { name: 'Sierra Madre', lat:  25, lng:  103, latRange:  5,  lngRange:  3, peakHeight: 0.35 },
@@ -123,16 +125,31 @@ const LAND_THRESHOLD = 0.5;
 const COAST_BLUR_DEG = 1.2;   // wide blur → soft coast, no pixel stair
 const COAST_FADE_END = 0.85;  // landness at which we hit full height
 
-function mountainBoost(lat: number, lng: number): number {
+// Global multiplier on every mountain — keeps everything proportional
+// while we tune how "tall" or "low" the ranges feel. 0.70 chosen so
+// that low-latitude mid-size ranges (Rockies, Andes outside the Bolivian
+// altiplano) sit just below the snowline and read as rocky/forested
+// chains, while only the true giants (Himalaya, Tibetan altiplano)
+// poke above and earn a snow cap.
+const MOUNTAIN_HEIGHT_SCALE = 0.70;
+
+function mountainBoost(
+  lat: number, lng: number,
+  nx: number, ny: number, nz: number,
+): number {
   let total = 0;
+  // Per-vertex wobble: shifts each mountain's centre by up to ±2° in
+  // lng. The shift is a smooth function of the vertex position, so the
+  // ridge meanders rather than running on a perfectly straight axis.
+  const wobble = (noise01(nx, ny, nz, 0.16) - 0.5) * 4;  // ±2°
   for (const m of MOUNTAINS) {
-    let dLng = lng - m.lng;
+    let dLng = lng - (m.lng + wobble);
     if (dLng > 180) dLng -= 360;
     if (dLng < -180) dLng += 360;
     const f = ellipseFalloff(Math.abs(lat - m.lat), m.latRange, Math.abs(dLng), m.lngRange);
     if (f > 0) total += m.peakHeight * f;
   }
-  return total;
+  return total * MOUNTAIN_HEIGHT_SCALE;
 }
 
 function elevation(
@@ -156,8 +173,8 @@ function elevation(
   const baseNoise = noise01(nx, ny, nz, 0.13);
   const baseHeight = 0.06 + baseNoise * 0.22;   // [0.06, 0.28]
 
-  // Mountains (table driven)
-  let mtHeight = mountainBoost(lat, lng) * inlandGate;
+  // Mountains (table driven; wobble-aware so chains aren't perfectly straight)
+  let mtHeight = mountainBoost(lat, lng, nx, ny, nz) * inlandGate;
 
   // Asymmetric ridge variation — real mountains are NOT smooth cones.
   // Two noise fields, different scales:
