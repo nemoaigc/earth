@@ -168,13 +168,17 @@ function elevation(
   // Smooth coast fade so the shoreline rises gradually from sea level.
   const coastGate = smoothstep(LAND_THRESHOLD, COAST_FADE_END, landness);
 
-  // Mountains additionally need to sit well inland — a white peak whose
-  // vertex lives next to an ocean vertex produces visible "spike"
-  // feathering through smooth shading + atmosphere bloom. Stricter
-  // gate (0.78 → 0.95) keeps mountains several bitmap pixels away
-  // from the coast, killing the white feathering along ranges that
-  // hug a coastline (Andes especially).
-  const inlandGate = smoothstep(0.78, 0.95, landness);
+  // Inland gate. We want the foothills to start rising near the coast
+  // and the peak to be reached only deep inland — that gives a long
+  // gentle slope from sea up to summit instead of mountains looking
+  // like a wall right behind the shoreline. The smoothstep range here
+  // is what controls that slope length.
+  // 0.55 -> mountain starts at the first vertex inside the coast.
+  // 0.95 -> peak reached only ~5° from the shore.
+  // Mountains have to be tuned low enough that their peak still sits
+  // below the local snowline; otherwise the old "white feather along
+  // the coast" artefact comes back.
+  const inlandGate = smoothstep(0.55, 0.95, landness);
 
   // Slow rolling base noise — adjacent vertices have very similar
   // values, so plains read as a smooth gradient (no spikes, no blocks).
