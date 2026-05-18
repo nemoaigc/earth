@@ -97,8 +97,8 @@ const MOUNTAINS: MountainRegion[] = [
   // small (just a hill) so the surrounding island/savannah doesn't get
   // dominated; the snow cap is forced by `snowCap: true` and rendered
   // as a small white patch at the centre.
-  { name: 'Fuji',         lat:  35.5, lng: -138.7, latRange: 1.5, lngRange: 1.5, peakHeight: 0.30, snowCap: true },
-  { name: 'Kilimanjaro',  lat:  -3,   lng:  -37.3, latRange: 1.6, lngRange: 1.6, peakHeight: 0.35, snowCap: true },
+  { name: 'Fuji',         lat:  35.5, lng: -138.7, latRange: 1.5, lngRange: 1.5, peakHeight: 0.18, snowCap: true },
+  { name: 'Kilimanjaro',  lat:  -3,   lng:  -37.3, latRange: 1.6, lngRange: 1.6, peakHeight: 0.22, snowCap: true },
 ];
 
 // ═══════════════════════════════════════════════════════════════════
@@ -146,9 +146,9 @@ const COAST_FADE_END = 0.85;  // landness at which we hit full height
 const MOUNTAIN_HEIGHT_SCALE = 0.70;
 
 // Forced snow cap at named famous peaks (snowCap: true). Returns the
-// max overlap with such a peak's centre as a [0..1] mix. Uses a
-// tighter ellipse (half the regular range) so the white patch reads
-// as a *cap*, not the whole hill being white.
+// max overlap with such a peak's centre as a [0..1] mix. Range
+// multiplier 0.85 → the white patch covers most of the hill's
+// footprint, reading as a substantial snowy top rather than a dot.
 function forcedSnowAt(lat: number, lng: number): number {
   let best = 0;
   for (const m of MOUNTAINS) {
@@ -157,8 +157,8 @@ function forcedSnowAt(lat: number, lng: number): number {
     if (dLng > 180) dLng -= 360;
     if (dLng < -180) dLng += 360;
     const f = ellipseFalloff(
-      Math.abs(lat - m.lat), m.latRange * 0.5,
-      Math.abs(dLng), m.lngRange * 0.5,
+      Math.abs(lat - m.lat), m.latRange * 0.85,
+      Math.abs(dLng), m.lngRange * 0.85,
     );
     if (f > best) best = f;
   }
@@ -383,7 +383,10 @@ export function generateTerrain(): TerrainData {
       colors[i * 3 + 2] = colorBuf.b;
 
       const sampleChance = (Math.sin(i * 7.13) * 0.5 + 0.5) > 0.85;
-      if ((i % 12 === 0 || sampleChance) && landness >= 0.65) {
+      // Skip vertices inside a snow-cap region — we don't want trees
+      // growing across Fuji's white top.
+      const onSnowCap = forcedSnowAt(lat, lng) > 0.15;
+      if ((i % 12 === 0 || sampleChance) && landness >= 0.65 && !onSnowCap) {
         landPoints.push({
           position: new THREE.Vector3(nx * r, ny * r, nz * r),
           normal: new THREE.Vector3(nx, ny, nz),
