@@ -49,42 +49,48 @@ interface MountainRegion {
 }
 
 const MOUNTAINS: MountainRegion[] = [
-  // Asia — Himalaya / Tibet broken into a chain of sub-peaks so the
-  // range reads as a series of summits rather than one smooth dome.
-  { name: 'Karakoram',    lat:  36, lng:  -76, latRange:  3,  lngRange:  4, peakHeight: 1.00 },
-  { name: 'Himalaya W',   lat:  32, lng:  -80, latRange:  3,  lngRange:  5, peakHeight: 0.95 },
-  { name: 'Himalaya C',   lat:  28, lng:  -86, latRange:  3,  lngRange:  5, peakHeight: 1.15 }, // Everest
-  { name: 'Himalaya E',   lat:  28, lng:  -94, latRange:  3,  lngRange:  5, peakHeight: 0.90 },
-  { name: 'Tibet Plat.',  lat:  33, lng:  -88, latRange:  7,  lngRange: 13, peakHeight: 0.45 },
-  { name: 'Tian Shan',    lat:  42, lng:  -78, latRange:  4,  lngRange:  8, peakHeight: 0.55 },
-  { name: 'Japanese Alps',lat:  36, lng: -138, latRange:  2,  lngRange:  2, peakHeight: 0.35 },
+  // Asia — Himalaya / Tibet. Heights bumped up so they reliably crown
+  // with snow even after the 0.70 global scale.
+  { name: 'Karakoram',    lat:  36, lng:  -76, latRange:  3,  lngRange:  4, peakHeight: 1.10 },
+  { name: 'Himalaya W',   lat:  32, lng:  -80, latRange:  3,  lngRange:  5, peakHeight: 1.25 },
+  { name: 'Himalaya C',   lat:  28, lng:  -86, latRange:  3,  lngRange:  5, peakHeight: 1.45 }, // Everest
+  { name: 'Himalaya E',   lat:  28, lng:  -94, latRange:  3,  lngRange:  5, peakHeight: 1.20 },
+  { name: 'Tibet Plat.',  lat:  33, lng:  -88, latRange:  7,  lngRange: 13, peakHeight: 0.60 },
+  { name: 'Tian Shan',    lat:  42, lng:  -78, latRange:  4,  lngRange:  8, peakHeight: 0.65 },
+  { name: 'Japanese Alps',lat:  36, lng: -138, latRange:  2,  lngRange:  2, peakHeight: 0.40 },
+  // Mt Fuji — single stratovolcano peak, kept narrow.
+  { name: 'Fuji',         lat:  35.5, lng: -138.7, latRange: 0.8, lngRange: 0.8, peakHeight: 0.95 },
   { name: 'Urals',        lat:  60, lng:  -60, latRange:  9,  lngRange:  3, peakHeight: 0.30 },
-  // Americas — Andes as 4 overlapping N-S sub-peaks. latRange is wider
-  // than the lat-spacing between adjacent peaks, so their fields ADD
-  // up in the overlap zones and the chain reads as one continuous
-  // ridge rather than four upright pillars.
-  { name: 'Andes N',      lat:   2, lng:   75, latRange: 12,  lngRange:  6, peakHeight: 0.70 },
-  { name: 'Andes C',      lat: -15, lng:   71, latRange: 14,  lngRange:  6, peakHeight: 0.95 },
-  { name: 'Andes S',      lat: -35, lng:   70, latRange: 14,  lngRange:  6, peakHeight: 0.85 },
-  { name: 'Patagonia',    lat: -48, lng:   72, latRange: 10,  lngRange:  5, peakHeight: 0.55 },
-  { name: 'Rockies',      lat:  47, lng:  113, latRange: 13,  lngRange:  6, peakHeight: 0.80 },
+  // Americas — Andes scaled down significantly. They sit right on the
+  // Pacific coast, so high white peaks here produce visible "feathering"
+  // through smooth shading + atmosphere bloom. Keep them rocky, not snowy.
+  { name: 'Andes N',      lat:   2, lng:   75, latRange: 12,  lngRange:  6, peakHeight: 0.50 },
+  { name: 'Andes C',      lat: -15, lng:   71, latRange: 14,  lngRange:  6, peakHeight: 0.70 },
+  { name: 'Andes S',      lat: -35, lng:   70, latRange: 14,  lngRange:  6, peakHeight: 0.60 },
+  { name: 'Patagonia',    lat: -48, lng:   72, latRange: 10,  lngRange:  5, peakHeight: 0.40 },
+  { name: 'Rockies',      lat:  47, lng:  113, latRange: 13,  lngRange:  6, peakHeight: 0.85 },
   { name: 'Appalachians', lat:  38, lng:   80, latRange:  6,  lngRange:  4, peakHeight: 0.35 },
   { name: 'Sierra Madre', lat:  25, lng:  103, latRange:  5,  lngRange:  3, peakHeight: 0.35 },
   { name: 'Brazilian H.', lat: -15, lng:   47, latRange:  7,  lngRange:  7, peakHeight: 0.20 },
   // Europe
-  { name: 'Alps',         lat:  46, lng:  -10, latRange:  3,  lngRange:  6, peakHeight: 0.55 },
-  { name: 'Pyrenees',     lat:  43, lng:    0, latRange:  1.5,lngRange:  3, peakHeight: 0.40 },
-  { name: 'Apennines',    lat:  43, lng:  -13, latRange:  4,  lngRange:  2, peakHeight: 0.25 },
-  { name: 'Carpathians',  lat:  47, lng:  -22, latRange:  3,  lngRange:  4, peakHeight: 0.30 },
-  { name: 'Caucasus',     lat:42.5, lng:  -44, latRange:  2,  lngRange:  4, peakHeight: 0.45 },
+  { name: 'Alps',         lat:  46, lng:  -10, latRange:  3,  lngRange:  6, peakHeight: 0.65 },
+  { name: 'Pyrenees',     lat:  43, lng:    0, latRange:  1.5,lngRange:  3, peakHeight: 0.45 },
+  { name: 'Apennines',    lat:  43, lng:  -13, latRange:  4,  lngRange:  2, peakHeight: 0.28 },
+  { name: 'Carpathians',  lat:  47, lng:  -22, latRange:  3,  lngRange:  4, peakHeight: 0.32 },
+  { name: 'Caucasus',     lat:42.5, lng:  -44, latRange:  2,  lngRange:  4, peakHeight: 0.55 },
   { name: 'Scandinavian', lat:  64, lng:   -8, latRange:  7,  lngRange:  3, peakHeight: 0.30 },
   // Africa
-  { name: 'Atlas',        lat:  33, lng:   -1, latRange:  3,  lngRange: 10, peakHeight: 0.40 },
-  { name: 'Ethiopian H.', lat:  10, lng:  -38, latRange:  5,  lngRange:  4, peakHeight: 0.45 },
-  { name: 'Drakensberg',  lat: -30, lng:  -29, latRange:  3,  lngRange:  3, peakHeight: 0.30 },
+  { name: 'Atlas',        lat:  33, lng:   -1, latRange:  3,  lngRange: 10, peakHeight: 0.50 },
+  { name: 'Ethiopian H.', lat:  10, lng:  -38, latRange:  5,  lngRange:  4, peakHeight: 0.60 },
+  { name: 'Drakensberg',  lat: -30, lng:  -29, latRange:  3,  lngRange:  3, peakHeight: 0.35 },
+  // East African Rift volcanoes — Kilimanjaro is the highest free-standing
+  // mountain on Earth (5895m), so it earns a snowy stratovolcano cone.
+  { name: 'Kilimanjaro',  lat:  -3, lng:  -37.3, latRange: 0.9, lngRange: 0.9, peakHeight: 1.10 },
+  { name: 'Mt Kenya',     lat:  -0.2, lng: -37.3, latRange: 0.7, lngRange: 0.7, peakHeight: 0.95 },
+  { name: 'Rwenzori',     lat:   0.4, lng: -29.9, latRange: 1.0, lngRange: 0.8, peakHeight: 0.85 },
   // Oceania
-  { name: 'Great Divide', lat: -33, lng: -148, latRange:  5,  lngRange:  3, peakHeight: 0.25 },
-  { name: 'NZ Southern',  lat: -43, lng: -170, latRange:  2,  lngRange:  3, peakHeight: 0.40 },
+  { name: 'Great Divide', lat: -33, lng: -148, latRange:  5,  lngRange:  3, peakHeight: 0.30 },
+  { name: 'NZ Southern',  lat: -43, lng: -170, latRange:  2,  lngRange:  3, peakHeight: 0.50 },
   // Polar ice plateaus (visual mass for Greenland / Antarctica peaks)
   { name: 'Greenland',    lat:  72, lng:   37, latRange:  8,  lngRange: 12, peakHeight: 0.55 },
 ];
@@ -164,9 +170,11 @@ function elevation(
 
   // Mountains additionally need to sit well inland — a white peak whose
   // vertex lives next to an ocean vertex produces visible "spike"
-  // feathering through smooth shading. Push mountain elevation to 0
-  // until we're at least a couple of bitmap pixels inside the coast.
-  const inlandGate = smoothstep(0.62, 0.85, landness);
+  // feathering through smooth shading + atmosphere bloom. Stricter
+  // gate (0.78 → 0.95) keeps mountains several bitmap pixels away
+  // from the coast, killing the white feathering along ranges that
+  // hug a coastline (Andes especially).
+  const inlandGate = smoothstep(0.78, 0.95, landness);
 
   // Slow rolling base noise — adjacent vertices have very similar
   // values, so plains read as a smooth gradient (no spikes, no blocks).
