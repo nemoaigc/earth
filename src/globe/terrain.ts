@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { sampleNoise } from '../utils/noise';
+import { sampleNoise, noise3D } from '../utils/noise';
 import { createWorldMask, type BiomeWeights } from './worldmap';
 
 export const GLOBE_RADIUS = 5;
@@ -155,14 +155,11 @@ function elevation(
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// Layer: biome (single dominant biome per vertex)
+// Layer: biome (weighted blend, with noise-distorted boundaries)
 // ═══════════════════════════════════════════════════════════════════
 
-function dominantBiome(
-  mask: ReturnType<typeof createWorldMask>,
-  lat: number, lng: number,
-): string {
-  const weights = mask.getBiomeWeights(lat, lng);
+// Pick the dominant biome name (only needed for landPoints metadata).
+function dominantBiomeName(weights: BiomeWeights): string {
   let best: keyof BiomeWeights = 'temperate';
   let bestW = -1;
   for (const [name, w] of Object.entries(weights) as [keyof BiomeWeights, number][]) {
@@ -182,30 +179,81 @@ function snowline(lat: number): number {
   return 0.80 - smoothstep(35, 70, Math.abs(lat)) * 0.65;
 }
 
-function landColor(biome: string, elev: number, lat: number, out: THREE.Color): THREE.Color {
-  const base = BIOME_BASE[biome] ?? BIOME_BASE.temperate;
-  out.copy(base);
+const C_JUNGLE_DARK = new THREE.Color('#1F5E1F');
+const C_FOREST_DARK = new THREE.Color('#2A5520');
+const C_SAND_LIGHT  = new THREE.Color('#EAC685');
 
-  const sl = snowline(lat);
+// Land colour combines: biome-weighted base + micro tint (sphere-wide
+// low-freq variation so flat regions don't read as one solid colour) +
+// per-biome accent patches (forest darker patches, desert sand mottle)
+// + rocky band + snow cap.
+function landColor(
+  weights: BiomeWeights, elev: number, lat: number,
+  nx: number, ny: number, nz: number,
+  out: THREE.Color,
+): THREE.Color {
+  // Weighted blend of biome base colours (no dominant snap → soft borders)
+  out.setRGB(0, 0, 0);
+  for (const [name, w] of Object.entries(weights) as [keyof BiomeWeights, number][]) {
+    if (w < 0.01) continue;
+    const base = BIOME_BASE[name];
+    if (!base) continue;
+    out.r += base.r * w;
+    out.g += base.g * w;
+    out.b += base.b * w;
+  }
+
+  // Sphere-wide low-freq micro tint (±5%). Same noise field for r/g/b
+  // shifted slightly so the tint is colour-coherent, not just brightness.
+  const micro = noise3D(nx * 3, ny * 3, nz * 3);  // [-1, 1]
+  const tint = micro * 0.045;
+  out.r += tint;
+  out.g += tint * 0.85;
+  out.b += tint * 0.70;
+
+  // Forest patches: tropical/temperate regions get darker green clumps.
+  if ((weights.tropical ?? 0) + (weights.temperate ?? 0) > 0.35) {
+    const patch = noise3D(nx * 6, ny * 6, nz * 6);
+    if (patch > 0.2) {
+      const darkRef = (weights.tropical ?? 0) > 0.5 ? C_JUNGLE_DARK : C_FOREST_DARK;
+      out.lerp(darkRef, Math.min(0.45, (patch - 0.2) * 0.55));
+    }
+  }
+
+  // Desert mottle: sand-coloured highlights and shadowy dunes.
+  if ((weights.desert ?? 0) > 0.35) {
+    const patch = noise3D(nx * 5, ny * 5, nz * 5);
+    if (patch > 0) {
+      out.lerp(C_SAND_LIGHT, patch * 0.30);
+    } else {
+      out.r += patch * 0.04;  // slightly darker dunes
+      out.g += patch * 0.03;
+    }
+  }
+
   // Rocky band: just below snowline, only on appreciable elevation.
+  const sl = snowline(lat);
   const rockyMix = smoothstep(Math.max(0.30, sl - 0.20), sl - 0.04, elev);
   out.lerp(C_ROCKY, rockyMix);
 
-  // Snow above snowline (narrow transition → crisp peaks).
+  // Snow above snowline (narrow transition → crisp peaks) or polar lat.
   const altSnow = smoothstep(sl - 0.04, sl + 0.04, elev);
-  // Polar latitudes always wear snow regardless of elevation.
   const polarSnow = smoothstep(68, 75, Math.abs(lat));
   out.lerp(C_SNOW, Math.max(altSnow, polarSnow));
 
+  // Final clamp (some additive tints could under/overshoot a bit)
+  out.r = Math.max(0, Math.min(1, out.r));
+  out.g = Math.max(0, Math.min(1, out.g));
+  out.b = Math.max(0, Math.min(1, out.b));
   return out;
 }
 
 function oceanColor(landness: number, out: THREE.Color): THREE.Color {
   const t = smoothstep(0, LAND_THRESHOLD, landness);
   out.copy(C_DEEP_OCEAN).lerp(C_SHALLOW_OCEAN, t);
-  // Narrow turquoise band right at the shoreline.
-  const shore = smoothstep(0.35, LAND_THRESHOLD, landness);
-  out.lerp(C_TURQUOISE, shore * 0.5);
+  // Wider, stronger turquoise band right at the shoreline.
+  const shore = smoothstep(0.28, LAND_THRESHOLD, landness);
+  out.lerp(C_TURQUOISE, shore * 0.75);
   return out;
 }
 
@@ -243,8 +291,13 @@ export function generateTerrain(): TerrainData {
       const r = GLOBE_RADIUS + elev * LAND_HEIGHT_SCALE;
       posAttr.setXYZ(i, nx * r, ny * r, nz * r);
 
-      const biome = dominantBiome(mask, lat, lng);
-      landColor(biome, elev, lat, colorBuf);
+      // Distort the lat we feed to getBiomeWeights so biome zones
+      // (Sahara/Sahel, taiga/temperate) get a wavy boundary instead of
+      // a perfectly horizontal stripe. ±4° of slow noise is enough.
+      const latJitter = noise3D(nx * 0.7, ny * 0.7, nz * 0.7) * 4;
+      const weights = mask.getBiomeWeights(lat + latJitter, lng);
+      const biome = dominantBiomeName(weights);
+      landColor(weights, elev, lat, nx, ny, nz, colorBuf);
       colors[i * 3]     = colorBuf.r;
       colors[i * 3 + 1] = colorBuf.g;
       colors[i * 3 + 2] = colorBuf.b;
