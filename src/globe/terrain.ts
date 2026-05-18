@@ -49,14 +49,23 @@ interface MountainRegion {
 }
 
 const MOUNTAINS: MountainRegion[] = [
-  // Asia
-  { name: 'Himalaya',     lat:  33, lng:  -85, latRange:  8,  lngRange: 14, peakHeight: 1.10 },
+  // Asia — Himalaya / Tibet broken into a chain of sub-peaks so the
+  // range reads as a series of summits rather than one smooth dome.
+  { name: 'Karakoram',    lat:  36, lng:  -76, latRange:  3,  lngRange:  4, peakHeight: 1.00 },
+  { name: 'Himalaya W',   lat:  32, lng:  -80, latRange:  3,  lngRange:  5, peakHeight: 0.95 },
+  { name: 'Himalaya C',   lat:  28, lng:  -86, latRange:  3,  lngRange:  5, peakHeight: 1.15 }, // Everest
+  { name: 'Himalaya E',   lat:  28, lng:  -94, latRange:  3,  lngRange:  5, peakHeight: 0.90 },
+  { name: 'Tibet Plat.',  lat:  33, lng:  -88, latRange:  7,  lngRange: 13, peakHeight: 0.45 },
   { name: 'Tian Shan',    lat:  42, lng:  -78, latRange:  4,  lngRange:  8, peakHeight: 0.55 },
   { name: 'Japanese Alps',lat:  36, lng: -138, latRange:  2,  lngRange:  2, peakHeight: 0.35 },
   { name: 'Urals',        lat:  60, lng:  -60, latRange:  9,  lngRange:  3, peakHeight: 0.30 },
-  // Americas
-  { name: 'Andes',        lat: -22, lng:   70, latRange: 32,  lngRange:  4, peakHeight: 1.00 },
-  { name: 'Rockies',      lat:  47, lng:  113, latRange: 13,  lngRange:  5, peakHeight: 0.80 },
+  // Americas — Andes broken into 4 N-S sub-peaks (the real chain has
+  // clearly distinct massifs: Northern, Central, Southern, Patagonian).
+  { name: 'Andes N',      lat:   2, lng:   75, latRange:  6,  lngRange:  6, peakHeight: 0.75 },
+  { name: 'Andes C',      lat: -15, lng:   70, latRange:  8,  lngRange:  7, peakHeight: 1.00 },
+  { name: 'Andes S',      lat: -35, lng:   70, latRange:  9,  lngRange:  6, peakHeight: 0.85 },
+  { name: 'Patagonia',    lat: -48, lng:   72, latRange:  6,  lngRange:  5, peakHeight: 0.55 },
+  { name: 'Rockies',      lat:  47, lng:  113, latRange: 13,  lngRange:  6, peakHeight: 0.80 },
   { name: 'Appalachians', lat:  38, lng:   80, latRange:  6,  lngRange:  4, peakHeight: 0.35 },
   { name: 'Sierra Madre', lat:  25, lng:  103, latRange:  5,  lngRange:  3, peakHeight: 0.35 },
   { name: 'Brazilian H.', lat: -15, lng:   47, latRange:  7,  lngRange:  7, peakHeight: 0.20 },
@@ -136,19 +145,33 @@ function elevation(
   // Smooth coast fade so the shoreline rises gradually from sea level.
   const coastGate = smoothstep(LAND_THRESHOLD, COAST_FADE_END, landness);
 
+  // Mountains additionally need to sit well inland — a white peak whose
+  // vertex lives next to an ocean vertex produces visible "spike"
+  // feathering through smooth shading. Push mountain elevation to 0
+  // until we're at least a couple of bitmap pixels inside the coast.
+  const inlandGate = smoothstep(0.62, 0.85, landness);
+
   // Slow rolling base noise — adjacent vertices have very similar
   // values, so plains read as a smooth gradient (no spikes, no blocks).
   const baseNoise = noise01(nx, ny, nz, 0.13);
   const baseHeight = 0.06 + baseNoise * 0.22;   // [0.06, 0.28]
 
   // Mountains (table driven)
-  let mtHeight = mountainBoost(lat, lng);
+  let mtHeight = mountainBoost(lat, lng) * inlandGate;
 
-  // Subtle ridge variation only inside real mountain regions, so peaks
-  // get some character without affecting plains.
+  // Asymmetric ridge variation — real mountains are NOT smooth cones.
+  // Two noise fields, different scales:
+  //   * lf (low-freq) shifts whole flanks higher or lower so the chain
+  //     has a wavy spine rather than a perfectly symmetric profile
+  //   * hf (high-freq) adds individual peaks and saddles
+  // Strength fades to 0 at the bump edge so we never get a "spike" at
+  // the foothills where the mountain meets the coast or plain.
   if (mtHeight > 0.15) {
-    const ridge = noise01(nx, ny, nz, 0.30);
-    mtHeight *= 0.85 + ridge * 0.30;
+    const lf = noise01(nx, ny, nz, 0.18);            // big rolling tilt
+    const hf = noise01(nx, ny, nz, 0.55);            // small peaks
+    const strength = smoothstep(0.15, 0.70, mtHeight);
+    const variation = (lf - 0.5) * 0.32 + (hf - 0.5) * 0.20;
+    mtHeight *= 1 + variation * strength;
   }
 
   return (baseHeight + mtHeight) * coastGate;
