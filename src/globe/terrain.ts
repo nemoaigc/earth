@@ -67,12 +67,13 @@ const MOUNTAINS: MountainRegion[] = [
 
   // Americas — Andes chain (4 overlapping sub-ranges), Rockies,
   // Appalachians. Andes peaks deliberately below the snowline so the
-  // chain stays rocky rather than feathering white into the Pacific.
-  { name: 'Andes N',      lat:   2, lng:   75, latRange: 12,  lngRange:  6, peakHeight: 0.50 },
-  { name: 'Andes C',      lat: -15, lng:   71, latRange: 14,  lngRange:  6, peakHeight: 0.70 },
-  { name: 'Andes S',      lat: -35, lng:   70, latRange: 14,  lngRange:  6, peakHeight: 0.60 },
-  { name: 'Patagonia',    lat: -48, lng:   72, latRange: 10,  lngRange:  5, peakHeight: 0.40 },
-  { name: 'Rockies',      lat:  47, lng:  113, latRange: 13,  lngRange:  6, peakHeight: 0.85 },
+  // chain stays rocky rather than feathering white into the Pacific,
+  // but a painted snow cap is added at each sub-range's centre.
+  { name: 'Andes N',      lat:   2, lng:   75, latRange: 12,  lngRange:  6, peakHeight: 0.50, snowCap: true },
+  { name: 'Andes C',      lat: -15, lng:   71, latRange: 14,  lngRange:  6, peakHeight: 0.70, snowCap: true },
+  { name: 'Andes S',      lat: -35, lng:   70, latRange: 14,  lngRange:  6, peakHeight: 0.60, snowCap: true },
+  { name: 'Patagonia',    lat: -48, lng:   72, latRange: 10,  lngRange:  5, peakHeight: 0.40, snowCap: true },
+  { name: 'Rockies',      lat:  47, lng:  113, latRange: 13,  lngRange:  6, peakHeight: 0.85, snowCap: true },
   { name: 'Appalachians', lat:  38, lng:   80, latRange:  6,  lngRange:  4, peakHeight: 0.35 },
 
   // Europe
@@ -82,9 +83,9 @@ const MOUNTAINS: MountainRegion[] = [
   { name: 'Scandinavian', lat:  64, lng:   -8, latRange:  7,  lngRange:  3, peakHeight: 0.30 },
 
   // Africa
-  { name: 'Atlas',        lat:  33, lng:   -1, latRange:  3,  lngRange: 10, peakHeight: 0.50 },
-  { name: 'Ethiopian H.', lat:  10, lng:  -38, latRange:  5,  lngRange:  4, peakHeight: 0.60 },
-  { name: 'Drakensberg',  lat: -30, lng:  -29, latRange:  3,  lngRange:  3, peakHeight: 0.35 },
+  { name: 'Atlas',        lat:  33, lng:   -1, latRange:  3,  lngRange: 10, peakHeight: 0.50, snowCap: true },
+  { name: 'Ethiopian H.', lat:  10, lng:  -38, latRange:  5,  lngRange:  4, peakHeight: 0.60, snowCap: true },
+  { name: 'Drakensberg',  lat: -30, lng:  -29, latRange:  3,  lngRange:  3, peakHeight: 0.35, snowCap: true },
 
   // Oceania
   { name: 'Great Divide', lat: -33, lng: -148, latRange:  5,  lngRange:  3, peakHeight: 0.30 },
@@ -146,9 +147,10 @@ const COAST_FADE_END = 0.85;  // landness at which we hit full height
 const MOUNTAIN_HEIGHT_SCALE = 0.70;
 
 // Forced snow cap at named famous peaks (snowCap: true). Returns the
-// max overlap with such a peak's centre as a [0..1] mix. Range
-// multiplier 0.85 → the white patch covers most of the hill's
-// footprint, reading as a substantial snowy top rather than a dot.
+// max overlap with such a peak's centre as a [0..1] mix. Snow ellipse
+// is the smaller of (m.range * 0.85) and a hard 3° cap, so long chains
+// (Andes, 14° latRange) get a focused snow patch at the centre rather
+// than a 25° white stripe along the whole spine.
 function forcedSnowAt(lat: number, lng: number): number {
   let best = 0;
   for (const m of MOUNTAINS) {
@@ -156,9 +158,11 @@ function forcedSnowAt(lat: number, lng: number): number {
     let dLng = lng - m.lng;
     if (dLng > 180) dLng -= 360;
     if (dLng < -180) dLng += 360;
+    const snowLatR = Math.min(m.latRange * 0.85, 3.0);
+    const snowLngR = Math.min(m.lngRange * 0.85, 3.0);
     const f = ellipseFalloff(
-      Math.abs(lat - m.lat), m.latRange * 0.85,
-      Math.abs(dLng), m.lngRange * 0.85,
+      Math.abs(lat - m.lat), snowLatR,
+      Math.abs(dLng), snowLngR,
     );
     if (f > best) best = f;
   }
