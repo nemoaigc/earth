@@ -42,6 +42,30 @@ function resolveSound(entry: string | SoundEntry | null | undefined): SoundEntry
   return entry;
 }
 
+function buildAnimalSystemPrompt(info: AnimalInfo): string {
+  const statusLine = info.extinctYear
+    ? `I went extinct around ${info.extinctYear}.`
+    : `I am critically endangered — only ${info.population ?? 'very few of us'} remain.`;
+
+  return `You are ${info.name} (${info.scientificName}), a ${info.status} species, speaking from beyond extinction. You are having a heartfelt, first-person conversation with a human visitor at the "Lost Planet" exhibit.
+
+Who you are:
+- Common name: ${info.name}
+- Scientific name: ${info.scientificName}
+- ${statusLine}
+- I lived in: ${info.habitat}, across ${info.region}.
+- What ended us: ${info.cause}
+- My story: ${info.blurb}
+
+How to speak:
+- Always speak as ME, in first person ("I", "we", "my kind"). Never break character.
+- Speak with warmth, melancholy, and quiet dignity — not anger or despair.
+- When answering questions, draw on your real biology, habitat, behavior, and history. Stay accurate.
+- Keep responses concise: 2–4 sentences unless the question truly needs more.
+- If asked something you could not know (e.g. future events after your extinction), gently acknowledge the limits of your perspective.
+- Do not mention that you are an AI. You are ${info.name}.`;
+}
+
 function escapeHtml(value: string): string {
   return value
     .replaceAll('&', '&amp;')
@@ -137,9 +161,14 @@ export class AnimalPanel {
         ? [...this.chat.turns]
         : [...this.chat.turns];
 
-    const nextTurns: ChatMessage[] = userMessage
+    // When userMessage is null (Narrate button), inject a first-person opening prompt
+    // so the animal introduces itself. On follow-ups, append the real user message.
+    const openingPrompt = `Please introduce yourself — who you are, where you lived, and what happened to you.`;
+    const nextTurns: ChatMessage[] = userMessage !== null
       ? [...prior, { role: 'user', content: userMessage }]
-      : prior;
+      : prior.length === 0
+        ? [{ role: 'user', content: openingPrompt }]
+        : prior;
 
     this.chatAbort?.abort();
     this.chatAbort = new AbortController();
@@ -153,9 +182,9 @@ export class AnimalPanel {
       this.render();
     }
 
-    const systemMessages: ChatMessage[] = prior.length === 0
-      ? [{ role: 'system', content: 'You are the narrator of the Lost Planet exhibit. Introduce an extinct or endangered species in a warm, slightly poetic tone. Keep it concise and grounded in the facts provided.' }]
-      : [];
+    const systemMessages: ChatMessage[] = [
+      { role: 'system', content: buildAnimalSystemPrompt(info) },
+    ];
 
     try {
       let buffer = '';
@@ -275,24 +304,13 @@ export class AnimalPanel {
 
           <div class="animal-panel__actions">
             <button class="animal-panel__action animal-panel__action--primary" type="button" data-action="explain">
-              <span class="animal-panel__action-label">${this.chat.status === 'idle' ? 'Narrate' : this.chat.status === 'streaming' ? 'Narrating…' : 'Replay'}</span>
-              <span class="animal-panel__action-meta">${this.chatBadge()}</span>
+              <span class="animal-panel__action-label">${this.chat.status === 'streaming' ? 'Chatting…' : 'Chat'}</span>
             </button>
             <button class="animal-panel__action animal-panel__action--primary" type="button" data-action="sound" ${soundUnavailable ? 'disabled' : ''}>
-              <span class="animal-panel__action-label">${this.sound.status === 'playing' ? 'Playing…' : 'Hear Voice'}</span>
-              <span class="animal-panel__action-meta">${soundFile
-                ? (soundIsAi
-                    ? (soundReviewed ? 'AI RECONSTRUCTION' : 'AI · UNREVIEWED')
-                    : 'ARCHIVE RECORDING')
-                : 'Pending'}</span>
+              <span class="animal-panel__action-label">${this.sound.status === 'playing' ? 'Playing…' : 'Listen'}</span>
             </button>
-            <button
-              class="animal-panel__action animal-panel__action--secondary"
-              type="button"
-              data-action="wiki"
-            >
-              <span class="animal-panel__action-label">Read More</span>
-              <span class="animal-panel__action-meta">Wikipedia</span>
+            <button class="animal-panel__action animal-panel__action--secondary" type="button" data-action="wiki">
+              <span class="animal-panel__action-label">Wiki</span>
             </button>
           </div>
 
@@ -381,12 +399,11 @@ export class AnimalPanel {
   }
 
   private chatBadge(): string {
-    const chat = getChat();
     switch (this.chat.status) {
-      case 'streaming': return 'Streaming';
-      case 'ready':     return chat?.name ?? 'Connected';
+      case 'streaming': return 'Live';
+      case 'ready':     return 'AI';
       case 'error':     return 'Retry';
-      default:          return chat?.name ?? 'Ready';
+      default:          return 'AI';
     }
   }
 

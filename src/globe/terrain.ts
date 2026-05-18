@@ -126,7 +126,7 @@ export function generateTerrain(): TerrainData {
       // Ridge noise — sharp peaks/valleys that break the smooth gaussian
       // regionBoost into a more "mountain range" look. Only applied where
       // mountainBlendFactor > 0 (real mountain regions).
-      const ridgeRaw = sampleNoise(nx, ny, nz, 3, 7.0, 0.5, 0.35);
+      const ridgeRaw = sampleNoise(nx, ny, nz, 2, 4.0, 0.5, 0.35);
       const ridge = 1.0 - Math.abs(ridgeRaw); // [0..1], 1 = peak ridge
 
       // Regional mountain boost
@@ -180,7 +180,7 @@ export function generateTerrain(): TerrainData {
       // Scandinavian mountains (N-S ridge)
       bump(0.30, ridge1dLng(-8, 4, 57, 71));
       // Caucasus
-      bump(0.45, peak2d(42.5, 2, -44, 5));
+      bump(0.30, peak2d(42.5, 2, -44, 4));
       // Pyrenees
       bump(0.50, peak2d(43, 1.5, -0.5, 3));
       // Apennines (Italy)
@@ -212,7 +212,7 @@ export function generateTerrain(): TerrainData {
       const coastSoftness = smoothstepFn(0.45, 0.90, landness);
       // Mountain regions: modulate by ridge noise so the smooth gaussian
       // dome becomes a series of peaks/saddles. Outside mountains: factor=1.
-      const ridgeFactor = 1.0 + mountainBlendFactor * (ridge - 0.5) * 0.9;
+      const ridgeFactor = 1.0 + mountainBlendFactor * (ridge - 0.5) * 0.4;
       const heightNorm = Math.min(
         noise * coastFactor * coastSoftness * centralBoost * effectiveRegionBoost * ridgeFactor,
         1.10,

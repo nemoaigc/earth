@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 
 const ORBIT_RADIUS = 10;
-const AUTO_ROTATE_SPEED = 0.3;
+const AUTO_ROTATE_SPEED = 0.15;
 const FOCUS_DURATION = 0.9;   // seconds
 // Offset the camera slightly so the clicked animal sits a bit above centre —
 // leaves room for the right-side panel without dead-centring the subject.
@@ -54,6 +54,7 @@ export class CameraController {
 
   clearFocus(): void {
     this.focusing = false;
+    this.controls.autoRotate = true;
   }
 
   update(deltaTime: number): void {
