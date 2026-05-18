@@ -98,7 +98,7 @@ export function generateTerrain(): TerrainData {
       return t * t * (3 - 2 * t);
     };
 
-    if (biome !== 'ocean') {
+    if (landness >= 0.5) {
       // Check distance to coast: sample nearby points for ocean
       let coastDist = 1.0; // 1.0 = far from coast
       for (let step = 1; step <= 7; step++) {
@@ -115,13 +115,21 @@ export function generateTerrain(): TerrainData {
       // Smooth ramp: height scales with distance from coast
       const coastFactor = coastDist; // linear ramp — visible mountains inland
 
-      // Very low frequency noise — smooth rolling hills, no spikes
-      // scale 0.2 = extremely slow variation across the sphere
-      const hills = sampleNoise(nx, ny, nz, 2, 1.8, 0.5, 0.2);
-      // Slight medium frequency for texture
-      const texture = sampleNoise(nx, ny, nz, 2, 2.0, 0.4, 0.5);
-      const noise = Math.abs(hills) * 0.85 + Math.abs(texture) * 0.15 + 0.05;
-      const centralBoost = 1.0 + coastDist * 0.3;
+      // Low-freq rolling hills. Two key choices for smoothness:
+      // (1) We map noise from [-1,1] to [0,1] with (n+1)*0.5 — NOT
+      //     Math.abs(n). Math.abs has a V-shaped fold at n=0, so any
+      //     vertex straddling that boundary becomes a local minimum
+      //     while its neighbours can be high — exactly the "spike /
+      //     column" artefact we saw. Linear remap removes the fold.
+      // (2) Keep scale at 0.20 (original) so plains still have visible
+      //     rolling elevation — just smoother because the abs-fold is
+      //     gone, not because the field is artificially flattened.
+      const hills = sampleNoise(nx, ny, nz, 2, 1.8, 0.5, 0.20);
+      const texture = sampleNoise(nx, ny, nz, 2, 2.0, 0.4, 0.50);
+      const hillsN = (hills + 1) * 0.5;
+      const textN  = (texture + 1) * 0.5;
+      const noise = hillsN * 0.70 + textN * 0.12 + 0.05;
+      const centralBoost = 1.0 + coastDist * 0.30;
 
       // Ridge noise — sharp peaks/valleys that break the smooth gaussian
       // regionBoost into a more "mountain range" look. Only applied where

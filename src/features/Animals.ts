@@ -214,11 +214,10 @@ export class Animals {
     if (newHover !== this.hoveredAnimal) {
       this.hoveredAnimal = newHover;
       if (newHover && !this.selectedAnimal) {
-        const statusLabel = newHover.info.status === 'extinct' ? '已灭绝' : '濒危';
+        const statusLabel = newHover.info.status === 'extinct' ? 'EXTINCT' : 'ENDANGERED';
         this.tooltip.innerHTML = `
-          <span style="color:#86868b;font-size:11px;margin-right:6px;">${statusLabel}</span>
-          ${newHover.info.nameCn}
-          <span style="color:#86868b;font-size:11px;margin-left:4px;">${newHover.info.name}</span>
+          <span style="color:#86868b;font-size:11px;margin-right:6px;letter-spacing:0.08em;">${statusLabel}</span>
+          ${newHover.info.name}
         `;
         this.tooltip.style.display = 'block';
         this.domElement.style.cursor = 'pointer';
