@@ -61,7 +61,7 @@ const COLOR_OCEAN_SHALLOW = new THREE.Color('#55ccee');
 export function generateTerrain(): TerrainData {
   // 320 segments → ~0.56°/vertex (~62 km), noticeably smoother coastlines
   // without going to 400+ which doubles generation time.
-  const geometry = new THREE.SphereGeometry(GLOBE_RADIUS, 320, 320);
+  const geometry = new THREE.SphereGeometry(GLOBE_RADIUS, 480, 480);
   const posAttr = geometry.getAttribute('position');
   const vertexCount = posAttr.count;
 
@@ -91,7 +91,7 @@ export function generateTerrain(): TerrainData {
     // Continuous landness. Small 0.4° blur kernel — cardinal samples land
     // INSIDE the adjacent bitmap pixel (px = 0.5°), so it smooths the
     // bilinear stair pattern without bridging the ~1° Taiwan Strait.
-    const landness = mask.sampleLandBlur(lat, lng, 0.4);
+    const landness = mask.sampleLandBlur(lat, lng, 0.55);
     const biome = mask.getBiome(lat, lng);
     const smoothstepFn = (e0: number, e1: number, x: number) => {
       const t = Math.max(0, Math.min(1, (x - e0) / (e1 - e0)));
@@ -209,7 +209,7 @@ export function generateTerrain(): TerrainData {
       // ranges (Andes) actually rise out of the water.
       const effectiveRegionBoost = 1.0 + (regionBoost - 1.0) * Math.pow(coastDist, 0.3);
       // Coast softness: ramp height from 0 across a wide [0.45, 0.90] band.
-      const coastSoftness = smoothstepFn(0.45, 0.90, landness);
+      const coastSoftness = smoothstepFn(0.50, 0.95, landness);
       // Mountain regions: modulate by ridge noise so the smooth gaussian
       // dome becomes a series of peaks/saddles. Outside mountains: factor=1.
       const ridgeFactor = 1.0 + mountainBlendFactor * (ridge - 0.5) * 0.4;
@@ -273,7 +273,7 @@ export function generateTerrain(): TerrainData {
       }
       // Soft coast colour: blend toward shallow-ocean across [0.50, 0.72].
       // Wider window erases the hard green/blue coast line.
-      const oceanBlend = 1 - smoothstepFn(0.50, 0.72, landness);
+      const oceanBlend = 1 - smoothstepFn(0.50, 0.88, landness);
       if (oceanBlend > 0) {
         color.r = color.r * (1 - oceanBlend) + COLOR_OCEAN_SHALLOW.r * oceanBlend;
         color.g = color.g * (1 - oceanBlend) + COLOR_OCEAN_SHALLOW.g * oceanBlend;
@@ -295,7 +295,7 @@ export function generateTerrain(): TerrainData {
       // tinted toward shallow ocean — placing trees there reads as
       // "trees in the sea". Skip them.
       const sampleChance = (Math.sin(i * 7.13) * 0.5 + 0.5) > 0.85;
-      if ((i % 12 === 0 || sampleChance) && landness >= 0.72) {
+      if ((i % 12 === 0 || sampleChance) && landness >= 0.88) {
         landPoints.push({
           position: new THREE.Vector3(nx * newRadius, ny * newRadius, nz * newRadius),
           normal: new THREE.Vector3(nx, ny, nz),
