@@ -24,6 +24,7 @@ import { CameraController } from './systems/Camera';
 import { CSS2DRenderer } from 'three/examples/jsm/renderers/CSS2DRenderer.js';
 import { Labels } from './features/Labels';
 import { Animals } from './features/Animals';
+import { Volcanoes } from './features/Volcanoes';
 
 // --- Renderer ---
 const renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -74,6 +75,8 @@ const flowers = new Flowers(globe.terrainData);
 scene.add(flowers.group);
 const grass = new Grass(globe.terrainData);
 scene.add(grass.group);
+const volcanoes = new Volcanoes();
+scene.add(volcanoes.group);
 
 const labels = new Labels();
 scene.add(labels.group);
@@ -170,6 +173,7 @@ function animate(): void {
   reefs.update(elapsed);
   flowers.update(elapsed);
   grass.update(elapsed);
+  volcanoes.update(elapsed);
   animals.update(elapsed, cameraController.camera);
 
   cameraController.update(deltaTime);
