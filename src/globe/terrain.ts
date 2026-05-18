@@ -233,7 +233,23 @@ function elevation(
     mtHeight *= 1 + variation * strength;
   }
 
-  return (baseHeight + mtHeight) * coastGate;
+  // Jagged peak detail. Adds high-frequency noise ONLY where the
+  // combined elevation is already high, so plains stay smooth. This
+  // is what turns the smooth gaussian dome into something that reads
+  // as a series of rocky tops — visible craggy variation between
+  // neighbouring faces at the very summit. Implemented as additive
+  // (not multiplicative) so it pulls some faces down into saddles
+  // and pushes others up into knobs without amplifying the whole peak.
+  const preElev = baseHeight + mtHeight;
+  if (preElev > 0.40) {
+    const fine = noise01(nx, ny, nz, 2.6) - 0.5;     // ±0.5
+    const finerer = noise01(nx, ny, nz, 5.2) - 0.5;  // ±0.5, higher freq
+    const peakGate = smoothstep(0.40, 0.75, preElev);
+    const knob = fine * 0.10 + finerer * 0.05;       // up to ±0.075
+    return (preElev + knob * peakGate) * coastGate;
+  }
+
+  return preElev * coastGate;
 }
 
 // ═══════════════════════════════════════════════════════════════════
