@@ -128,7 +128,10 @@ export function generateTerrain(): TerrainData {
       const texture = sampleNoise(nx, ny, nz, 2, 2.0, 0.4, 0.50);
       const hillsN = (hills + 1) * 0.5;
       const textN  = (texture + 1) * 0.5;
-      const noise = hillsN * 0.70 + textN * 0.12 + 0.05;
+      // Restore original amplitudes — the abs() fix removed the spikes,
+      // so we can keep the full elevation range. (Earlier trim made the
+      // continents look uniformly low.)
+      const noise = hillsN * 0.85 + textN * 0.15 + 0.05;
       const centralBoost = 1.0 + coastDist * 0.30;
 
       // Ridge noise — sharp peaks/valleys that break the smooth gaussian
@@ -171,10 +174,12 @@ export function generateTerrain(): TerrainData {
       bump(0.25, ridge1dLng(-60, 4, 50, 67));
 
       // === Americas ===
-      // Andes — long N-S ridge
-      bump(1.5, ridge1dLng(70, 9, -55, 10));
-      // Rockies — wide N-S ridge
-      bump(1.1, ridge1dLng(112, 8, 35, 60));
+      // Andes — narrow N-S ridge along the Pacific coast (Chile/Peru).
+      // Width tightened from 9° to 4° so the chain reads as a coastal
+      // wall rather than a slab covering half the continent.
+      bump(1.5, ridge1dLng(70, 4, -55, 10));
+      // Rockies — slightly wider N-S ridge.
+      bump(1.1, ridge1dLng(112, 5, 35, 60));
       // Appalachians (E North America)
       bump(0.55, ridge1dLng(78, 6, 33, 45));
       // Sierra Madre Occidental (W Mexico)
@@ -230,16 +235,16 @@ export function generateTerrain(): TerrainData {
 
       posAttr.setXYZ(i, nx * newRadius, ny * newRadius, nz * newRadius);
 
-      // ── Color is decoupled from height ────────────────────────────────
-      // Previously colorNorm === heightNorm, which pushed interior land
-      // (high coastDist + centralBoost) deep into olive/brown territory.
-      // Now: base color = raw noise only (keeps land vivid and biome-true).
-      // Mountain ridges (regionBoost > 1.0) blend toward high/snow on top
-      // of the base, so only real peaks get rocky colours.
+      // ── Colour is driven by actual height, not by region presence ──
+      // Previously colorNorm was forced to 1.0 wherever a mountain bump
+      // existed at all (mountainBlendFactor → 1 across the whole bump),
+      // so every face inside Andes/Rockies hit the snow band even at
+      // mid-elevation. Driving it from heightNorm lets ridge-high faces
+      // be snow while ridge-low faces inside the same range stay
+      // biome-coloured or rocky brown — the "snow on peaks, green on
+      // slopes" look from the reference Himalaya art.
       const microVar = noise3D(nx * 1.9, ny * 1.9, nz * 1.9) * 0.03;
-      const baseColorNorm = Math.min(0.55, noise * 0.9 + microVar);
-      const mountainBlend = mountainBlendFactor;
-      const colorNorm = baseColorNorm + mountainBlend * (1.0 - baseColorNorm);
+      const colorNorm = Math.min(1.0, heightNorm * 0.95 + microVar);
 
       // Smooth-step color bands — avoids the hard threshold "steps" that
       // create visible colour blocks on the terrain surface.
