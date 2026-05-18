@@ -46,6 +46,11 @@ interface MountainRegion {
   latRange: number;  // half-extent N-S, degrees
   lngRange: number;  // half-extent E-W, degrees
   peakHeight: number;
+  // Optional: force a small snow cap painted at the centre, regardless
+  // of how tall the elevation actually is. Use for famous low peaks
+  // (Fuji, Kilimanjaro) that should LOOK iconic without poking high
+  // above the local terrain.
+  snowCap?: boolean;
 }
 
 // Only the world's famous chains — every entry has multiple sub-points
@@ -88,12 +93,12 @@ const MOUNTAINS: MountainRegion[] = [
   // Polar ice plateau
   { name: 'Greenland',    lat:  72, lng:   37, latRange:  8,  lngRange: 12, peakHeight: 0.55 },
 
-  // NOTE: do not add single stratovolcano peaks (Fuji, Kilimanjaro,
-  // Mt Kenya, etc.) to this table. Tried multiple times — any
-  // narrow-footprint elevation looks like a needle, and worse, when
-  // it sits on a small island (Japan) or savannah it stands out
-  // disproportionately relative to nearby continental chains. They
-  // need a different rendering path (sprite/decal) to read correctly.
+  // Famous low peaks with PAINTED snow cap. peakHeight is intentionally
+  // small (just a hill) so the surrounding island/savannah doesn't get
+  // dominated; the snow cap is forced by `snowCap: true` and rendered
+  // as a small white patch at the centre.
+  { name: 'Fuji',         lat:  35.5, lng: -138.7, latRange: 1.5, lngRange: 1.5, peakHeight: 0.30, snowCap: true },
+  { name: 'Kilimanjaro',  lat:  -3,   lng:  -37.3, latRange: 1.6, lngRange: 1.6, peakHeight: 0.35, snowCap: true },
 ];
 
 // ═══════════════════════════════════════════════════════════════════
@@ -139,6 +144,26 @@ const COAST_FADE_END = 0.85;  // landness at which we hit full height
 // chains, while only the true giants (Himalaya, Tibetan altiplano)
 // poke above and earn a snow cap.
 const MOUNTAIN_HEIGHT_SCALE = 0.70;
+
+// Forced snow cap at named famous peaks (snowCap: true). Returns the
+// max overlap with such a peak's centre as a [0..1] mix. Uses a
+// tighter ellipse (half the regular range) so the white patch reads
+// as a *cap*, not the whole hill being white.
+function forcedSnowAt(lat: number, lng: number): number {
+  let best = 0;
+  for (const m of MOUNTAINS) {
+    if (!m.snowCap) continue;
+    let dLng = lng - m.lng;
+    if (dLng > 180) dLng -= 360;
+    if (dLng < -180) dLng += 360;
+    const f = ellipseFalloff(
+      Math.abs(lat - m.lat), m.latRange * 0.5,
+      Math.abs(dLng), m.lngRange * 0.5,
+    );
+    if (f > best) best = f;
+  }
+  return best;
+}
 
 function mountainBoost(
   lat: number, lng: number,
@@ -241,7 +266,7 @@ const C_SAND_LIGHT  = new THREE.Color('#EAC685');
 // per-biome accent patches (forest darker patches, desert sand mottle)
 // + rocky band + snow cap.
 function landColor(
-  weights: BiomeWeights, elev: number, lat: number,
+  weights: BiomeWeights, elev: number, lat: number, lng: number,
   nx: number, ny: number, nz: number,
   out: THREE.Color,
 ): THREE.Color {
@@ -292,7 +317,9 @@ function landColor(
   // Snow above snowline (narrow transition → crisp peaks) or polar lat.
   const altSnow = smoothstep(sl - 0.04, sl + 0.04, elev);
   const polarSnow = smoothstep(68, 75, Math.abs(lat));
-  out.lerp(C_SNOW, Math.max(altSnow, polarSnow));
+  // Forced snow cap at named famous low peaks (Fuji, Kilimanjaro).
+  const forcedSnow = forcedSnowAt(lat, lng);
+  out.lerp(C_SNOW, Math.max(altSnow, polarSnow, forcedSnow));
 
   // Final clamp (some additive tints could under/overshoot a bit)
   out.r = Math.max(0, Math.min(1, out.r));
@@ -350,7 +377,7 @@ export function generateTerrain(): TerrainData {
       const latJitter = noise3D(nx * 0.7, ny * 0.7, nz * 0.7) * 4;
       const weights = mask.getBiomeWeights(lat + latJitter, lng);
       const biome = dominantBiomeName(weights);
-      landColor(weights, elev, lat, nx, ny, nz, colorBuf);
+      landColor(weights, elev, lat, lng, nx, ny, nz, colorBuf);
       colors[i * 3]     = colorBuf.r;
       colors[i * 3 + 1] = colorBuf.g;
       colors[i * 3 + 2] = colorBuf.b;
