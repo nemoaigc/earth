@@ -11,7 +11,7 @@ export interface TerrainData {
   oceanRatio: number;
 }
 
-const LAND_HEIGHT_SCALE = 0.85;
+const LAND_HEIGHT_SCALE = 1.0;
 
 // Vibrant colors matching reference screenshots
 const BIOME_COLORS: Record<string, { low: THREE.Color; mid: THREE.Color; high: THREE.Color; snow: THREE.Color }> = {
@@ -125,13 +125,14 @@ export function generateTerrain(): TerrainData {
       //     rolling elevation — just smoother because the abs-fold is
       //     gone, not because the field is artificially flattened.
       const hills = sampleNoise(nx, ny, nz, 2, 1.8, 0.5, 0.20);
-      const texture = sampleNoise(nx, ny, nz, 2, 2.0, 0.4, 0.50);
+      // Texture scale lowered 0.50 -> 0.30: high-freq detail varies more
+      // slowly across the sphere, so adjacent vertices have very close
+      // height — kills the "blocky" feel where neighbouring triangles
+      // have visibly different elevation.
+      const texture = sampleNoise(nx, ny, nz, 2, 2.0, 0.4, 0.30);
       const hillsN = (hills + 1) * 0.5;
       const textN  = (texture + 1) * 0.5;
-      // Restore original amplitudes — the abs() fix removed the spikes,
-      // so we can keep the full elevation range. (Earlier trim made the
-      // continents look uniformly low.)
-      const noise = hillsN * 0.85 + textN * 0.15 + 0.05;
+      const noise = hillsN * 0.85 + textN * 0.08 + 0.07;
       const centralBoost = 1.0 + coastDist * 0.30;
 
       // Ridge noise — sharp peaks/valleys that break the smooth gaussian
@@ -228,7 +229,7 @@ export function generateTerrain(): TerrainData {
       const ridgeFactor = 1.0 + mountainBlendFactor * (ridge - 0.5) * 0.4;
       const heightNorm = Math.min(
         noise * coastFactor * coastSoftness * centralBoost * effectiveRegionBoost * ridgeFactor,
-        1.10,
+        1.35,
       );
       const height = heightNorm * LAND_HEIGHT_SCALE;
       const newRadius = GLOBE_RADIUS + height;
