@@ -48,44 +48,52 @@ interface MountainRegion {
   peakHeight: number;
 }
 
+// Only the world's famous chains — every entry has multiple sub-points
+// or a wide ellipse, never a single narrow peak. Single-cone volcanoes
+// (Fuji, Kilimanjaro, …) belong in a separate sprite system if needed.
 const MOUNTAINS: MountainRegion[] = [
-  // Asia — Himalaya / Tibet. Heights bumped up so they reliably crown
-  // with snow even after the 0.70 global scale.
+  // Asia — Himalaya chain + Tibet
   { name: 'Karakoram',    lat:  36, lng:  -76, latRange:  3,  lngRange:  4, peakHeight: 1.10 },
   { name: 'Himalaya W',   lat:  32, lng:  -80, latRange:  3,  lngRange:  5, peakHeight: 1.25 },
   { name: 'Himalaya C',   lat:  28, lng:  -86, latRange:  3,  lngRange:  5, peakHeight: 1.45 }, // Everest
   { name: 'Himalaya E',   lat:  28, lng:  -94, latRange:  3,  lngRange:  5, peakHeight: 1.20 },
   { name: 'Tibet Plat.',  lat:  33, lng:  -88, latRange:  7,  lngRange: 13, peakHeight: 0.60 },
-  { name: 'Tian Shan',    lat:  42, lng:  -78, latRange:  4,  lngRange:  8, peakHeight: 0.65 },
-  { name: 'Japanese Alps',lat:  36, lng: -138, latRange:  2,  lngRange:  2, peakHeight: 0.40 },
   { name: 'Urals',        lat:  60, lng:  -60, latRange:  9,  lngRange:  3, peakHeight: 0.30 },
-  // Americas — Andes scaled down significantly. They sit right on the
-  // Pacific coast, so high white peaks here produce visible "feathering"
-  // through smooth shading + atmosphere bloom. Keep them rocky, not snowy.
+
+  // Americas — Andes chain (4 overlapping sub-ranges), Rockies,
+  // Appalachians. Andes peaks deliberately below the snowline so the
+  // chain stays rocky rather than feathering white into the Pacific.
   { name: 'Andes N',      lat:   2, lng:   75, latRange: 12,  lngRange:  6, peakHeight: 0.50 },
   { name: 'Andes C',      lat: -15, lng:   71, latRange: 14,  lngRange:  6, peakHeight: 0.70 },
   { name: 'Andes S',      lat: -35, lng:   70, latRange: 14,  lngRange:  6, peakHeight: 0.60 },
   { name: 'Patagonia',    lat: -48, lng:   72, latRange: 10,  lngRange:  5, peakHeight: 0.40 },
   { name: 'Rockies',      lat:  47, lng:  113, latRange: 13,  lngRange:  6, peakHeight: 0.85 },
   { name: 'Appalachians', lat:  38, lng:   80, latRange:  6,  lngRange:  4, peakHeight: 0.35 },
-  { name: 'Sierra Madre', lat:  25, lng:  103, latRange:  5,  lngRange:  3, peakHeight: 0.35 },
-  { name: 'Brazilian H.', lat: -15, lng:   47, latRange:  7,  lngRange:  7, peakHeight: 0.20 },
+
   // Europe
   { name: 'Alps',         lat:  46, lng:  -10, latRange:  3,  lngRange:  6, peakHeight: 0.65 },
   { name: 'Pyrenees',     lat:  43, lng:    0, latRange:  1.5,lngRange:  3, peakHeight: 0.45 },
-  { name: 'Apennines',    lat:  43, lng:  -13, latRange:  4,  lngRange:  2, peakHeight: 0.28 },
-  { name: 'Carpathians',  lat:  47, lng:  -22, latRange:  3,  lngRange:  4, peakHeight: 0.32 },
   { name: 'Caucasus',     lat:42.5, lng:  -44, latRange:  2,  lngRange:  4, peakHeight: 0.55 },
   { name: 'Scandinavian', lat:  64, lng:   -8, latRange:  7,  lngRange:  3, peakHeight: 0.30 },
+
   // Africa
   { name: 'Atlas',        lat:  33, lng:   -1, latRange:  3,  lngRange: 10, peakHeight: 0.50 },
   { name: 'Ethiopian H.', lat:  10, lng:  -38, latRange:  5,  lngRange:  4, peakHeight: 0.60 },
   { name: 'Drakensberg',  lat: -30, lng:  -29, latRange:  3,  lngRange:  3, peakHeight: 0.35 },
+
   // Oceania
   { name: 'Great Divide', lat: -33, lng: -148, latRange:  5,  lngRange:  3, peakHeight: 0.30 },
   { name: 'NZ Southern',  lat: -43, lng: -170, latRange:  2,  lngRange:  3, peakHeight: 0.50 },
-  // Polar ice plateaus (visual mass for Greenland / Antarctica peaks)
+
+  // Polar ice plateau
   { name: 'Greenland',    lat:  72, lng:   37, latRange:  8,  lngRange: 12, peakHeight: 0.55 },
+
+  // Famous isolated peaks — small footprint, modest height, but tuned
+  // so the very tip pokes above the local snowline and shows a small
+  // white cap. Width:height ratio kept ≥ 4 so they read as gentle
+  // hills with a snowy crown, not needles.
+  { name: 'Fuji',         lat:  35.5, lng: -138.7, latRange: 2.0, lngRange: 2.0, peakHeight: 1.00 },
+  { name: 'Kilimanjaro',  lat:  -3,   lng:  -37.3, latRange: 2.0, lngRange: 2.0, peakHeight: 1.10 },
 ];
 
 // ═══════════════════════════════════════════════════════════════════
