@@ -58,8 +58,6 @@ const MOUNTAINS: MountainRegion[] = [
   { name: 'Tibet Plat.',  lat:  33, lng:  -88, latRange:  7,  lngRange: 13, peakHeight: 0.60 },
   { name: 'Tian Shan',    lat:  42, lng:  -78, latRange:  4,  lngRange:  8, peakHeight: 0.65 },
   { name: 'Japanese Alps',lat:  36, lng: -138, latRange:  2,  lngRange:  2, peakHeight: 0.40 },
-  // Mt Fuji — single stratovolcano peak, kept narrow.
-  { name: 'Fuji',         lat:  35.5, lng: -138.7, latRange: 0.8, lngRange: 0.8, peakHeight: 0.95 },
   { name: 'Urals',        lat:  60, lng:  -60, latRange:  9,  lngRange:  3, peakHeight: 0.30 },
   // Americas — Andes scaled down significantly. They sit right on the
   // Pacific coast, so high white peaks here produce visible "feathering"
@@ -83,11 +81,6 @@ const MOUNTAINS: MountainRegion[] = [
   { name: 'Atlas',        lat:  33, lng:   -1, latRange:  3,  lngRange: 10, peakHeight: 0.50 },
   { name: 'Ethiopian H.', lat:  10, lng:  -38, latRange:  5,  lngRange:  4, peakHeight: 0.60 },
   { name: 'Drakensberg',  lat: -30, lng:  -29, latRange:  3,  lngRange:  3, peakHeight: 0.35 },
-  // East African Rift volcanoes — Kilimanjaro is the highest free-standing
-  // mountain on Earth (5895m), so it earns a snowy stratovolcano cone.
-  { name: 'Kilimanjaro',  lat:  -3, lng:  -37.3, latRange: 0.9, lngRange: 0.9, peakHeight: 1.10 },
-  { name: 'Mt Kenya',     lat:  -0.2, lng: -37.3, latRange: 0.7, lngRange: 0.7, peakHeight: 0.95 },
-  { name: 'Rwenzori',     lat:   0.4, lng: -29.9, latRange: 1.0, lngRange: 0.8, peakHeight: 0.85 },
   // Oceania
   { name: 'Great Divide', lat: -33, lng: -148, latRange:  5,  lngRange:  3, peakHeight: 0.30 },
   { name: 'NZ Southern',  lat: -43, lng: -170, latRange:  2,  lngRange:  3, peakHeight: 0.50 },
