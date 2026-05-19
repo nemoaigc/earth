@@ -69,7 +69,9 @@
 
 .animal-panel__hero {
   position: relative;
-  height: clamp(120px, 18vh, 150px);
+  /* aspect-ratio 5:3 matches the 800x480 source photos so they show
+   * complete (no top/bottom crop). With width=320px → height=192px. */
+  aspect-ratio: 5 / 3;
   overflow: hidden;
   background: rgba(255, 255, 255, 0.03);
 }
@@ -78,6 +80,8 @@
 .animal-panel__hero-art {
   width: 100%;
   height: 100%;
+  /* Cover still, because aspect now matches → no crop, but defends
+   * against any future image with a different aspect. */
   object-fit: cover;
   display: block;
 }

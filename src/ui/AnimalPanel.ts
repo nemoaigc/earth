@@ -5,8 +5,9 @@ import { getChat } from '../ai/registry';
 import soundManifest from '../../public/animal-sounds/manifest.json';
 
 const STATUS_COLORS = {
-  extinct:    { bg: 'rgba(120, 122, 128, 0.14)', text: '#7f8794', label: 'EXTINCT'    },
-  endangered: { bg: 'rgba(255, 95, 87, 0.14)',   text: '#f85d54', label: 'ENDANGERED' },
+  // Stronger colours so the badge is readable on the dark hero veil.
+  extinct:    { bg: 'rgba(60, 65, 80, 0.55)',    text: '#E8ECF2', label: 'EXTINCT'    },
+  endangered: { bg: 'rgba(220, 60, 50, 0.55)',   text: '#FFFFFF', label: 'ENDANGERED' },
 } as const;
 
 type ChatState =

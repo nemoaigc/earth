@@ -71,10 +71,15 @@ export class Animals {
             transparent: true,
             alphaTest: 0.1,
             depthWrite: false,
+            // Never let nearby trees / sprites occlude an animal. Combined
+            // with the dot-product back-face culling in update(), the
+            // sprite still only renders on the camera-facing hemisphere.
+            depthTest: false,
             fog: true,
           });
 
           const sprite = new THREE.Sprite(material);
+          sprite.renderOrder = 10;  // draw above terrain features
           const s = info.scale * 1.5 * (0.9 + Math.random() * 0.2);
           sprite.scale.set(s, s, s);
 
@@ -171,8 +176,11 @@ export class Animals {
 
   onSelect: ((info: AnimalInfo, position: THREE.Vector3) => void) | null = null;
 
+  private selectedAt = -1;
+
   private select(animal: PlacedAnimal) {
     this.selectedAnimal = animal;
+    this.selectedAt = performance.now() / 1000;
     this.panel.show(animal.info);
     this.tooltip.style.display = 'none';
     this.onSelect?.(animal.info, animal.sprite.position);
@@ -233,13 +241,25 @@ export class Animals {
       this.tooltip.style.top = `${this._tooltipY}px`;
     }
 
-    // Animate scales (hover effect)
+    // Animate scales. Selected animal gets a short bounce burst on
+    // top of the steady 1.8× hover/select scale — visible feedback
+    // that the click "took". Decays back to 1.8× in ~0.6s.
+    const now = performance.now() / 1000;
     for (const placed of this.placed) {
       const isHovered = placed === this.hoveredAnimal;
       const isSelected = placed === this.selectedAnimal;
-      const target = (isHovered || isSelected ? 1.8 : 1) * placed.baseScale;
+      let mult = isHovered || isSelected ? 1.8 : 1;
+      if (isSelected && this.selectedAt > 0) {
+        const dt = now - this.selectedAt;
+        if (dt < 0.6) {
+          // Critically-damped bounce: spike to ~+0.9× then settle.
+          const k = Math.exp(-dt * 8);
+          mult += k * Math.cos(dt * 14) * 0.9;
+        }
+      }
+      const target = mult * placed.baseScale;
       const cur = placed.sprite.scale.x;
-      const next = cur + (target - cur) * 0.12;
+      const next = cur + (target - cur) * 0.18;
       placed.sprite.scale.set(next, next, next);
     }
   }
