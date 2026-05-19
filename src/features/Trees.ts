@@ -26,7 +26,7 @@ const BIOME_CONFIGS: BiomeConfig[] = [
   { biome: 'boreal',    count: 50, heightRange: [0.11, 0.18], widthRange: [0.038, 0.055], geoType: 'boreal',     maxHeight: 0.65 },
   { biome: 'desert',    count: 8,  heightRange: [0.065, 0.095], widthRange: [0.038, 0.055], geoType: 'temperate', maxHeight: 0.40 },
   // Acacia: African savanna (sub-Saharan, real lng -20 to 55°E → our lng +20 to -55)
-  { biome: 'desert',    count: 28, heightRange: [0.075, 0.105], widthRange: [0.045, 0.065], geoType: 'acacia',   maxHeight: 0.45,
+  { biome: 'desert',    count: 15, heightRange: [0.075, 0.105], widthRange: [0.045, 0.065], geoType: 'acacia',   maxHeight: 0.45,
     geoFilter: (lat, lng) => lat > -35 && lat < 20 && lng < 20 && lng > -55 },
   // Cactus: Sonoran / N American deserts (real lng 95-120°W → our lng +95 to +120)
   { biome: 'desert',    count: 8,  heightRange: [0.038, 0.055], widthRange: [0.015, 0.023], geoType: 'cactus',   maxHeight: 0.35,
@@ -39,16 +39,15 @@ const BIOME_CONFIGS: BiomeConfig[] = [
   { biome: 'temperate', count: 20, heightRange: [0.13, 0.18], widthRange: [0.04, 0.06],   geoType: 'eucalyptus', maxHeight: 0.50,
     geoFilter: (lat, lng) => lat > -40 && lat < -10 && lng < -113 && lng > -155 },
   // Baobab: Africa (real lng 10-50°E → our lng -10 to -50)
-  { biome: 'desert',    count: 18, heightRange: [0.10, 0.14], widthRange: [0.07, 0.10],   geoType: 'baobab',     maxHeight: 0.40,
+  { biome: 'desert',    count: 10, heightRange: [0.10, 0.14], widthRange: [0.07, 0.10],   geoType: 'baobab',     maxHeight: 0.40,
     geoFilter: (lat, lng) => lat > -25 && lat < 15 && lng < -8 && lng > -52 },
   // Africa tropical mix — three species so the Congo basin / Sub-Saharan
-  // tropics aren't all one tree. Counts split across acacia / baobab /
-  // generic tropical instead of stacking 30 more of the same default.
-  { biome: 'tropical',  count: 14, heightRange: [0.12, 0.18], widthRange: [0.065, 0.095], geoType: 'tropical', maxHeight: 0.45,
-    geoFilter: (lat, lng) => lat > -10 && lat < 12 && lng < -10 && lng > -35 },
-  { biome: 'tropical',  count: 18, heightRange: [0.085, 0.115], widthRange: [0.05, 0.07],  geoType: 'acacia',   maxHeight: 0.40,
+  // tropics aren't all one tree. Density kept low so Africa overall
+  // doesn't feel crowded; the global default tropical (count 50) already
+  // sprays trees here.
+  { biome: 'tropical',  count: 10, heightRange: [0.085, 0.115], widthRange: [0.05, 0.07],  geoType: 'acacia',   maxHeight: 0.40,
     geoFilter: (lat, lng) => lat > -25 && lat < 18 && lng < -5 && lng > -50 },
-  { biome: 'tropical',  count: 10, heightRange: [0.11, 0.15], widthRange: [0.075, 0.105], geoType: 'baobab',   maxHeight: 0.40,
+  { biome: 'tropical',  count: 6,  heightRange: [0.11, 0.15], widthRange: [0.075, 0.105], geoType: 'baobab',   maxHeight: 0.40,
     geoFilter: (lat, lng) => lat > -25 && lat < 15 && lng < -8 && lng > -50 },
   // Amazon basin tropical mix (real lng -75..-45 → codebase +45..+75,
   // lat -12..8). Bamboo (Guadua spp. is real here) + baobab as a
