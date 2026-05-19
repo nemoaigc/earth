@@ -63,23 +63,26 @@ const MOUNTAINS: MountainRegion[] = [
   { name: 'Himalaya C',   lat:  28, lng:  -86, latRange:  3,  lngRange:  5, peakHeight: 1.45 }, // Everest
   { name: 'Himalaya E',   lat:  28, lng:  -94, latRange:  3,  lngRange:  5, peakHeight: 1.20 },
   { name: 'Tibet Plat.',  lat:  33, lng:  -88, latRange:  7,  lngRange: 13, peakHeight: 0.60 },
+  // Central Asia — Tianshan + Kunlun, both 7000m-class with snow caps.
+  { name: 'Tianshan',     lat:  42, lng:  -80, latRange:  3,  lngRange:  7, peakHeight: 0.95, snowCap: true },
+  { name: 'Kunlun',       lat:  36, lng:  -85, latRange:  3,  lngRange:  8, peakHeight: 1.05, snowCap: true },
   { name: 'Urals',        lat:  60, lng:  -60, latRange:  9,  lngRange:  3, peakHeight: 0.30 },
 
-  // Americas — Andes chain (4 overlapping sub-ranges), Rockies,
-  // Appalachians. Andes peaks deliberately below the snowline so the
-  // chain stays rocky rather than feathering white into the Pacific,
-  // but a painted snow cap is added at each sub-range's centre.
-  { name: 'Andes N',      lat:   2, lng:   75, latRange: 12,  lngRange:  6, peakHeight: 0.50, snowCap: true },
-  { name: 'Andes C',      lat: -15, lng:   71, latRange: 14,  lngRange:  6, peakHeight: 0.70, snowCap: true },
-  { name: 'Andes S',      lat: -35, lng:   70, latRange: 14,  lngRange:  6, peakHeight: 0.60, snowCap: true },
-  { name: 'Patagonia',    lat: -48, lng:   72, latRange: 10,  lngRange:  5, peakHeight: 0.40, snowCap: true },
-  { name: 'Rockies',      lat:  47, lng:  113, latRange: 13,  lngRange:  6, peakHeight: 0.85, snowCap: true },
+  // Americas — Andes chain. 4 narrow sub-ranges following the Pacific
+  // coast (lngRange 4 ≈ 450km, matches the real range width). Central
+  // sub-range = Aconcagua/Altiplano region, highest peak in S America.
+  { name: 'Andes N',       lat:   3, lng:   74, latRange: 10,  lngRange: 4, peakHeight: 0.55, snowCap: true },
+  { name: 'Andes Peru',    lat: -12, lng:   75, latRange: 12,  lngRange: 4, peakHeight: 0.72, snowCap: true },
+  { name: 'Andes Atacama', lat: -28, lng:   70, latRange: 10,  lngRange: 4, peakHeight: 0.90, snowCap: true }, // Aconcagua
+  { name: 'Andes S',       lat: -42, lng:   72, latRange:  8,  lngRange: 4, peakHeight: 0.55, snowCap: true },
+  { name: 'Patagonia',     lat: -50, lng:   73, latRange:  6,  lngRange: 4, peakHeight: 0.40, snowCap: true },
+  { name: 'Rockies',       lat:  47, lng:  113, latRange: 13,  lngRange: 6, peakHeight: 0.85, snowCap: true },
   { name: 'Appalachians', lat:  38, lng:   80, latRange:  6,  lngRange:  4, peakHeight: 0.35 },
 
   // Europe
-  { name: 'Alps',         lat:  46, lng:  -10, latRange:  3,  lngRange:  6, peakHeight: 0.65 },
-  { name: 'Pyrenees',     lat:  43, lng:    0, latRange:  1.5,lngRange:  3, peakHeight: 0.45 },
-  { name: 'Caucasus',     lat:42.5, lng:  -44, latRange:  2,  lngRange:  4, peakHeight: 0.55 },
+  { name: 'Alps',         lat:  46, lng:  -10, latRange:  3,  lngRange:  6, peakHeight: 0.75, snowCap: true },
+  { name: 'Pyrenees',     lat:  43, lng:    0, latRange:  1.5,lngRange:  3, peakHeight: 0.55, snowCap: true },
+  { name: 'Caucasus',     lat:42.5, lng:  -44, latRange:  2,  lngRange:  4, peakHeight: 0.70, snowCap: true },
   { name: 'Scandinavian', lat:  64, lng:   -8, latRange:  7,  lngRange:  3, peakHeight: 0.30 },
 
   // Africa
@@ -148,9 +151,8 @@ const MOUNTAIN_HEIGHT_SCALE = 0.70;
 
 // Forced snow cap at named famous peaks (snowCap: true). Returns the
 // max overlap with such a peak's centre as a [0..1] mix. Snow ellipse
-// is the smaller of (m.range * 0.85) and a hard 3° cap, so long chains
-// (Andes, 14° latRange) get a focused snow patch at the centre rather
-// than a 25° white stripe along the whole spine.
+// capped at 2° per axis so long chains get a focused snow patch at
+// the centre rather than a giant white stripe along the spine.
 function forcedSnowAt(lat: number, lng: number): number {
   let best = 0;
   for (const m of MOUNTAINS) {
@@ -158,8 +160,8 @@ function forcedSnowAt(lat: number, lng: number): number {
     let dLng = lng - m.lng;
     if (dLng > 180) dLng -= 360;
     if (dLng < -180) dLng += 360;
-    const snowLatR = Math.min(m.latRange * 0.85, 3.0);
-    const snowLngR = Math.min(m.lngRange * 0.85, 3.0);
+    const snowLatR = Math.min(m.latRange * 0.85, 2.0);
+    const snowLngR = Math.min(m.lngRange * 0.85, 2.0);
     const f = ellipseFalloff(
       Math.abs(lat - m.lat), snowLatR,
       Math.abs(dLng), snowLngR,
@@ -233,23 +235,7 @@ function elevation(
     mtHeight *= 1 + variation * strength;
   }
 
-  // Jagged peak detail. Adds high-frequency noise ONLY where the
-  // combined elevation is already high, so plains stay smooth. This
-  // is what turns the smooth gaussian dome into something that reads
-  // as a series of rocky tops — visible craggy variation between
-  // neighbouring faces at the very summit. Implemented as additive
-  // (not multiplicative) so it pulls some faces down into saddles
-  // and pushes others up into knobs without amplifying the whole peak.
-  const preElev = baseHeight + mtHeight;
-  if (preElev > 0.40) {
-    const fine = noise01(nx, ny, nz, 2.6) - 0.5;     // ±0.5
-    const finerer = noise01(nx, ny, nz, 5.2) - 0.5;  // ±0.5, higher freq
-    const peakGate = smoothstep(0.40, 0.75, preElev);
-    const knob = fine * 0.10 + finerer * 0.05;       // up to ±0.075
-    return (preElev + knob * peakGate) * coastGate;
-  }
-
-  return preElev * coastGate;
+  return (baseHeight + mtHeight) * coastGate;
 }
 
 // ═══════════════════════════════════════════════════════════════════
@@ -329,16 +315,24 @@ function landColor(
     }
   }
 
-  // Rocky band: just below snowline, only on appreciable elevation.
-  const sl = snowline(lat);
-  const rockyMix = smoothstep(Math.max(0.30, sl - 0.20), sl - 0.04, elev);
+  // Rocky band: decoupled from snowline (which goes very low at polar
+  // latitudes — the previous coupling produced an inverted smoothstep
+  // that painted boreal lowlands brown). Pure elevation-driven band,
+  // gated to mid-elevations; at high latitudes the polar snow rule
+  // below paints over it anyway.
+  const rockyMix = smoothstep(0.40, 0.62, elev);
   out.lerp(C_ROCKY, rockyMix);
 
-  // Snow above snowline (narrow transition → crisp peaks) or polar lat.
+  // Snow: above snowline (altitude) or above ~60° (polar). Polar ramp
+  // starts earlier (60° → 72°) so the Arctic / Greenland / Antarctica
+  // read as icy instead of muddy boreal.
+  const sl = snowline(lat);
   const altSnow = smoothstep(sl - 0.04, sl + 0.04, elev);
-  const polarSnow = smoothstep(68, 75, Math.abs(lat));
-  // Forced snow cap at named famous low peaks (Fuji, Kilimanjaro).
-  const forcedSnow = forcedSnowAt(lat, lng);
+  const polarSnow = smoothstep(60, 72, Math.abs(lat));
+  // Forced snow cap at named famous low peaks. Gated by elevation so
+  // it paints only the actual high-ground inside the snow ellipse —
+  // not a flat blob across the whole range.
+  const forcedSnow = forcedSnowAt(lat, lng) * smoothstep(0.10, 0.25, elev);
   out.lerp(C_SNOW, Math.max(altSnow, polarSnow, forcedSnow));
 
   // Final clamp (some additive tints could under/overshoot a bit)
