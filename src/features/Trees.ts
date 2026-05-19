@@ -8,7 +8,8 @@ interface BiomeConfig {
   heightRange: [number, number];
   widthRange: [number, number];
   geoType: 'tropical' | 'temperate' | 'boreal' | 'acacia' | 'cactus'
-    | 'oak' | 'bamboo' | 'eucalyptus' | 'baobab' | 'spruce' | 'cherry' | 'olive' | 'sequoia';
+    | 'oak' | 'bamboo' | 'eucalyptus' | 'baobab' | 'spruce' | 'cherry' | 'olive' | 'sequoia'
+    | 'birch';
   /** max terrain heightNorm — trees don't appear above this elevation */
   maxHeight?: number;
   /** optional lat/lng bounding box filter (lng is negated: eastern hemisphere = negative) */
@@ -25,7 +26,7 @@ const BIOME_CONFIGS: BiomeConfig[] = [
   { biome: 'boreal',    count: 50, heightRange: [0.11, 0.18], widthRange: [0.038, 0.055], geoType: 'boreal',     maxHeight: 0.65 },
   { biome: 'desert',    count: 8,  heightRange: [0.065, 0.095], widthRange: [0.038, 0.055], geoType: 'temperate', maxHeight: 0.40 },
   // Acacia: African savanna (sub-Saharan, real lng -20 to 55°E → our lng +20 to -55)
-  { biome: 'desert',    count: 12, heightRange: [0.075, 0.105], widthRange: [0.045, 0.065], geoType: 'acacia',   maxHeight: 0.45,
+  { biome: 'desert',    count: 28, heightRange: [0.075, 0.105], widthRange: [0.045, 0.065], geoType: 'acacia',   maxHeight: 0.45,
     geoFilter: (lat, lng) => lat > -35 && lat < 20 && lng < 20 && lng > -55 },
   // Cactus: Sonoran / N American deserts (real lng 95-120°W → our lng +95 to +120)
   { biome: 'desert',    count: 8,  heightRange: [0.038, 0.055], widthRange: [0.015, 0.023], geoType: 'cactus',   maxHeight: 0.35,
@@ -38,8 +39,17 @@ const BIOME_CONFIGS: BiomeConfig[] = [
   { biome: 'temperate', count: 20, heightRange: [0.13, 0.18], widthRange: [0.04, 0.06],   geoType: 'eucalyptus', maxHeight: 0.50,
     geoFilter: (lat, lng) => lat > -40 && lat < -10 && lng < -113 && lng > -155 },
   // Baobab: Africa (real lng 10-50°E → our lng -10 to -50)
-  { biome: 'desert',    count: 8,  heightRange: [0.10, 0.14], widthRange: [0.07, 0.10],   geoType: 'baobab',     maxHeight: 0.40,
+  { biome: 'desert',    count: 18, heightRange: [0.10, 0.14], widthRange: [0.07, 0.10],   geoType: 'baobab',     maxHeight: 0.40,
     geoFilter: (lat, lng) => lat > -25 && lat < 15 && lng < -8 && lng > -52 },
+  // Africa tropical mix — three species so the Congo basin / Sub-Saharan
+  // tropics aren't all one tree. Counts split across acacia / baobab /
+  // generic tropical instead of stacking 30 more of the same default.
+  { biome: 'tropical',  count: 14, heightRange: [0.12, 0.18], widthRange: [0.065, 0.095], geoType: 'tropical', maxHeight: 0.45,
+    geoFilter: (lat, lng) => lat > -10 && lat < 12 && lng < -10 && lng > -35 },
+  { biome: 'tropical',  count: 18, heightRange: [0.085, 0.115], widthRange: [0.05, 0.07],  geoType: 'acacia',   maxHeight: 0.40,
+    geoFilter: (lat, lng) => lat > -25 && lat < 18 && lng < -5 && lng > -50 },
+  { biome: 'tropical',  count: 10, heightRange: [0.11, 0.15], widthRange: [0.075, 0.105], geoType: 'baobab',   maxHeight: 0.40,
+    geoFilter: (lat, lng) => lat > -25 && lat < 15 && lng < -8 && lng > -50 },
   { biome: 'boreal',    count: 35, heightRange: [0.12, 0.19], widthRange: [0.03, 0.045],  geoType: 'spruce',     maxHeight: 0.65 },
   // Cherry blossom: East Asia (real lng 100-145°E → our lng -100 to -145)
   { biome: 'temperate', count: 12, heightRange: [0.10, 0.14], widthRange: [0.06, 0.085],  geoType: 'cherry',     maxHeight: 0.50,
@@ -50,6 +60,25 @@ const BIOME_CONFIGS: BiomeConfig[] = [
   // Sequoia: N America Pacific coast (real lng 115-125°W → our lng +115 to +125)
   { biome: 'temperate', count: 6,  heightRange: [0.16, 0.22], widthRange: [0.05, 0.07],   geoType: 'sequoia',    maxHeight: 0.55,
     geoFilter: (lat, lng) => lat > 35 && lat < 52 && lng > 113 && lng < 128 },
+  // Birch: white trunks + autumn-gold canopy. Lives along the
+  // temperate / taiga boundary across the northern hemisphere
+  // (N Europe, Russia, Canada, NE US, Japan). Two configs so the
+  // tree shows up in both temperate AND boreal biome cells nearby.
+  { biome: 'boreal',    count: 30, heightRange: [0.12, 0.17], widthRange: [0.038, 0.058], geoType: 'birch',      maxHeight: 0.55,
+    geoFilter: (lat, _lng) => lat > 45 && lat < 68 },
+  { biome: 'temperate', count: 14, heightRange: [0.11, 0.15], widthRange: [0.035, 0.055], geoType: 'birch',      maxHeight: 0.50,
+    geoFilter: (lat, _lng) => lat > 42 && lat < 55 },
+
+  // ─── South America density boosts ────────────────────────────────
+  // Amazon basin: dense tropical rainforest
+  { biome: 'tropical',  count: 45, heightRange: [0.13, 0.20], widthRange: [0.07, 0.10],   geoType: 'tropical',   maxHeight: 0.45,
+    geoFilter: (lat, lng) => lat > -18 && lat < 8 && lng > 35 && lng < 80 },
+  // Patagonian / Andean temperate forests (S Chile / Argentina)
+  { biome: 'temperate', count: 22, heightRange: [0.12, 0.17], widthRange: [0.04, 0.06],   geoType: 'spruce',     maxHeight: 0.55,
+    geoFilter: (lat, lng) => lat > -55 && lat < -30 && lng > 60 && lng < 78 },
+  // Brazilian cerrado / atlantic forest oaks
+  { biome: 'temperate', count: 18, heightRange: [0.11, 0.16], widthRange: [0.055, 0.085], geoType: 'oak',        maxHeight: 0.45,
+    geoFilter: (lat, lng) => lat > -28 && lat < -15 && lng > 40 && lng < 60 },
 ];
 
 /* ---------- helpers ---------- */
@@ -420,6 +449,29 @@ function createSequoiaGeometry(height: number, width: number): THREE.BufferGeome
   return mergeGeometries([trunk, ensureMergeReady(canopy), ensureMergeReady(top)], false)!;
 }
 
+// --- Birch: tall slim white trunk + warm autumn-gold canopy ---
+function createBirchGeometry(height: number, width: number): THREE.BufferGeometry {
+  // Slim, mostly-white trunk taking up the lower 60% of the tree.
+  const trunkH = height * 0.6;
+  const trunk = createTrunk(trunkH, 0.018, 0.012, 6,
+    new THREE.Color('#D8CDB8'),  // warm ivory at the base
+    new THREE.Color('#FAF6EE'));  // near-white at the top
+
+  // Slender, slightly oblong canopy in warm autumn tones.
+  const canopyR = width * 0.42;
+  const canopy = new THREE.IcosahedronGeometry(canopyR, 1);
+  const cp = canopy.getAttribute('position');
+  for (let i = 0; i < cp.count; i++) cp.setY(i, cp.getY(i) * 1.35);
+  const cy = trunkH + canopyR * 0.9;
+  canopy.translate(0, cy, 0);
+  colorGeometry(canopy,
+    new THREE.Color('#C6892A'),  // amber base
+    new THREE.Color('#F5D04A'),  // bright gold top
+    cy - canopyR * 1.35, cy + canopyR * 1.35);
+
+  return mergeGeometries([trunk, ensureMergeReady(canopy)], false)!;
+}
+
 /* ---------- material ---------- */
 
 function createWindSwayMaterial(
@@ -443,7 +495,11 @@ function createWindSwayMaterial(
       '#include <begin_vertex>',
       `#include <begin_vertex>
       vec4 worldPos4 = modelMatrix * vec4(transformed, 1.0);
-      float swayAmount = transformed.y * transformed.y * 0.015;
+      // Linear in y (not y²). The previous y²×0.015 made the sway peak
+      // at ~0.0006 for a 0.2-unit-tall tree, invisible on a globe of
+      // radius 5. Linear y×0.07 gives a visible canopy swing while
+      // keeping the trunk base anchored (y=0 ⇒ 0 sway).
+      float swayAmount = transformed.y * 0.07;
       transformed.x += sin(uTime * 2.0 + worldPos4.x * 3.0 + worldPos4.z * 2.0) * swayAmount;
       transformed.z += cos(uTime * 1.7 + worldPos4.z * 3.0 + worldPos4.x * 2.0) * swayAmount;`
     );
@@ -543,6 +599,7 @@ export class Trees {
         case 'cherry':     geometry = createCherryGeometry(height, width); break;
         case 'olive':      geometry = createOliveGeometry(height, width); break;
         case 'sequoia':    geometry = createSequoiaGeometry(height, width); break;
+        case 'birch':      geometry = createBirchGeometry(height, width); break;
       }
 
       const material = createWindSwayMaterial(this.timeUniform);
