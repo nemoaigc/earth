@@ -50,6 +50,14 @@ const BIOME_CONFIGS: BiomeConfig[] = [
     geoFilter: (lat, lng) => lat > -25 && lat < 18 && lng < -5 && lng > -50 },
   { biome: 'tropical',  count: 10, heightRange: [0.11, 0.15], widthRange: [0.075, 0.105], geoType: 'baobab',   maxHeight: 0.40,
     geoFilter: (lat, lng) => lat > -25 && lat < 15 && lng < -8 && lng > -50 },
+  // Amazon basin tropical mix (real lng -75..-45 → codebase +45..+75,
+  // lat -12..8). Bamboo (Guadua spp. is real here) + baobab as a
+  // visual stand-in for kapok/ceiba — wide-trunk silhouette breaks up
+  // the otherwise uniform default-tropical canopy.
+  { biome: 'tropical',  count: 16, heightRange: [0.13, 0.19], widthRange: [0.025, 0.04],  geoType: 'bamboo',   maxHeight: 0.40,
+    geoFilter: (lat, lng) => lat > -12 && lat < 8 && lng > 40 && lng < 78 },
+  { biome: 'tropical',  count: 8,  heightRange: [0.12, 0.16], widthRange: [0.075, 0.105], geoType: 'baobab',   maxHeight: 0.40,
+    geoFilter: (lat, lng) => lat > -12 && lat < 8 && lng > 40 && lng < 78 },
   { biome: 'boreal',    count: 35, heightRange: [0.12, 0.19], widthRange: [0.03, 0.045],  geoType: 'spruce',     maxHeight: 0.65 },
   // Cherry blossom: East Asia (real lng 100-145°E → our lng -100 to -145)
   { biome: 'temperate', count: 12, heightRange: [0.10, 0.14], widthRange: [0.06, 0.085],  geoType: 'cherry',     maxHeight: 0.50,
