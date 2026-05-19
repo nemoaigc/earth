@@ -385,11 +385,15 @@ export function generateTerrain(): TerrainData {
       const r = GLOBE_RADIUS + elev * LAND_HEIGHT_SCALE;
       posAttr.setXYZ(i, nx * r, ny * r, nz * r);
 
-      // Distort the lat we feed to getBiomeWeights so biome zones
-      // (Sahara/Sahel, taiga/temperate) get a wavy boundary instead of
-      // a perfectly horizontal stripe. ±4° of slow noise is enough.
+      // Distort lat AND lng we feed to getBiomeWeights so biome zones
+      // get a wavy boundary in BOTH directions, not a rectangle. With
+      // only lat jitter, deserts defined as rectangular lat/lng boxes
+      // still showed straight east/west edges — square patches in the
+      // Caspian / Mid-east region. ±5° lng jitter (different noise
+      // field) breaks those lines too.
       const latJitter = noise3D(nx * 0.7, ny * 0.7, nz * 0.7) * 4;
-      const weights = mask.getBiomeWeights(lat + latJitter, lng);
+      const lngJitter = noise3D(nx * 0.6 + 17, ny * 0.6, nz * 0.6 + 5) * 5;
+      const weights = mask.getBiomeWeights(lat + latJitter, lng + lngJitter);
       const biome = dominantBiomeName(weights);
       landColor(weights, elev, lat, lng, nx, ny, nz, colorBuf);
       colors[i * 3]     = colorBuf.r;
