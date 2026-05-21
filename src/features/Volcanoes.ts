@@ -18,7 +18,6 @@ interface Volcano {
 
 const VOLCANOES: Volcano[] = [
   // Pacific Ring of Fire
-  { lat:  35.4, lng: -138.7, size: 0.10, smoke: true  }, // Mt Fuji
   { lat:  46.2, lng:  122.2, size: 0.07, smoke: false }, // Mt St Helens
   { lat:  19.4, lng:  155.3, size: 0.07, smoke: true  }, // Kilauea (Hawaii)
   { lat: -39.3, lng:  171.4, size: 0.06, smoke: false }, // Mt Ruapehu (NZ)

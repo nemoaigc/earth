@@ -251,10 +251,10 @@ export class Animals {
       let mult = isHovered || isSelected ? 1.8 : 1;
       if (isSelected && this.selectedAt > 0) {
         const dt = now - this.selectedAt;
-        if (dt < 0.6) {
-          // Critically-damped bounce: spike to ~+0.9× then settle.
-          const k = Math.exp(-dt * 8);
-          mult += k * Math.cos(dt * 14) * 0.9;
+        if (dt < 1.0) {
+          // Bouncy spring: spike up then settle with multiple bounces
+          const k = Math.exp(-dt * 5);
+          mult += k * Math.cos(dt * 18) * 1.2;
         }
       }
       const target = mult * placed.baseScale;

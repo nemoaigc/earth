@@ -124,6 +124,47 @@
   justify-content: space-between;
 }
 
+.animal-panel__bottom-actions {
+  display: flex;
+  gap: 6px;
+  padding: 12px 14px;
+  border-top: 1px solid var(--panel-divider);
+}
+
+.animal-panel__bottom-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 0;
+  border: 1px solid var(--panel-card-border);
+  border-radius: 10px;
+  background: var(--panel-card-bg);
+  color: var(--panel-text);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  transition: background 0.16s ease, transform 0.16s ease, border-color 0.16s ease;
+}
+
+.animal-panel__bottom-btn:hover {
+  transform: translateY(-1px);
+  border-color: rgba(255, 255, 255, 0.24);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.animal-panel__bottom-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.animal-panel__bottom-btn:disabled:hover {
+  transform: none;
+  background: var(--panel-card-bg);
+  border-color: var(--panel-card-border);
+}
+
 .animal-panel__badge,
 .animal-panel__chip {
   display: inline-flex;
@@ -162,6 +203,31 @@
 }
 
 .animal-panel__close:hover {
+  transform: scale(1.06);
+  background: rgba(0, 0, 0, 0.5);
+}
+
+.animal-panel__snap-btn {
+  position: absolute;
+  bottom: 12px;
+  right: 14px;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(14px) saturate(150%);
+  -webkit-backdrop-filter: blur(14px) saturate(150%);
+  color: rgba(255, 255, 255, 0.9);
+  cursor: pointer;
+  transition: transform 0.18s ease, background 0.18s ease;
+}
+
+.animal-panel__snap-btn:hover {
   transform: scale(1.06);
   background: rgba(0, 0, 0, 0.5);
 }
@@ -215,59 +281,6 @@
   font-size: 12px;
   font-weight: 600;
   letter-spacing: 0.04em;
-}
-
-.animal-panel__actions {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 6px;
-}
-
-.animal-panel__action {
-  position: relative;
-  display: flex;
-  flex-direction: row;
-  justify-content: center;
-  align-items: center;
-  text-align: center;
-  min-height: 40px;
-  padding: 8px 12px;
-  border-radius: 11px;
-  text-decoration: none;
-  color: inherit;
-  border: 1px solid var(--panel-card-border);
-  background: var(--panel-card-bg);
-  transition:
-    transform 0.16s ease,
-    border-color 0.16s ease,
-    background 0.16s ease;
-}
-
-.animal-panel__action:hover {
-  transform: translateY(-1px);
-  border-color: rgba(255, 255, 255, 0.24);
-  background: rgba(255, 255, 255, 0.08);
-}
-
-.animal-panel__action--primary {
-  cursor: pointer;
-}
-
-.animal-panel__action-label {
-  font-size: 13px;
-  font-weight: 600;
-  letter-spacing: -0.01em;
-  color: var(--panel-text);
-}
-
-.animal-panel__action-meta {
-  margin-top: 0;
-  font-size: 9px;
-  line-height: 1.3;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--panel-text-faint);
-  flex-shrink: 0;
 }
 
 /* meta-grid: inline label/value rows instead of card grid */
@@ -403,6 +416,8 @@
   display: flex;
   flex-direction: column;
   gap: 10px;
+  margin-top: 4px;
+  padding: 0 14px 10px;
 }
 
 .animal-panel__chat:empty {
@@ -545,10 +560,6 @@
     transform: translate3d(0, 0, 0) scale(1);
   }
 
-  .animal-panel__actions {
-    grid-template-columns: repeat(3, 1fr);
-  }
-
   .animal-panel__meta-grid {
     grid-template-columns: 1fr;
   }
@@ -596,9 +607,7 @@
 .wiki-overlay__backdrop {
   position: absolute;
   inset: 0;
-  background: rgba(8, 10, 18, 0.62);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
+  background: transparent;
 }
 
 .wiki-overlay__shell {
@@ -607,12 +616,15 @@
   flex-direction: column;
   width: min(1080px, 92vw);
   height: min(820px, 86vh);
-  background: rgba(18, 20, 28, 0.92);
-  border: 1px solid rgba(255, 255, 255, 0.10);
+  background: rgba(255, 255, 255, 0.14);
+  border: 1px solid rgba(255, 255, 255, 0.28);
   border-radius: 18px;
   box-shadow:
-    0 24px 70px rgba(0, 0, 0, 0.5),
-    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+    0 18px 48px rgba(0, 0, 0, 0.4),
+    0 2px 8px rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(28px) saturate(160%);
+  -webkit-backdrop-filter: blur(28px) saturate(160%);
   overflow: hidden;
   transform: translateY(8px) scale(0.992);
   transition: transform 0.32s cubic-bezier(0.22, 1, 0.36, 1);
@@ -627,8 +639,9 @@
   align-items: center;
   justify-content: space-between;
   padding: 12px 14px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.14);
   color: rgba(255, 255, 255, 0.94);
+  background: transparent;
 }
 
 .wiki-overlay__title {

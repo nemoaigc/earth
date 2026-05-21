@@ -1331,8 +1331,8 @@ function smoothTransition(value: number, center: number, width: number): number 
 
 function inDesert(lat: number, lng: number): number {
   for (const d of DESERTS) {
-    const insideLng = Math.min((lng - d.minLng) / 5, (d.maxLng - lng) / 5);
-    const insideLat = Math.min((lat - d.minLat) / 4, (d.maxLat - lat) / 4);
+    const insideLng = Math.min((lng - d.minLng) / 12, (d.maxLng - lng) / 12);
+    const insideLat = Math.min((lat - d.minLat) / 10, (d.maxLat - lat) / 10);
     if (insideLng > 0 && insideLat > 0) return Math.min(1, Math.min(insideLng, insideLat));
   }
   return 0;
