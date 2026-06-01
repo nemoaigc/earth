@@ -48,7 +48,7 @@ appEl?.appendChild(labelRenderer.domElement);
 
 // --- Scene ---
 const scene = new THREE.Scene();
-scene.fog = new THREE.Fog('#60ccde', 25, 80);
+scene.fog = new THREE.Fog('#5bbad0', 25, 80);
 
 // --- Day/Night Cycle ---
 const dayNight = new DayNightCycle();
