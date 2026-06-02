@@ -9,6 +9,9 @@ const nextConfig: NextConfig = {
   // effects in dev. The canvas mount has a full dispose() teardown so this is
   // safe and surfaces any leak early. Leave it on.
   reactStrictMode: true,
+  // Hide the Next.js dev indicator (the bottom-left logo button) in `next dev`.
+  // It never appears in production builds anyway.
+  devIndicators: false,
 };
 
 export default nextConfig;

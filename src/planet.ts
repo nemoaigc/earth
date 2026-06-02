@@ -191,10 +191,17 @@ export function mountPlanet(container: HTMLElement, opts: MountOptions = {}): ()
     cancelAnimationFrame(rafId);
     window.removeEventListener('resize', onResize);
     animals.dispose();
+    // OrbitControls keeps a document-level keydown listener that the canvas
+    // removal below does NOT free — dispose it explicitly.
+    cameraController.dispose();
     renderer.dispose();
     renderer.forceContextLoss();
     // Remove the canvas + CSS2D layer we appended.
     renderer.domElement.remove();
     labelRenderer.domElement.remove();
+    // Drop the dev debug handle so it doesn't pin the disposed scene graph.
+    if (process.env.NODE_ENV !== 'production') {
+      delete (window as unknown as { __earth?: unknown }).__earth;
+    }
   };
 }

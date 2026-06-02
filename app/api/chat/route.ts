@@ -31,7 +31,7 @@ function env(name: string, fallback = ''): string {
 
 // ---- Provider adapters --------------------------------------------------
 
-async function* streamClaude(messages: ChatMessage[]): AsyncIterable<string> {
+async function* streamClaude(messages: ChatMessage[], signal?: AbortSignal): AsyncIterable<string> {
   // Anthropic's Messages API rejects role:"system" entries inside `messages`;
   // the system prompt must be lifted to the top-level `system` field. The old
   // production /api/chat forwarded messages verbatim (a real, latent bug); the
@@ -55,6 +55,7 @@ async function* streamClaude(messages: ChatMessage[]): AsyncIterable<string> {
   const res = await fetch(`${baseUrl}/v1/messages`, {
     method: 'POST',
     headers,
+    signal,
     body: JSON.stringify({
       model: env('ANTHROPIC_MODEL', 'claude-opus-4-5'),
       max_tokens: 512,
@@ -95,10 +96,12 @@ async function* streamOpenAI(
   baseUrl = 'https://api.openai.com',
   key = env('OPENAI_API_KEY'),
   model = 'gpt-4o-mini',
+  signal?: AbortSignal,
 ): AsyncIterable<string> {
   const res = await fetch(`${baseUrl}/v1/chat/completions`, {
     method: 'POST',
     headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
+    signal,
     body: JSON.stringify({ model, stream: true, max_tokens: 512, messages }),
   });
   if (!res.ok) throw new Error(`OpenAI ${res.status}`);
@@ -125,14 +128,15 @@ async function* streamOpenAI(
   }
 }
 
-async function* streamDeepSeek(messages: ChatMessage[]): AsyncIterable<string> {
-  yield* streamOpenAI(messages, 'https://api.deepseek.com', env('DEEPSEEK_API_KEY'), 'deepseek-chat');
+async function* streamDeepSeek(messages: ChatMessage[], signal?: AbortSignal): AsyncIterable<string> {
+  yield* streamOpenAI(messages, 'https://api.deepseek.com', env('DEEPSEEK_API_KEY'), 'deepseek-chat', signal);
 }
 
-async function* streamMock(messages: ChatMessage[]): AsyncIterable<string> {
+async function* streamMock(messages: ChatMessage[], signal?: AbortSignal): AsyncIterable<string> {
   const last = messages.filter((m) => m.role === 'user').at(-1)?.content ?? '';
   const text = `(mock) Received: "${last.slice(0, 60)}". Set LLM_PROVIDER + an API key to activate a real model.`;
   for (const ch of text) {
+    if (signal?.aborted) return;
     yield ch;
     await new Promise((r) => setTimeout(r, 12));
   }
@@ -151,12 +155,19 @@ export async function POST(req: Request): Promise<Response> {
   const messages: ChatMessage[] = body.messages ?? [];
   const provider = env('LLM_PROVIDER', 'mock');
 
+  // Abort the upstream LLM request when the client disconnects or the stream is
+  // cancelled, so cancelled chats stop billing tokens and don't leak a connection.
+  const ac = new AbortController();
+  if (req.signal.aborted) ac.abort();
+  else req.signal.addEventListener('abort', () => ac.abort(), { once: true });
+  const signal = ac.signal;
+
   async function* stream(): AsyncIterable<string> {
     switch (provider) {
-      case 'claude':   yield* streamClaude(messages); break;
-      case 'openai':   yield* streamOpenAI(messages); break;
-      case 'deepseek': yield* streamDeepSeek(messages); break;
-      default:         yield* streamMock(messages);
+      case 'claude':   yield* streamClaude(messages, signal); break;
+      case 'openai':   yield* streamOpenAI(messages, undefined, undefined, undefined, signal); break;
+      case 'deepseek': yield* streamDeepSeek(messages, signal); break;
+      default:         yield* streamMock(messages, signal);
     }
   }
 
@@ -169,11 +180,24 @@ export async function POST(req: Request): Promise<Response> {
         }
         controller.enqueue(encoder.encode('data: [DONE]\n\n'));
       } catch (err) {
+        // Client gone / aborted: the consumer is gone, so don't try to enqueue.
+        if (signal.aborted) return;
         const msg = err instanceof Error ? err.message : 'Unknown error';
-        controller.enqueue(encoder.encode(`data: ${JSON.stringify({ error: msg })}\n\n`));
+        try {
+          controller.enqueue(encoder.encode(`data: ${JSON.stringify({ error: msg })}\n\n`));
+        } catch {
+          /* controller already closed */
+        }
       } finally {
-        controller.close();
+        try {
+          controller.close();
+        } catch {
+          /* already closed/errored */
+        }
       }
+    },
+    cancel() {
+      ac.abort();
     },
   });
 

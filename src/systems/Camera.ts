@@ -92,4 +92,13 @@ export class CameraController {
     this.camera.aspect = aspect;
     this.camera.updateProjectionMatrix();
   }
+
+  /**
+   * Release OrbitControls' input listeners. OrbitControls binds a capture-phase
+   * keydown handler to the document (which outlives the canvas), so removing the
+   * canvas alone does not free it — this must be called on teardown.
+   */
+  dispose(): void {
+    this.controls.dispose();
+  }
 }
