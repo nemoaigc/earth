@@ -1,7 +1,8 @@
 /**
  * Browser-side StreamChatProvider that POSTs to /api/chat.
- * Only registered when VITE_LLM_PROXY=1 is set at build time,
- * which is done automatically in Vercel via vercel.json env config.
+ * Only registered when NEXT_PUBLIC_LLM_PROXY=1 is set at BUILD time
+ * (NEXT_PUBLIC_* values are inlined into the client bundle by next build —
+ * setting it only at runtime will not enable this provider).
  */
 
 import type { AnimalInfo } from '../../data/animals';

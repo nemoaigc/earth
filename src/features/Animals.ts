@@ -52,16 +52,14 @@ export class Animals {
     // Event listeners
     domElement.addEventListener('mousemove', this.onMouseMove);
     domElement.addEventListener('click', this.onClick);
-    window.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape') this.deselect();
-    });
+    window.addEventListener('keydown', this.onKeyDown);
 
     // Load and place animals
     for (const info of ANIMALS) {
       const positions = this.getPositions(info, terrainData);
       if (positions.length === 0) continue;
 
-      loader.load(`animals/${info.id}.png`, (texture) => {
+      loader.load(`/animals/${info.id}.png`, (texture) => {
         texture.minFilter = THREE.LinearFilter;
         texture.magFilter = THREE.LinearFilter;
 
@@ -174,6 +172,10 @@ export class Animals {
     }
   };
 
+  private onKeyDown = (e: KeyboardEvent) => {
+    if (e.key === 'Escape') this.deselect();
+  };
+
   onSelect: ((info: AnimalInfo, position: THREE.Vector3) => void) | null = null;
 
   private selectedAt = -1;
@@ -267,6 +269,7 @@ export class Animals {
   dispose() {
     this.domElement.removeEventListener('mousemove', this.onMouseMove);
     this.domElement.removeEventListener('click', this.onClick);
+    window.removeEventListener('keydown', this.onKeyDown);
     this.tooltip.remove();
     this.panel.dispose();
   }

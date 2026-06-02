@@ -12,6 +12,19 @@ dist
 dist-ssr
 *.local
 
+# Next.js
+.next/
+out/
+next-env.d.ts
+
+# Env (secrets — never commit)
+.env
+.env*.local
+
+# OpenNext / Cloudflare build output (R&D adds the adapter; keep artifacts out of git)
+.open-next/
+.wrangler/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

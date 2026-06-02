@@ -6,24 +6,25 @@ import { mockChatProvider } from './mock';
  * stream a narration or synthesise voice. Providers can be swapped
  * freely at runtime.
  *
- * One-command cloud activation (Vercel dashboard):
- *   VITE_LLM_PROXY=1   →  enables /api/chat proxy (set LLM_PROVIDER +
- *                          the corresponding API key on the server side)
- *   VITE_TTS_PROXY=1   →  enables /api/tts proxy (set TTS_PROVIDER +
- *                          ELEVENLABS_API_KEY or OPENAI_API_KEY server-side)
+ * One-command activation (set as build-time env vars, e.g. in .env.local or
+ * the deploy platform's dashboard):
+ *   NEXT_PUBLIC_LLM_PROXY=1   →  enables /api/chat proxy (set LLM_PROVIDER +
+ *                                 the corresponding API key on the server side)
+ *   NEXT_PUBLIC_TTS_PROXY=1   →  enables /api/tts proxy (set TTS_PROVIDER +
+ *                                 ELEVENLABS_API_KEY or OPENAI_API_KEY server-side)
  *
- * Without these flags the mock chat provider is used and TTS is silent.
+ * Without these flags the mock chat provider is used and TTS uses Web Speech.
  */
 
 // Lazily import the proxy providers only when the feature flags are set,
 // so their fetch() calls don't appear in the bundle when disabled.
 async function loadProxies() {
-  if (import.meta.env.VITE_LLM_PROXY === '1') {
+  if (process.env.NEXT_PUBLIC_LLM_PROXY === '1') {
     const { httpChatProvider } = await import('./providers/http-chat');
     registerAi({ chat: httpChatProvider });
   }
 
-  if (import.meta.env.VITE_TTS_PROXY === '1') {
+  if (process.env.NEXT_PUBLIC_TTS_PROXY === '1') {
     // Production: TTS via edge function (/api/tts), key stays server-side.
     const { httpTtsProvider } = await import('./providers/http-tts');
     registerAi({ tts: httpTtsProvider });

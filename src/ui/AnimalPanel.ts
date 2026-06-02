@@ -1,4 +1,5 @@
-import './animal-panel.css';
+// NOTE: animal-panel.css is imported from app/layout.tsx — Next only allows
+// global (non-module) CSS to be imported from the root layout.
 import type { AnimalInfo } from '../data/animals';
 import type { ChatMessage } from '../ai/types';
 import { getChat } from '../ai/registry';
