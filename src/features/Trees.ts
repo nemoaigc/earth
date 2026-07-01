@@ -619,7 +619,7 @@ function densityGate(point: { position: THREE.Vector3; treeDensity?: number }): 
   const hash = Math.sin(
     point.position.x * 91.73 + point.position.y * 37.21 + point.position.z * 53.11,
   ) * 0.5 + 0.5;
-  return hash < Math.max(0.035, density * 0.42);
+  return hash < Math.max(0.055, density * 0.58);
 }
 
 function placeTrees(
@@ -651,7 +651,7 @@ function placeTrees(
     const yRot = new THREE.Quaternion().setFromAxisAngle(normal, Math.random() * Math.PI * 2);
     dummy.quaternion.premultiply(yRot);
 
-    const assetScale = 1.22;
+    const assetScale = 1.30;
     const scaleY = (0.82 + Math.random() * 0.28) * expose * assetScale;
     const scaleXZ = (0.86 + Math.random() * 0.24) * (0.86 + expose * 0.18) * assetScale;
     dummy.scale.set(scaleXZ, scaleY, scaleXZ);
@@ -691,7 +691,7 @@ export class Trees {
       });
       if (biomePoints.length === 0) continue;
 
-      const count = Math.min(Math.max(1, Math.round(config.count * 0.42)), biomePoints.length);
+      const count = Math.min(Math.max(1, Math.round(config.count * 0.58)), biomePoints.length);
       if (count <= 0) continue;
 
       const height =

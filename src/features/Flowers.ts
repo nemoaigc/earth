@@ -84,10 +84,10 @@ export class Flowers {
   constructor(terrainData: TerrainData) {
     this.group = new THREE.Group();
     const eligible = terrainData.landPoints.filter(
-      p => (p.biome === 'temperate' || p.biome === 'tropical') && p.height < 0.3
+      p => (p.biome === 'temperate' || p.biome === 'tropical') && p.height > 0.055 && p.height < 0.30 && p.mountain < 0.35
     ).sort(() => Math.random() - 0.5);
 
-    const total = Math.min(200, eligible.length);
+    const total = Math.min(280, eligible.length);
     let idx = 0;
 
     for (const fc of FLOWER_COLORS) {
@@ -116,10 +116,10 @@ export class Flowers {
       const dummy = new THREE.Object3D();
       for (let i = 0; i < count && idx < eligible.length; i++, idx++) {
         const p = eligible[idx];
-        dummy.position.copy(p.position);
+        dummy.position.copy(p.position).addScaledVector(p.normal, 0.006);
         dummy.lookAt(0, 0, 0);
         dummy.rotateX(Math.PI / 2);
-        dummy.scale.setScalar(0.7 + Math.random() * 0.6);
+        dummy.scale.setScalar(0.90 + Math.random() * 0.65);
         dummy.rotateY(Math.random() * Math.PI * 2);
         dummy.updateMatrix();
         mesh.setMatrixAt(i, dummy.matrix);

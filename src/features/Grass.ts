@@ -65,10 +65,10 @@ export class Grass {
 
     for (const bg of BIOME_GRASS) {
       const eligible = terrainData.landPoints
-        .filter(p => p.biome === bg.biome)
+        .filter(p => p.biome === bg.biome && p.height > 0.055 && p.height < 0.34 && p.mountain < 0.42)
         .sort(() => Math.random() - 0.5);
 
-      const count = Math.min(100, eligible.length);
+      const count = Math.min(160, eligible.length);
       if (count === 0) continue;
 
       const geo = buildGrassGeometry(new THREE.Color(bg.color));
@@ -96,10 +96,10 @@ export class Grass {
       const dummy = new THREE.Object3D();
       for (let i = 0; i < count; i++) {
         const p = eligible[i];
-        dummy.position.copy(p.position);
+        dummy.position.copy(p.position).addScaledVector(p.normal, 0.004);
         dummy.lookAt(0, 0, 0);
         dummy.rotateX(Math.PI / 2);
-        dummy.scale.setScalar(0.6 + Math.random() * 0.8);
+        dummy.scale.setScalar(0.85 + Math.random() * 0.75);
         dummy.rotateY(Math.random() * Math.PI * 2);
         dummy.updateMatrix();
         mesh.setMatrixAt(i, dummy.matrix);

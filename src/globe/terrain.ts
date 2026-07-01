@@ -89,12 +89,12 @@ function elevation(
   // Geography-aware relief comes from src/geo: mountain polylines, basins,
   // highlands, rifts and volcanoes all share one true-lon atlas.
   const continentalRoll = (
-    (noise01(nx + 11.7, ny - 4.3, nz + 2.6, 0.28, 3) - 0.5) * 0.110 +
-    noise3D(nx * 2.4 - 6.1, ny * 2.4 + 2.9, nz * 2.4 + 9.4) * 0.026
+    (noise01(nx + 11.7, ny - 4.3, nz + 2.6, 0.30, 3) - 0.5) * 0.128 +
+    noise3D(nx * 2.8 - 6.1, ny * 2.8 + 2.9, nz * 2.8 + 9.4) * 0.032
   );
   const macroRelief = (
     geo.elevation * geoFeatureGate +
-    continentalRoll * (0.50 + geo.roughness * 0.36) * inlandGate
+    continentalRoll * (0.52 + geo.roughness * 0.40) * inlandGate
   );
 
   // Keep the surface clean and toy-like. The earlier high-frequency
@@ -171,7 +171,7 @@ function landColor(
   // Very low-frequency tint only. Avoid speckle / psoriasis-like patches
   // on broad land areas; the shape should read as a clean illustrated map.
   const micro = noise3D(nx * 3, ny * 3, nz * 3);  // [-1, 1]
-  const tint = micro * 0.018;
+  const tint = micro * 0.024;
   out.r += tint;
   out.g += tint * 0.85;
   out.b += tint * 0.70;
@@ -181,7 +181,7 @@ function landColor(
     const patch = noise3D(nx * 2.2, ny * 2.2, nz * 2.2);
     if (patch > 0.18) {
       const darkRef = (weights.tropical ?? 0) > 0.5 ? C_JUNGLE_DARK : C_FOREST_DARK;
-      out.lerp(darkRef, Math.min(0.06, (patch - 0.18) * 0.08));
+      out.lerp(darkRef, Math.min(0.10, (patch - 0.18) * 0.13));
     }
   }
 
@@ -189,9 +189,9 @@ function landColor(
   if ((weights.desert ?? 0) > 0.35) {
     const patch = noise3D(nx * 2.4, ny * 2.4, nz * 2.4);
     if (patch > 0) {
-      out.lerp(C_SAND_LIGHT, patch * 0.12);
+      out.lerp(C_SAND_LIGHT, patch * 0.16);
     } else {
-      out.lerp(C_WARM_ROCK, Math.min(0.06, -patch * 0.05));
+      out.lerp(C_WARM_ROCK, Math.min(0.08, -patch * 0.07));
     }
   }
 
