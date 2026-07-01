@@ -14,9 +14,9 @@ export class Ocean {
     };
 
     const material = new THREE.MeshPhongMaterial({
-      color: new THREE.Color('#44aacc'),
+      color: new THREE.Color('#3C94B8'),
       emissive: new THREE.Color('#0a2244'),
-      shininess: 15,
+      shininess: 5,
       flatShading: true,
       transparent: true,
       opacity: 0.75,
@@ -61,7 +61,7 @@ export class Ocean {
         float f6 = sin(wp.z * 37.0 - wp.y * 10.0 + wp.x * 29.0 + oceanTime * 1.6) * 0.5 + 0.5;
         float foam = f1 * f3 * f5 + f2 * f4 * f6 * 0.35;
         foam = 1.0 - smoothstep(0.0002, 0.004, foam);
-        gl_FragColor.rgb += vec3(0.72, 0.86, 0.92) * foam * 0.18;
+        gl_FragColor.rgb += vec3(0.60, 0.78, 0.84) * foam * 0.10;
 
         // === SPARKLE ===
         float s1 = sin(wp.x * 44.0 + wp.y * 19.0 + wp.z * 12.0 + oceanTime * 3.8);
@@ -74,7 +74,7 @@ export class Ocean {
         sMask = smoothstep(0.12, 0.48, sMask);
         float sparkle = s1 * s2 * s3 * s4;
         sparkle = smoothstep(0.52, 0.96, sparkle) * sMask;
-        gl_FragColor.rgb += vec3(1.0, 1.0, 1.0) * sparkle * 0.55;
+        gl_FragColor.rgb += vec3(0.74, 0.88, 0.92) * sparkle * 0.16;
 
         // === GLASS EFFECT: Fresnel-based opacity ===
         vec3 rimViewDir = normalize(vViewPosition);

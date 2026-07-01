@@ -126,16 +126,14 @@ function createFacetedBlobGeometry(
 }
 
 function createVolcanoBodyGeometry(size: number, seed: number): THREE.BufferGeometry {
-  const radialSegments = 14;
+  const radialSegments = 28;
   const profile = [
-    { y: 0.06, rx: 1.34, rz: 0.92, x: 0.00, z: 0.02, c: new THREE.Color('#6B4B36') },
-    { y: 0.24, rx: 1.12, rz: 0.76, x: -0.04, z: 0.00, c: new THREE.Color('#744C34') },
-    { y: 0.48, rx: 0.88, rz: 0.62, x: 0.02, z: -0.02, c: new THREE.Color('#654130') },
-    { y: 0.70, rx: 0.66, rz: 0.48, x: 0.00, z: -0.03, c: new THREE.Color('#55362B') },
-    { y: 0.90, rx: 0.52, rz: 0.38, x: 0.03, z: -0.02, c: new THREE.Color('#342620') },
-    { y: 1.00, rx: 0.63, rz: 0.43, x: 0.00, z: -0.01, c: new THREE.Color('#7B5135') }, // broken raised rim
-    { y: 0.92, rx: 0.34, rz: 0.24, x: 0.01, z: -0.01, c: new THREE.Color('#251916') }, // inner wall
-    { y: 0.83, rx: 0.22, rz: 0.16, x: 0.02, z: 0.00, c: new THREE.Color('#15100E') }, // crater floor edge
+    { y: -0.07, rx: 1.72, rz: 1.52, x: 0.00, z: 0.00, c: new THREE.Color('#8D6849') },
+    { y: -0.02, rx: 1.58, rz: 1.42, x: 0.00, z: 0.00, c: new THREE.Color('#B08258') },
+    { y: 0.08, rx: 1.28, rz: 1.16, x: -0.01, z: 0.01, c: new THREE.Color('#C0895E') },
+    { y: 0.20, rx: 0.98, rz: 0.88, x: 0.01, z: 0.00, c: new THREE.Color('#AA7054') },
+    { y: 0.31, rx: 0.70, rz: 0.64, x: 0.00, z: -0.01, c: new THREE.Color('#8E5745') },
+    { y: 0.38, rx: 0.54, rz: 0.49, x: 0.01, z: 0.00, c: new THREE.Color('#6D4035') },
   ];
 
   const positions: number[] = [];
@@ -148,17 +146,16 @@ function createVolcanoBodyGeometry(size: number, seed: number): THREE.BufferGeom
     for (let seg = 0; seg < radialSegments; seg++) {
       const a = (seg / radialSegments) * Math.PI * 2;
       const flankNoise =
-        Math.sin(a * 3 + seed * 12.7) * 0.055 +
-        Math.sin(a * 7 + seed * 31.3 + ring * 0.45) * 0.030;
-      const rimNoise = ring >= profile.length - 3 ? Math.sin(a * 5 + seed * 19.1) * 0.075 : 0;
-      const jitter = 1 + flankNoise * (1 - yNorm * 0.45) + rimNoise;
+        Math.sin(a * 3 + seed * 12.7) * 0.018 +
+        Math.sin(a * 7 + seed * 31.3 + ring * 0.45) * 0.010;
+      const jitter = 1 + flankNoise * (1 - yNorm * 0.35);
       positions.push(
         (p.x + Math.cos(a) * p.rx * jitter) * size,
         p.y * size,
         (p.z + Math.sin(a) * p.rz * jitter) * size,
       );
 
-      const shade = 0.86 + Math.sin(a * 4 + ring * 1.7 + seed * 8) * 0.07;
+      const shade = 0.94 + Math.sin(a * 2 + ring * 1.2 + seed * 8) * 0.035;
       colors.push(
         Math.max(0, Math.min(1, p.c.r * shade)),
         Math.max(0, Math.min(1, p.c.g * shade)),
@@ -178,6 +175,14 @@ function createVolcanoBodyGeometry(size: number, seed: number): THREE.BufferGeom
     }
   }
 
+  const bottomCenter = positions.length / 3;
+  const bottom = profile[0];
+  positions.push(bottom.x * size, bottom.y * size, bottom.z * size);
+  colors.push(bottom.c.r, bottom.c.g, bottom.c.b);
+  for (let seg = 0; seg < radialSegments; seg++) {
+    indices.push(bottomCenter, (seg + 1) % radialSegments, seg);
+  }
+
   const geometry = new THREE.BufferGeometry();
   geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
   geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
@@ -187,39 +192,26 @@ function createVolcanoBodyGeometry(size: number, seed: number): THREE.BufferGeom
 }
 
 function createCraterGlowGeometry(size: number): THREE.BufferGeometry {
-  const geometry = createIrregularDiscGeometry(
-    size * 0.14,
-    size * 0.014,
-    26,
-    new THREE.Color('#E96632'),
-    new THREE.Color('#782713'),
-    7,
-    0.74,
-  );
-  geometry.translate(size * 0.03, size * 0.86, -size * 0.01);
+  const geometry = new THREE.CircleGeometry(size * 0.20, 24);
+  geometry.rotateX(-Math.PI / 2);
+  geometry.translate(size * 0.02, size * 0.392, -size * 0.005);
   return geometry;
 }
 
 function createSmokePlume(size: number, material: THREE.MeshPhongMaterial, seed: number): THREE.Group {
   const group = new THREE.Group();
-  for (let i = 0; i < 5; i++) {
-    const t = i / 4;
-    const puffGeometry = createFacetedBlobGeometry(
-      size * (0.24 + t * 0.25),
-      new THREE.Color('#A69D8B'),
-      new THREE.Color('#E0D8C8'),
-      seed * 41 + i,
-      0.72,
-    );
+  for (let i = 0; i < 4; i++) {
+    const t = i / 3;
+    const puffGeometry = new THREE.SphereGeometry(size * (0.16 + t * 0.13), 16, 10);
     const puff = new THREE.Mesh(puffGeometry, material.clone());
     const angle = seed * Math.PI * 2 + i * 1.37;
-    const drift = size * (0.05 + t * 0.22);
+    const drift = size * (0.03 + t * 0.16);
     puff.position.set(
       Math.cos(angle) * drift,
-      size * (1.08 + t * 0.34),
+      size * (0.90 + t * 0.30),
       Math.sin(angle) * drift,
     );
-    puff.scale.set(1.15 - t * 0.2, 0.72 + t * 0.2, 0.9);
+    puff.scale.set(1.10 - t * 0.12, 0.78 + t * 0.22, 0.96);
     group.add(puff);
   }
   return group;
@@ -234,29 +226,32 @@ export class Volcanoes {
 
     const bodyMat = new THREE.MeshPhongMaterial({
       vertexColors: true,
-      flatShading: true,
-      shininess: 18,
+      flatShading: false,
+      shininess: 8,
     });
+    bodyMat.specular.set('#3A2A22');
     const lavaMat = new THREE.MeshPhongMaterial({
-      color: '#E5763A',
-      flatShading: true,
-      emissive: '#C53A10',
-      emissiveIntensity: 0.42,
+      color: '#E76B35',
+      flatShading: false,
+      emissive: '#D3401B',
+      emissiveIntensity: 0.18,
+      side: THREE.DoubleSide,
     });
     const craterMat = new THREE.MeshPhongMaterial({
-      color: '#201713',
-      emissive: '#3B1208',
-      emissiveIntensity: 0.12,
-      flatShading: true,
-      shininess: 18,
+      color: '#241512',
+      emissive: '#160A08',
+      emissiveIntensity: 0.04,
+      flatShading: false,
+      shininess: 4,
+      side: THREE.DoubleSide,
     });
     const smokeMat = new THREE.MeshPhongMaterial({
-      color: '#D6D4CE',
+      color: '#F1ECDD',
       transparent: true,
-      opacity: 0.38,
+      opacity: 0.34,
       depthWrite: false,
-      flatShading: true,
-      shininess: 4,
+      flatShading: false,
+      shininess: 10,
     });
 
     const basePoint = new THREE.Vector3();
@@ -265,44 +260,8 @@ export class Volcanoes {
 
     for (const v of VOLCANOES) {
       const seed = hashString(v.id);
-      const visualSize = v.size * 1.55;
+      const visualSize = v.size * 1.24;
       const volcano = new THREE.Group();
-
-      const base = new THREE.Mesh(
-        createIrregularDiscGeometry(
-          visualSize * 1.52,
-          visualSize * 0.12,
-          seed,
-          new THREE.Color('#40302A'),
-          new THREE.Color('#211813'),
-          15,
-          0.70,
-          1.22,
-        ),
-        bodyMat,
-      );
-      base.position.y = -visualSize * 0.005;
-      base.castShadow = true;
-      base.receiveShadow = true;
-      volcano.add(base);
-
-      const shoulder = new THREE.Mesh(
-        createIrregularDiscGeometry(
-          visualSize * 1.05,
-          visualSize * 0.035,
-          seed * 3.7,
-          new THREE.Color('#5A3D2E'),
-          new THREE.Color('#2A1C17'),
-          12,
-          0.62,
-          1.10,
-        ),
-        bodyMat,
-      );
-      shoulder.position.set(-visualSize * 0.04, visualSize * 0.085, visualSize * 0.02);
-      shoulder.castShadow = true;
-      shoulder.receiveShadow = true;
-      volcano.add(shoulder);
 
       const body = new THREE.Mesh(createVolcanoBodyGeometry(visualSize, seed), bodyMat);
       body.castShadow = true;
@@ -310,18 +269,14 @@ export class Volcanoes {
       volcano.add(body);
 
       const craterFloor = new THREE.Mesh(
-        createIrregularDiscGeometry(
-          visualSize * 0.23,
-          visualSize * 0.018,
-          seed * 5.2,
-          new THREE.Color('#21110C'),
-          new THREE.Color('#100908'),
-          8,
-          0.72,
-        ),
+        (() => {
+          const geo = new THREE.CircleGeometry(visualSize * 0.31, 28);
+          geo.rotateX(-Math.PI / 2);
+          return geo;
+        })(),
         craterMat,
       );
-      craterFloor.position.set(visualSize * 0.02, visualSize * 0.86, -visualSize * 0.005);
+      craterFloor.position.set(visualSize * 0.02, visualSize * 0.386, -visualSize * 0.004);
       volcano.add(craterFloor);
 
       if (v.smoke) {
@@ -339,7 +294,7 @@ export class Volcanoes {
         latLonToVec3(v.position.lat, v.position.lon, GLOBE_RADIUS, basePoint);
         normal.copy(basePoint).normalize();
       }
-      volcano.position.copy(basePoint).addScaledVector(normal, visualSize * 0.045);
+      volcano.position.copy(basePoint).addScaledVector(normal, -visualSize * 0.080);
       volcano.quaternion.setFromUnitVectors(up, normal);
       this.group.add(volcano);
 

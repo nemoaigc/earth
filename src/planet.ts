@@ -2,7 +2,6 @@ import { mulberry32 } from './utils/noise';
 import * as THREE from 'three';
 import { Globe } from './globe/Globe';
 import { Trees } from './features/Trees';
-import { Volcanoes } from './features/Volcanoes';
 import { Reefs } from './features/Reefs';
 import { Flowers } from './features/Flowers';
 import { Grass } from './features/Grass';
@@ -73,8 +72,6 @@ export function mountPlanet(container: HTMLElement, opts: MountOptions = {}): ()
   // --- Terrain features ---
   const trees = new Trees(globe.terrainData);
   scene.add(trees.group);
-  const volcanoes = new Volcanoes(globe.snapToSurface);
-  scene.add(volcanoes.group);
   const reefs = new Reefs(globe.terrainData);
   scene.add(reefs.group);
   const flowers = new Flowers(globe.terrainData);
@@ -160,7 +157,6 @@ export function mountPlanet(container: HTMLElement, opts: MountOptions = {}): ()
 
     // --- Terrain features ---
     trees.update(elapsed);
-    volcanoes.update(elapsed);
     reefs.update(elapsed);
     flowers.update(elapsed);
     grass.update(elapsed);

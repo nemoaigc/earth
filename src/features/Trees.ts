@@ -339,277 +339,238 @@ function createTrunk(
   return ensureMergeReady(geo);
 }
 
-// --- Tropical: sculpted multi-lobe canopy, not primitive spheres ---
+function createRoundedBlob(
+  radius: number,
+  y: number,
+  scale: [number, number, number],
+  bottomColor: THREE.Color,
+  topColor: THREE.Color,
+  offset: [number, number] = [0, 0],
+): THREE.BufferGeometry {
+  const blob = new THREE.SphereGeometry(radius, 16, 10);
+  blob.scale(scale[0], scale[1], scale[2]);
+  blob.translate(offset[0], y, offset[1]);
+  colorGeometry(blob, bottomColor, topColor, y - radius * scale[1], y + radius * scale[1]);
+  return ensureMergeReady(blob);
+}
+
+function createCuteBubbleTreeGeometry(
+  height: number,
+  width: number,
+  palette: { trunkLow?: string; trunkHigh?: string; low: string; mid: string; high: string; accent?: string },
+  shape: 'round' | 'wide' | 'tall' = 'round',
+): THREE.BufferGeometry {
+  const trunkH = height * (shape === 'wide' ? 0.34 : 0.40);
+  const trunk = createTrunk(
+    trunkH,
+    Math.max(0.010, width * 0.16),
+    Math.max(0.007, width * 0.10),
+    16,
+    new THREE.Color(palette.trunkLow ?? '#9B6A42'),
+    new THREE.Color(palette.trunkHigh ?? '#C98B55'),
+  );
+
+  const low = new THREE.Color(palette.low);
+  const mid = new THREE.Color(palette.mid);
+  const high = new THREE.Color(palette.high);
+  const accent = new THREE.Color(palette.accent ?? palette.high);
+  const squash = shape === 'wide' ? 0.68 : shape === 'tall' ? 1.18 : 0.88;
+  const spread = shape === 'wide' ? 1.18 : shape === 'tall' ? 0.78 : 0.96;
+
+  const parts: THREE.BufferGeometry[] = [trunk];
+  parts.push(createRoundedBlob(width * 0.50, trunkH + width * 0.42, [spread, squash, spread * 0.92], low, mid, [-width * 0.18, width * 0.02]));
+  parts.push(createRoundedBlob(width * 0.46, trunkH + width * 0.49, [spread * 0.92, squash * 0.92, spread * 0.86], mid, high, [width * 0.24, -width * 0.03]));
+  parts.push(createRoundedBlob(width * 0.36, trunkH + width * 0.76, [spread * 0.78, squash * 0.84, spread * 0.72], mid, accent, [0, width * 0.08]));
+  return mergeGeometries(parts, false)!;
+}
+
+function createCuteNeedleTreeGeometry(
+  height: number,
+  width: number,
+  palette: { trunkLow?: string; trunkHigh?: string; low: string; mid: string; high: string },
+): THREE.BufferGeometry {
+  const trunkH = height * 0.38;
+  const parts: THREE.BufferGeometry[] = [
+    createTrunk(
+      height * 0.70,
+      Math.max(0.008, width * 0.13),
+      Math.max(0.006, width * 0.08),
+      14,
+      new THREE.Color(palette.trunkLow ?? '#8C603E'),
+      new THREE.Color(palette.trunkHigh ?? '#B78352'),
+    ),
+  ];
+  const low = new THREE.Color(palette.low);
+  const mid = new THREE.Color(palette.mid);
+  const high = new THREE.Color(palette.high);
+  parts.push(createRoundedBlob(width * 0.54, trunkH + height * 0.10, [0.92, 0.58, 0.88], low, mid));
+  parts.push(createRoundedBlob(width * 0.43, trunkH + height * 0.24, [0.82, 0.56, 0.78], mid, high));
+  parts.push(createRoundedBlob(width * 0.31, trunkH + height * 0.38, [0.70, 0.58, 0.66], mid, high));
+  return mergeGeometries(parts, false)!;
+}
+
+// --- Tropical: round sticker-like canopy puffs ---
 function createTropicalTreeGeometry(height: number, width: number): THREE.BufferGeometry {
-  return createSculptedCanopyTreeGeometry(height, width, {
-    trunkSeed: 11,
-    dark: '#123B1E',
-    low: '#1E5B2F',
-    mid: '#2F8C45',
-    high: '#64B45A',
+  return createCuteBubbleTreeGeometry(height, width * 1.08, {
+    low: '#39A94C',
+    mid: '#65C957',
+    high: '#A9E56E',
   });
 }
 
-// --- Temperate: broad faceted crown integrated with roots ---
+// --- Temperate: soft broadleaf toy canopy ---
 function createTemperateTreeGeometry(height: number, width: number): THREE.BufferGeometry {
-  return createSculptedCanopyTreeGeometry(height, width, {
-    trunkSeed: 23,
-    dark: '#1F4A24',
-    low: '#2D642B',
-    mid: '#4F8733',
-    high: '#86B64A',
+  return createCuteBubbleTreeGeometry(height, width, {
+    low: '#5BAF46',
+    mid: '#88CF58',
+    high: '#C3E77A',
   });
 }
 
-// --- Boreal: stepped needle masses instead of stacked cones ---
+// --- Boreal: rounded gumdrop needle masses ---
 function createBorealTreeGeometry(height: number, width: number): THREE.BufferGeometry {
-  return createSculptedNeedleTreeGeometry(height, width, {
-    trunkSeed: 37,
-    low: '#0B3020',
-    mid: '#1B5631',
-    high: '#4B8A4D',
+  return createCuteNeedleTreeGeometry(height, width * 1.08, {
+    low: '#2E6F48',
+    mid: '#4F9560',
+    high: '#8ACB73',
   });
 }
 
-// --- Acacia: flat disk canopy ---
+// --- Acacia: wide soft savanna canopy ---
 function createAcaciaGeometry(height: number, width: number): THREE.BufferGeometry {
-  const trunk = new THREE.CylinderGeometry(0.015, 0.025, height, 12);
-  trunk.translate(0, height / 2, 0);
-  colorGeometryFlat(trunk, new THREE.Color('#A0784C'));
-
-  const canopy = new THREE.CylinderGeometry(width / 2, width / 2 * 0.85, 0.05, 22);
-  canopy.translate(0, height, 0);
-  colorGeometryFlat(canopy, new THREE.Color('#5A8C32'));
-  return mergeGeometries([ensureMergeReady(trunk), ensureMergeReady(canopy)], false)!;
+  return createCuteBubbleTreeGeometry(height * 0.92, width * 1.18, {
+    trunkLow: '#A36E41',
+    trunkHigh: '#D29A58',
+    low: '#6FAE45',
+    mid: '#A1CD61',
+    high: '#D7E484',
+  }, 'wide');
 }
 
 // --- Cactus ---
 function createCactusGeometry(height: number, _width: number): THREE.BufferGeometry {
-  const gc = new THREE.Color('#5A8C32');
-  function makeArm(h: number, rTop: number, rBot: number): THREE.BufferGeometry {
-    const g = new THREE.CylinderGeometry(rTop, rBot, h, 12);
-    colorGeometryFlat(g, gc);
-    return g;
+  const greenLow = new THREE.Color('#6FB879');
+  const greenHigh = new THREE.Color('#A8D98C');
+  const parts: THREE.BufferGeometry[] = [];
+  const trunkRadius = height * 0.18;
+  const trunkH = height * 0.76;
+  const trunk = new THREE.CylinderGeometry(trunkRadius * 0.86, trunkRadius, trunkH, 16);
+  trunk.translate(0, trunkH / 2, 0);
+  colorGeometry(trunk, greenLow, greenHigh, 0, trunkH);
+  parts.push(ensureMergeReady(trunk));
+  parts.push(createRoundedBlob(trunkRadius * 0.98, trunkH, [1, 0.72, 1], greenLow, greenHigh));
+
+  for (const side of [-1, 1]) {
+    const armH = height * 0.34;
+    const armR = trunkRadius * 0.52;
+    const arm = new THREE.CylinderGeometry(armR * 0.82, armR, armH, 14);
+    arm.translate(0, armH / 2, 0);
+    arm.rotateZ(side * -0.82);
+    arm.translate(side * height * 0.20, height * (side < 0 ? 0.44 : 0.52), 0);
+    colorGeometry(arm, greenLow, greenHigh, 0, armH);
+    parts.push(ensureMergeReady(arm));
+
+    const cap = createRoundedBlob(armR, height * (side < 0 ? 0.60 : 0.68), [0.86, 0.66, 0.86], greenLow, greenHigh, [side * height * 0.32, 0]);
+    parts.push(cap);
   }
-  const trunk = makeArm(height, 0.035, 0.04);
-  trunk.translate(0, height / 2, 0);
-  const armL = makeArm(height * 0.4, 0.022, 0.026);
-  armL.rotateZ(Math.PI / 4);
-  armL.translate(-0.04, height * 0.6, 0);
-  const armR = makeArm(height * 0.4, 0.022, 0.026);
-  armR.rotateZ(-Math.PI / 4);
-  armR.translate(0.04, height * 0.55, 0);
-  return mergeGeometries([trunk, armL, armR].map(ensureMergeReady), false)!;
+
+  return mergeGeometries(parts, false)!;
 }
 
-// --- Oak: wide sculpted canopy, thick terrain-like base ---
+// --- Oak: wide rounded canopy ---
 function createOakGeometry(height: number, width: number): THREE.BufferGeometry {
-  const tree = createSculptedCanopyTreeGeometry(height, width * 1.12, {
-    trunkSeed: 41,
-    dark: '#263F1D',
-    low: '#315B20',
-    mid: '#52772B',
-    high: '#8B9B3B',
-  });
-  tree.scale(1.15, 0.95, 1.03);
-  return tree;
+  return createCuteBubbleTreeGeometry(height, width * 1.18, {
+    low: '#6D9944',
+    mid: '#9CC65C',
+    high: '#D8E47A',
+  }, 'wide');
 }
 
-// --- Bamboo: thin stalk with node ring, small leaf tuft ---
+// --- Bamboo: taller rounded tuft silhouette ---
 function createBambooGeometry(height: number, width: number): THREE.BufferGeometry {
-  const lowerH = height * 0.5;
-  const lower = new THREE.CylinderGeometry(0.008, 0.012, lowerH, 12);
-  lower.translate(0, lowerH / 2, 0);
-  colorGeometryFlat(lower, new THREE.Color('#5A7A3A'));
-
-  const upperH = height * 0.35;
-  const upper = new THREE.CylinderGeometry(0.006, 0.009, upperH, 12);
-  upper.translate(0, lowerH + upperH / 2, 0);
-  colorGeometryFlat(upper, new THREE.Color('#6B8B4A'));
-
-  const ring = new THREE.CylinderGeometry(0.012, 0.012, height * 0.02, 12);
-  ring.translate(0, lowerH, 0);
-  colorGeometryFlat(ring, new THREE.Color('#4A6A2A'));
-
-  const leafR = width * 0.4;
-  const leaf = new THREE.IcosahedronGeometry(leafR, 2);
-  const lp = leaf.getAttribute('position');
-  for (let i = 0; i < lp.count; i++) {
-    lp.setY(i, lp.getY(i) * 0.5);
-    lp.setX(i, lp.getX(i) * 1.3);
-  }
-  leaf.translate(0, height * 0.9, 0);
-  colorGeometry(leaf,
-    new THREE.Color('#3D8B2E'), new THREE.Color('#6BBF4A'),
-    height * 0.9 - leafR * 0.5, height * 0.9 + leafR * 0.5);
-
-  return mergeGeometries([lower, upper, ring, leaf].map(ensureMergeReady), false)!;
+  return createCuteBubbleTreeGeometry(height * 1.02, width * 1.08, {
+    trunkLow: '#7AA35D',
+    trunkHigh: '#B7D36F',
+    low: '#4EAA57',
+    mid: '#7ED36A',
+    high: '#C8EC85',
+  }, 'tall');
 }
 
-// --- Eucalyptus: tall pale trunk, narrow cone canopy ---
+// --- Eucalyptus: tall pale trunk, soft canopy ---
 function createEucalyptusGeometry(height: number, width: number): THREE.BufferGeometry {
-  const trunkH = height * 0.6;
-  const trunk = createTrunk(trunkH, 0.035, 0.02, 6,
-    new THREE.Color('#8B7355'), new THREE.Color('#C4A882'));
-
-  const c1H = height * 0.35;
-  const c1 = new THREE.ConeGeometry(width * 0.35, c1H, 16);
-  c1.translate(0, trunkH + c1H * 0.4, 0);
-  colorGeometry(c1,
-    new THREE.Color('#3B6B3B'), new THREE.Color('#5A9A5A'),
-    trunkH, trunkH + c1H);
-
-  const c2H = height * 0.2;
-  const c2 = new THREE.ConeGeometry(width * 0.2, c2H, 14);
-  c2.translate(0, trunkH + c1H * 0.65 + c2H * 0.4, 0);
-  colorGeometry(c2,
-    new THREE.Color('#4A7A4A'), new THREE.Color('#6AAA6A'),
-    trunkH + c1H * 0.5, trunkH + c1H * 0.5 + c2H);
-
-  return mergeGeometries([trunk, ensureMergeReady(c1), ensureMergeReady(c2)], false)!;
+  return createCuteBubbleTreeGeometry(height, width * 0.92, {
+    trunkLow: '#9B8466',
+    trunkHigh: '#DEC8A7',
+    low: '#6EA76F',
+    mid: '#91C587',
+    high: '#C6E0AE',
+  }, 'tall');
 }
 
-// --- Baobab: massive trunk, tiny canopy ---
+// --- Baobab: wide toy silhouette ---
 function createBaobabGeometry(height: number, width: number): THREE.BufferGeometry {
-  const trunkH = height * 0.7;
-  const trunk = createTrunk(trunkH, width * 0.5, width * 0.35, 16,
-    new THREE.Color('#6B4226'), new THREE.Color('#A08060'));
-
-  const bulge = new THREE.SphereGeometry(width * 0.3, 18, 12);
-  const bp = bulge.getAttribute('position');
-  for (let i = 0; i < bp.count; i++) bp.setY(i, bp.getY(i) * 0.4);
-  bulge.translate(0, trunkH, 0);
-  colorGeometryFlat(bulge, new THREE.Color('#9A7B5A'));
-
-  const canopyR = width * 0.25;
-  const canopy = new THREE.IcosahedronGeometry(canopyR, 2);
-  const cp = canopy.getAttribute('position');
-  for (let i = 0; i < cp.count; i++) cp.setY(i, cp.getY(i) * 0.6);
-  canopy.translate(0, height * 0.85, 0);
-  colorGeometry(canopy,
-    new THREE.Color('#4A7A2A'), new THREE.Color('#6A9A4A'),
-    height * 0.85 - canopyR * 0.6, height * 0.85 + canopyR * 0.6);
-
-  return mergeGeometries([trunk, ensureMergeReady(bulge), ensureMergeReady(canopy)], false)!;
+  return createCuteBubbleTreeGeometry(height * 0.96, width * 1.22, {
+    trunkLow: '#A87950',
+    trunkHigh: '#D7AE78',
+    low: '#6DA947',
+    mid: '#99C75B',
+    high: '#D2E37F',
+  }, 'wide');
 }
 
-// --- Spruce: narrower/darker stepped needle tree ---
+// --- Spruce: compact rounded needle tree ---
 function createSpruceGeometry(height: number, width: number): THREE.BufferGeometry {
-  const tree = createSculptedNeedleTreeGeometry(height, width * 0.92, {
-    trunkSeed: 53,
-    low: '#082519',
-    mid: '#143D26',
-    high: '#326A3A',
+  return createCuteNeedleTreeGeometry(height * 1.02, width * 0.98, {
+    low: '#2C6848',
+    mid: '#4E8C5D',
+    high: '#80BE74',
   });
-  tree.scale(0.88, 1.12, 0.88);
-  return tree;
 }
 
 // --- Cherry Blossom: pink canopy ---
 function createCherryGeometry(height: number, width: number): THREE.BufferGeometry {
-  const trunkH = height * 0.45;
-  const trunk = createTrunk(trunkH, 0.03, 0.02, 12,
-    new THREE.Color('#5A3A2A'), new THREE.Color('#7A5A4A'));
-  const parts: THREE.BufferGeometry[] = [trunk];
-
-  const r1 = width * 0.5;
-  const r2 = width * 0.35;
-  for (const { r, y, cBot, cTop } of [
-    { r: r1, y: trunkH + width * 0.35, cBot: new THREE.Color('#E8A0B0'), cTop: new THREE.Color('#FFD0DD') },
-    { r: r2, y: trunkH + width * 0.7,  cBot: new THREE.Color('#F0C0D0'), cTop: new THREE.Color('#FFE8F0') },
-  ]) {
-    const geo = new THREE.DodecahedronGeometry(r, 3);
-    const p = geo.getAttribute('position');
-    for (let i = 0; i < p.count; i++) p.setY(i, p.getY(i) * 0.75);
-    geo.translate(0, y, 0);
-    colorGeometry(geo, cBot, cTop, y - r * 0.75, y + r * 0.75);
-    parts.push(ensureMergeReady(geo));
-  }
-  return mergeGeometries(parts, false)!;
+  return createCuteBubbleTreeGeometry(height, width * 1.08, {
+    trunkLow: '#8F5F4F',
+    trunkHigh: '#C08A6A',
+    low: '#EAA4B8',
+    mid: '#FFC2D2',
+    high: '#FFF0F5',
+    accent: '#FFDCE7',
+  });
 }
 
-// --- Olive: silvery-green, asymmetric canopy ---
+// --- Olive: silvery-green soft canopy ---
 function createOliveGeometry(height: number, width: number): THREE.BufferGeometry {
-  const trunkH = height * 0.35;
-  const trunkGeo = new THREE.CylinderGeometry(0.025, 0.04, trunkH, 14);
-  // Gnarled trunk: perturb vertices
-  const tp = trunkGeo.getAttribute('position');
-  for (let i = 0; i < tp.count; i++) {
-    const angle = Math.atan2(tp.getZ(i), tp.getX(i));
-    const offset = Math.sin(angle * 3) * 0.005;
-    tp.setX(i, tp.getX(i) + offset);
-    tp.setZ(i, tp.getZ(i) + offset);
-  }
-  trunkGeo.translate(0, trunkH / 2, 0);
-  colorGeometry(trunkGeo,
-    new THREE.Color('#5A4A30'), new THREE.Color('#7A6A50'),
-    0, trunkH);
-
-  const c1R = width * 0.45;
-  const c1 = new THREE.IcosahedronGeometry(c1R, 3);
-  const c1p = c1.getAttribute('position');
-  for (let i = 0; i < c1p.count; i++) c1p.setX(i, c1p.getX(i) * 1.2);
-  c1.translate(0, trunkH + width * 0.3, 0);
-  colorGeometry(c1,
-    new THREE.Color('#6A7A5A'), new THREE.Color('#8A9A7A'),
-    trunkH, trunkH + c1R * 2);
-
-  const c2R = width * 0.3;
-  const c2 = new THREE.IcosahedronGeometry(c2R, 2);
-  c2.translate(width * 0.1, trunkH + width * 0.55, width * 0.05);
-  colorGeometry(c2,
-    new THREE.Color('#7A8A6A'), new THREE.Color('#9AAA8A'),
-    trunkH + width * 0.3, trunkH + width * 0.8);
-
-  return mergeGeometries([ensureMergeReady(trunkGeo), ensureMergeReady(c1), ensureMergeReady(c2)], false)!;
+  return createCuteBubbleTreeGeometry(height * 0.94, width * 0.98, {
+    trunkLow: '#A0845D',
+    trunkHigh: '#C5A976',
+    low: '#7E9870',
+    mid: '#A6B98A',
+    high: '#D3DDB2',
+  }, 'wide');
 }
 
-// --- Giant Sequoia: very tall reddish trunk, small top canopy ---
+// --- Giant Sequoia: tall rounded needle tree ---
 function createSequoiaGeometry(height: number, width: number): THREE.BufferGeometry {
-  const trunkH = height * 0.75;
-  const trunk = createTrunk(trunkH, 0.065, 0.04, 16,
-    new THREE.Color('#6B2A1A'), new THREE.Color('#9B4A2A'));
-
-  const canopyR = width * 0.35;
-  const canopy = new THREE.IcosahedronGeometry(canopyR, 3);
-  const cp = canopy.getAttribute('position');
-  for (let i = 0; i < cp.count; i++) cp.setY(i, cp.getY(i) * 1.4);
-  canopy.translate(0, height * 0.8, 0);
-  colorGeometry(canopy,
-    new THREE.Color('#1A4A1A'), new THREE.Color('#2A6A2A'),
-    height * 0.8 - canopyR * 1.4, height * 0.8 + canopyR * 1.4);
-
-  const topH = height * 0.12;
-  const top = new THREE.ConeGeometry(width * 0.15, topH, 14);
-  top.translate(0, height * 0.95, 0);
-  colorGeometry(top,
-    new THREE.Color('#2A5A2A'), new THREE.Color('#3A7A3A'),
-    height * 0.95 - topH / 2, height * 0.95 + topH / 2);
-
-  return mergeGeometries([trunk, ensureMergeReady(canopy), ensureMergeReady(top)], false)!;
+  return createCuteNeedleTreeGeometry(height * 1.04, width * 1.02, {
+    trunkLow: '#A95F3E',
+    trunkHigh: '#D89459',
+    low: '#2E7048',
+    mid: '#55945B',
+    high: '#86C16D',
+  });
 }
 
-// --- Birch: tall slim white trunk + warm autumn-gold canopy ---
+// --- Birch: ivory trunk + warm rounded gold canopy ---
 function createBirchGeometry(height: number, width: number): THREE.BufferGeometry {
-  // Slim, mostly-white trunk taking up the lower 60% of the tree.
-  const trunkH = height * 0.6;
-  const trunk = createTrunk(trunkH, 0.018, 0.012, 12,
-    new THREE.Color('#D8CDB8'),  // warm ivory at the base
-    new THREE.Color('#FAF6EE'));  // near-white at the top
-
-  // Slender, slightly oblong canopy in warm autumn tones.
-  const canopyR = width * 0.42;
-  const canopy = new THREE.IcosahedronGeometry(canopyR, 3);
-  const cp = canopy.getAttribute('position');
-  for (let i = 0; i < cp.count; i++) cp.setY(i, cp.getY(i) * 1.35);
-  const cy = trunkH + canopyR * 0.9;
-  canopy.translate(0, cy, 0);
-  colorGeometry(canopy,
-    new THREE.Color('#C6892A'),  // amber base
-    new THREE.Color('#F5D04A'),  // bright gold top
-    cy - canopyR * 1.35, cy + canopyR * 1.35);
-
-  return mergeGeometries([trunk, ensureMergeReady(canopy)], false)!;
+  return createCuteBubbleTreeGeometry(height, width * 0.98, {
+    trunkLow: '#E1D6C2',
+    trunkHigh: '#FFF8ED',
+    low: '#D99B34',
+    mid: '#F2C957',
+    high: '#FFE98C',
+  }, 'tall');
 }
 
 /* ---------- material ---------- */
@@ -619,10 +580,11 @@ function createWindSwayMaterial(
 ): THREE.MeshPhongMaterial {
   const material = new THREE.MeshPhongMaterial({
     vertexColors: true,
-    shininess: 16,
+    shininess: 5,
     flatShading: false,
   });
   material.color.set(0xffffff);
+  material.specular.set('#1F2A1B');
 
   material.onBeforeCompile = (shader) => {
     shader.uniforms.uTime = timeUniform;
@@ -657,7 +619,7 @@ function densityGate(point: { position: THREE.Vector3; treeDensity?: number }): 
   const hash = Math.sin(
     point.position.x * 91.73 + point.position.y * 37.21 + point.position.z * 53.11,
   ) * 0.5 + 0.5;
-  return hash < Math.max(0.08, density);
+  return hash < Math.max(0.035, density * 0.42);
 }
 
 function placeTrees(
@@ -680,8 +642,8 @@ function placeTrees(
 
     const altitude = Math.max(0, Math.min(1, point.height / 0.55));
     const mountain = Math.max(0, Math.min(1, point.mountain ?? 0));
-    const expose = Math.max(0.45, 1.0 - altitude * 0.48 - mountain * 0.20);
-    const buryDepth = 0.010 + altitude * 0.025 + mountain * 0.018;
+    const expose = Math.max(0.32, 1.0 - altitude * 0.58 - mountain * 0.34);
+    const buryDepth = 0.018 + altitude * 0.030 + mountain * 0.028;
 
     dummy.position.copy(point.position).addScaledVector(normal, -buryDepth);
     dummy.quaternion.setFromUnitVectors(_up, normal);
@@ -689,8 +651,9 @@ function placeTrees(
     const yRot = new THREE.Quaternion().setFromAxisAngle(normal, Math.random() * Math.PI * 2);
     dummy.quaternion.premultiply(yRot);
 
-    const scaleY = (0.82 + Math.random() * 0.28) * expose;
-    const scaleXZ = (0.86 + Math.random() * 0.24) * (0.86 + expose * 0.18);
+    const assetScale = 1.22;
+    const scaleY = (0.82 + Math.random() * 0.28) * expose * assetScale;
+    const scaleXZ = (0.86 + Math.random() * 0.24) * (0.86 + expose * 0.18) * assetScale;
     dummy.scale.set(scaleXZ, scaleY, scaleXZ);
 
     dummy.updateMatrix();
@@ -728,7 +691,7 @@ export class Trees {
       });
       if (biomePoints.length === 0) continue;
 
-      const count = Math.min(config.count, biomePoints.length);
+      const count = Math.min(Math.max(1, Math.round(config.count * 0.42)), biomePoints.length);
       if (count <= 0) continue;
 
       const height =

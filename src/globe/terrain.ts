@@ -28,19 +28,19 @@ export interface TerrainData {
 // Palette — single source of truth for every land/ocean colour.
 // ═══════════════════════════════════════════════════════════════════
 
-const C_DEEP_OCEAN    = new THREE.Color('#1E5FA0');
-const C_SHALLOW_OCEAN = new THREE.Color('#46B5C8');
-const C_TURQUOISE     = new THREE.Color('#7CD3D9');
-const C_ROCKY         = new THREE.Color('#7A6A50');
-const C_POLAR_ICE     = new THREE.Color('#C8D6DA');
-const C_SNOW_CAP      = new THREE.Color('#EEF2EA');
+const C_DEEP_OCEAN    = new THREE.Color('#23689F');
+const C_SHALLOW_OCEAN = new THREE.Color('#4AAABB');
+const C_TURQUOISE     = new THREE.Color('#7FCFC6');
+const C_ROCKY         = new THREE.Color('#9B8563');
+const C_POLAR_ICE     = new THREE.Color('#D2E3E6');
+const C_SNOW_CAP      = new THREE.Color('#F1E9D2');
 
 const BIOME_BASE: Record<string, THREE.Color> = {
-  polar:     new THREE.Color('#D8E2E8'),
-  boreal:    new THREE.Color('#3E5A3A'),   // taiga
-  temperate: new THREE.Color('#5BA84A'),
-  tropical:  new THREE.Color('#2E8B2E'),
-  desert:    new THREE.Color('#D9B26A'),
+  polar:     new THREE.Color('#DCE7E1'),
+  boreal:    new THREE.Color('#6F9A66'),   // taiga
+  temperate: new THREE.Color('#75B966'),
+  tropical:  new THREE.Color('#58B75B'),
+  desert:    new THREE.Color('#D9BB78'),
 };
 
 // ═══════════════════════════════════════════════════════════════════
@@ -89,22 +89,23 @@ function elevation(
   // Geography-aware relief comes from src/geo: mountain polylines, basins,
   // highlands, rifts and volcanoes all share one true-lon atlas.
   const continentalRoll = (
-    (noise01(nx + 11.7, ny - 4.3, nz + 2.6, 0.34, 4) - 0.5) * 0.170 +
-    noise3D(nx * 4.8 - 6.1, ny * 4.8 + 2.9, nz * 4.8 + 9.4) * 0.050
+    (noise01(nx + 11.7, ny - 4.3, nz + 2.6, 0.28, 3) - 0.5) * 0.110 +
+    noise3D(nx * 2.4 - 6.1, ny * 2.4 + 2.9, nz * 2.4 + 9.4) * 0.026
   );
   const macroRelief = (
     geo.elevation * geoFeatureGate +
-    continentalRoll * (0.55 + geo.roughness * 0.55) * inlandGate
+    continentalRoll * (0.50 + geo.roughness * 0.36) * inlandGate
   );
 
-  // Fine land material relief. Desert gets shallow ribbing, highlands
-  // get more tooth, and plains stay subtle.
-  const ridgeNoise = Math.abs(noise3D(nx * 22 + 4.1, ny * 22 - 8.3, nz * 22 + 1.7));
-  const rollingNoise = noise3D(nx * 9 - 2.5, ny * 9 + 6.2, nz * 9 - 1.1);
+  // Keep the surface clean and toy-like. The earlier high-frequency
+  // ripples made plains look diseased / mottled when zoomed in; now only
+  // broad undulation remains, with a little extra tooth on true ranges.
   const reliefGate = smoothstep(0.04, 0.22, Math.abs(macroRelief));
-  const materialRoughness = geo.roughness + geo.mountain * 0.45 + geo.volcanic * 0.35;
-  const detailStrength = 0.020 + materialRoughness * 0.070 + reliefGate * 0.026;
-  const surfaceDetail = (rollingNoise * 0.55 + (ridgeNoise - 0.42) * 0.45) * detailStrength;
+  const softRoll = noise3D(nx * 3.2 - 2.5, ny * 3.2 + 6.2, nz * 3.2 - 1.1) * 0.010 * inlandGate;
+  const rangeTooth = (Math.abs(noise3D(nx * 10.5 + 4.1, ny * 10.5 - 8.3, nz * 10.5 + 1.7)) - 0.42)
+    * (0.010 + geo.mountain * 0.032 + geo.roughness * 0.014)
+    * geoFeatureGate;
+  const surfaceDetail = softRoll + rangeTooth * reliefGate;
 
   return Math.max(0, baseHeight + macroRelief + surfaceDetail) * coastGate;
 }
@@ -127,18 +128,18 @@ function dominantBiomeName(weights: BiomeWeights): string {
 // Layer: colour
 // ═══════════════════════════════════════════════════════════════════
 
-const C_JUNGLE_DARK = new THREE.Color('#1F5E1F');
-const C_FOREST_DARK = new THREE.Color('#2A5520');
-const C_SAND_LIGHT  = new THREE.Color('#EAC685');
-const C_GRASS_LIGHT = new THREE.Color('#82C75A');
-const C_FOREST_BLUE = new THREE.Color('#1E4D35');
-const C_WARM_ROCK   = new THREE.Color('#9A8566');
-const C_DARK_ROCK   = new THREE.Color('#55483A');
-const C_BASIN_GREEN = new THREE.Color('#3E6D36');
-const C_BASIN_EARTH = new THREE.Color('#6F6546');
-const C_PLATEAU_SOIL = new THREE.Color('#8C744F');
-const C_DRY_PLATEAU = new THREE.Color('#C08C52');
-const C_VOLCANIC_ROCK = new THREE.Color('#332B27');
+const C_JUNGLE_DARK = new THREE.Color('#4F9A56');
+const C_FOREST_DARK = new THREE.Color('#638D55');
+const C_SAND_LIGHT  = new THREE.Color('#E5C986');
+const C_GRASS_LIGHT = new THREE.Color('#86C85F');
+const C_FOREST_BLUE = new THREE.Color('#3A6A51');
+const C_WARM_ROCK   = new THREE.Color('#B9A179');
+const C_DARK_ROCK   = new THREE.Color('#8A7655');
+const C_BASIN_GREEN = new THREE.Color('#6D965E');
+const C_BASIN_EARTH = new THREE.Color('#998A5F');
+const C_PLATEAU_SOIL = new THREE.Color('#B3996B');
+const C_DRY_PLATEAU = new THREE.Color('#C99156');
+const C_VOLCANIC_ROCK = new THREE.Color('#694B3C');
 
 // Snow caps exist, but only on high/cold peaks. Threshold stays high
 // near the equator so mountains read as landform first, snow second.
@@ -167,49 +168,30 @@ function landColor(
     out.b += base.b * w;
   }
 
-  // Sphere-wide low-freq micro tint (±5%). Same noise field for r/g/b
-  // shifted slightly so the tint is colour-coherent, not just brightness.
+  // Very low-frequency tint only. Avoid speckle / psoriasis-like patches
+  // on broad land areas; the shape should read as a clean illustrated map.
   const micro = noise3D(nx * 3, ny * 3, nz * 3);  // [-1, 1]
-  const tint = micro * 0.045;
+  const tint = micro * 0.018;
   out.r += tint;
   out.g += tint * 0.85;
   out.b += tint * 0.70;
 
-  // Forest patches: tropical/temperate regions get darker green clumps.
+  // Broad biome blush, not noisy mottling.
   if ((weights.tropical ?? 0) + (weights.temperate ?? 0) > 0.35) {
-    const patch = noise3D(nx * 6, ny * 6, nz * 6);
-    if (patch > 0.2) {
+    const patch = noise3D(nx * 2.2, ny * 2.2, nz * 2.2);
+    if (patch > 0.18) {
       const darkRef = (weights.tropical ?? 0) > 0.5 ? C_JUNGLE_DARK : C_FOREST_DARK;
-      out.lerp(darkRef, Math.min(0.45, (patch - 0.2) * 0.55));
-    }
-
-    // Mid-frequency canopy speckles. This is intentionally colour-only:
-    // the terrain mesh is already dense enough, but the old vertex colour
-    // field read like flat paint. Tiny green/yellow flecks make forests and
-    // grasslands feel like material instead of a single biome swatch.
-    const canopy = noise3D(nx * 18 + 2.1, ny * 18 - 1.7, nz * 18 + 4.3);
-    if (canopy > 0.34) {
-      out.lerp(C_GRASS_LIGHT, Math.min(0.26, (canopy - 0.34) * 0.32));
-    } else if (canopy < -0.38) {
-      out.lerp(C_FOREST_BLUE, Math.min(0.24, (-canopy - 0.38) * 0.30));
+      out.lerp(darkRef, Math.min(0.06, (patch - 0.18) * 0.08));
     }
   }
 
-  // Desert mottle: sand-coloured highlights and shadowy dunes.
+  // Desert tint stays broad and soft; no dune speckle.
   if ((weights.desert ?? 0) > 0.35) {
-    const patch = noise3D(nx * 5, ny * 5, nz * 5);
+    const patch = noise3D(nx * 2.4, ny * 2.4, nz * 2.4);
     if (patch > 0) {
-      out.lerp(C_SAND_LIGHT, patch * 0.30);
+      out.lerp(C_SAND_LIGHT, patch * 0.12);
     } else {
-      out.r += patch * 0.04;  // slightly darker dunes
-      out.g += patch * 0.03;
-    }
-
-    const dune = noise3D(nx * 15 + 4, ny * 15, nz * 15 - 2);
-    if (dune > 0.18) {
-      out.lerp(C_SAND_LIGHT, Math.min(0.20, dune * 0.18));
-    } else {
-      out.lerp(C_WARM_ROCK, Math.min(0.14, -dune * 0.10));
+      out.lerp(C_WARM_ROCK, Math.min(0.06, -patch * 0.05));
     }
   }
 
@@ -225,12 +207,12 @@ function landColor(
   }
   const plateauSignal = Math.max(geo.plateau, geo.shield, geo.rift * 0.65);
   if (plateauSignal > 0.04) {
-    const plateauMix = Math.min(0.38, plateauSignal * 0.28 + geo.rock * 0.12 + geo.sand * 0.08);
+    const plateauMix = Math.min(0.22, plateauSignal * 0.16 + geo.rock * 0.06 + geo.sand * 0.04);
     const plateauRef = (weights.desert ?? 0) > 0.35 || geo.sand > 0.25 ? C_DRY_PLATEAU : C_PLATEAU_SOIL;
     out.lerp(plateauRef, plateauMix);
   }
   if (geo.volcanic > 0.05) {
-    out.lerp(C_VOLCANIC_ROCK, Math.min(0.42, geo.volcanic * 0.36));
+    out.lerp(C_VOLCANIC_ROCK, Math.min(0.16, geo.volcanic * 0.12));
   }
 
   // Mountain material: altitude-driven ridges, scree, and dark slope
@@ -238,32 +220,29 @@ function landColor(
   // supply the missing sense of "faces" on the mountains.
   const highland = Math.max(smoothstep(0.30, 0.78, elev), geo.mountain * 0.65 + geo.roughness * 0.22);
   if (highland > 0) {
-    const ridgeA = Math.abs(noise3D(nx * 26 + 9, ny * 26 - 3, nz * 26 + 2));
-    const ridgeB = Math.abs(noise3D(nx * 47 - 5, ny * 47 + 7, nz * 47 - 11));
-    const striation = Math.pow(Math.max(ridgeA, ridgeB), 2.2) * highland;
-    out.lerp(C_DARK_ROCK, Math.min(0.34, striation * 0.30));
+    const ridge = Math.abs(noise3D(nx * 8 + 9, ny * 8 - 3, nz * 8 + 2)) * highland;
+    out.lerp(C_DARK_ROCK, Math.min(0.06, ridge * 0.05));
 
     const sunSide = smoothstep(-0.2, 0.8, nx * -0.35 + ny * 0.76 + nz * 0.28);
-    out.lerp(C_WARM_ROCK, highland * sunSide * 0.12);
+    out.lerp(C_WARM_ROCK, highland * sunSide * 0.04);
   }
 
   // Rocky band: pure elevation-driven material. This replaces the old
   // white snow-cap look with warmer rock and soil.
-  const rockyMix = Math.min(0.72, smoothstep(0.36, 0.66, elev) + geo.rock * 0.28 + geo.volcanic * 0.18);
+  const rockyMix = Math.min(0.26, smoothstep(0.48, 0.82, elev) * 0.26 + geo.rock * 0.08 + geo.volcanic * 0.04);
   out.lerp(C_ROCKY, rockyMix);
 
   // Polar ice only. High mountains elsewhere stay rocky, matching the
   // requested non-white mountain material, with only small broken caps.
-  const capBreakup = noise3D(nx * 31 - 13, ny * 31 + 8, nz * 31 + 1) * 0.055;
+  const capBreakup = noise3D(nx * 9 - 13, ny * 9 + 8, nz * 9 + 1) * 0.030;
   const localSnowline = snowline(lat) - geo.snowBias * 0.18;
   const capSnow = smoothstep(localSnowline + capBreakup, localSnowline + 0.12 + capBreakup, elev);
-  const polarIce = smoothstep(66, 78, Math.abs(lat));
-  out.lerp(C_SNOW_CAP, capSnow * Math.min(0.56, 0.34 + geo.snowBias * 0.38));
-  out.lerp(C_POLAR_ICE, polarIce * 0.50);
+  const polarIce = smoothstep(70, 82, Math.abs(lat));
+  out.lerp(C_SNOW_CAP, capSnow * Math.min(0.40, 0.22 + geo.snowBias * 0.28));
+  out.lerp(C_POLAR_ICE, polarIce * 0.36);
 
-  // Fine grain last. It is subtle but removes the remaining "flat vertex
-  // paint" feeling on plains without changing the macro biome colours.
-  const grain = noise3D(nx * 68 + 1.3, ny * 68 - 4.2, nz * 68 + 6.7) * 0.022;
+  // A tiny broad grain only; never high-frequency speckle.
+  const grain = noise3D(nx * 5.5 + 1.3, ny * 5.5 - 4.2, nz * 5.5 + 6.7) * 0.004;
   out.r += grain;
   out.g += grain * 0.9;
   out.b += grain * 0.72;

@@ -34,10 +34,13 @@ export class Globe {
     this.terrainData = generateTerrain();
     this.terrainMaterial = new THREE.MeshPhongMaterial({
       vertexColors: true,
-      shininess: 12,
+      shininess: 4,
       // smooth shading — computeVertexNormals() in terrain.ts already built
       // per-vertex averaged normals; removing flatShading uses them.
     });
+    this.terrainMaterial.specular.set('#232820');
+    this.terrainMaterial.emissive.set('#10210B');
+    this.terrainMaterial.emissiveIntensity = 0.16;
     const timeUniform = this.timeUniform;
     this.terrainMaterial.onBeforeCompile = (shader) => {
       shader.uniforms.uTime = timeUniform;
