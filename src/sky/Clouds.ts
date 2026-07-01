@@ -1,12 +1,17 @@
 import * as THREE from 'three';
-import { randomRange } from '../utils/helpers';
+import { createClimateSample, sampleClimate } from '../geo/climate';
+import { latLonToVec3, lonToGlobeLng, normalizeLon } from '../geo/coordinates';
+import { createGeoSample, sampleGeo } from '../geo/sampler';
+import { createWorldMask } from '../globe/worldmap';
 
 interface CloudCluster {
   group: THREE.Group;
-  inclination: number;
-  azimuth: number;
-  orbitSpeed: number;
+  lat: number;
+  lon: number;
+  windSpeed: number;
+  windHeading: number;
   orbitRadius: number;
+  phase: number;
 }
 
 // Shared material — solid white, receives light for 3D shading
@@ -19,6 +24,10 @@ const cloudMat = new THREE.MeshStandardMaterial({
 });
 
 const _up = new THREE.Vector3(0, 1, 0);
+
+function hash01(lat: number, lon: number, salt: number): number {
+  return Math.sin(lat * 17.371 + lon * 31.117 + salt * 101.73) * 0.5 + 0.5;
+}
 
 // Cumulus: 7 overlapping spheres forming puffy cotton shape
 function createCumulus(): THREE.Group {
@@ -88,47 +97,87 @@ export class Clouds {
   constructor() {
     this.group = new THREE.Group();
 
-    // GLOBE_RADIUS=5, surface max=5.7, atmosphere=5*1.3=6.5
-    // Clouds between 5.8 and 6.2
+    const mask = createWorldMask();
+    const geo = createGeoSample();
+    const climate = createClimateSample();
+    const candidates: {
+      lat: number;
+      lon: number;
+      score: number;
+      builder: () => THREE.Group;
+      radius: number;
+      windSpeed: number;
+      windHeading: number;
+      scale: number;
+    }[] = [];
 
-    for (let i = 0; i < Math.floor(randomRange(10, 14)); i++) {
-      this.clusters.push(this.createCluster(createCumulus, randomRange(5.8, 6.0)));
+    for (let baseLat = -62; baseLat <= 72; baseLat += 9) {
+      for (let baseLon = -170; baseLon <= 170; baseLon += 18) {
+        const lat = baseLat + (hash01(baseLat, baseLon, 1) - 0.5) * 4.5;
+        const lon = normalizeLon(baseLon + (hash01(baseLat, baseLon, 2) - 0.5) * 8);
+        const landness = mask.sampleLandBlur(lat, lonToGlobeLng(lon), 2.0);
+        const overOcean = landness < 0.35;
+        sampleGeo(lat, lon, geo);
+        sampleClimate(lat, lon, geo, climate);
+
+        const geographyScore = climate.cloudDensity + (overOcean ? 0.10 : -geo.desert * 0.18);
+        const score = geographyScore + hash01(lat, lon, 3) * 0.24;
+        if (score < 0.54) continue;
+
+        const builder = climate.orographic > 0.32
+          ? createStratus
+          : climate.polar > 0.55
+            ? createWisp
+            : createCumulus;
+        candidates.push({
+          lat,
+          lon,
+          score,
+          builder,
+          radius: climate.cloudAltitude + hash01(lat, lon, 4) * 0.08,
+          windSpeed: climate.windSpeed * (0.55 + hash01(lat, lon, 5) * 0.7),
+          windHeading: climate.windHeading,
+          scale: 0.72 + climate.storm * 0.38 + climate.orographic * 0.24 + hash01(lat, lon, 6) * 0.22,
+        });
+      }
     }
 
-    for (let i = 0; i < Math.floor(randomRange(5, 8)); i++) {
-      this.clusters.push(this.createCluster(createStratus, randomRange(5.85, 5.95)));
-    }
-
-    for (let i = 0; i < Math.floor(randomRange(6, 10)); i++) {
-      this.clusters.push(this.createCluster(createWisp, randomRange(6.0, 6.2)));
+    candidates.sort((a, b) => b.score - a.score);
+    for (const c of candidates.slice(0, 34)) {
+      this.clusters.push(this.createCluster(c.builder, c.lat, c.lon, c.radius, c.windSpeed, c.windHeading, c.scale));
     }
   }
 
   private createCluster(
     builder: () => THREE.Group,
+    lat: number,
+    lon: number,
     orbitRadius: number,
+    windSpeed: number,
+    windHeading: number,
+    scale: number,
   ): CloudCluster {
     const cloudGroup = builder();
-
-    const inclination = randomRange(-Math.PI * 0.45, Math.PI * 0.45);
-    const azimuth = randomRange(0, Math.PI * 2);
-    const orbitSpeed = randomRange(0.003, 0.012);
-
-    const x = orbitRadius * Math.cos(azimuth) * Math.cos(inclination);
-    const y = orbitRadius * Math.sin(inclination);
-    const z = orbitRadius * Math.sin(azimuth) * Math.cos(inclination);
-
-    cloudGroup.position.set(x, y, z);
+    cloudGroup.scale.setScalar(scale);
+    latLonToVec3(lat, lon, orbitRadius, cloudGroup.position);
 
     // Orient cloud to lie on the sphere surface:
     // cloud geometry is built in XZ plane with Y up
     // we need local Y to point radially outward from origin
-    const normal = new THREE.Vector3(x, y, z).normalize();
+    const normal = cloudGroup.position.clone().normalize();
     cloudGroup.quaternion.setFromUnitVectors(_up, normal);
 
     this.group.add(cloudGroup);
 
-    return { group: cloudGroup, inclination, azimuth, orbitSpeed, orbitRadius };
+    return {
+      group: cloudGroup,
+      lat,
+      lon,
+      windSpeed,
+      windHeading,
+      orbitRadius,
+      phase: hash01(lat, lon, 7) * Math.PI * 2,
+    };
   }
 
   update(_time: number, opacity: number): void {
@@ -136,15 +185,11 @@ export class Clouds {
     cloudMat.transparent = opacity < 1;
 
     for (const c of this.clusters) {
-      c.azimuth += c.orbitSpeed * 0.1;
+      c.lon = normalizeLon(c.lon + c.windSpeed * c.windHeading);
+      const lat = c.lat + Math.sin(_time * 0.08 + c.phase) * 0.05;
+      latLonToVec3(lat, c.lon, c.orbitRadius, c.group.position);
 
-      const x = c.orbitRadius * Math.cos(c.azimuth) * Math.cos(c.inclination);
-      const y = c.orbitRadius * Math.sin(c.inclination);
-      const z = c.orbitRadius * Math.sin(c.azimuth) * Math.cos(c.inclination);
-
-      c.group.position.set(x, y, z);
-
-      const normal = new THREE.Vector3(x, y, z).normalize();
+      const normal = c.group.position.clone().normalize();
       c.group.quaternion.setFromUnitVectors(_up, normal);
     }
   }

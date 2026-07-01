@@ -1,13 +1,25 @@
 import * as THREE from 'three';
 import { sampleNoise, noise3D } from '../utils/noise';
+import { createGeoSample, sampleGeoFromGlobe } from '../geo/sampler';
+import type { GeoSample } from '../geo/types';
 import { createWorldMask, type BiomeWeights } from './worldmap';
 
 export const GLOBE_RADIUS = 5;
 const LAND_HEIGHT_SCALE = 1.0;
+const TERRAIN_SEGMENTS = 360;
 
 export interface TerrainData {
   geometry: THREE.BufferGeometry;
-  landPoints: { position: THREE.Vector3; normal: THREE.Vector3; height: number; biome: string }[];
+  landPoints: {
+    position: THREE.Vector3;
+    normal: THREE.Vector3;
+    height: number;
+    biome: string;
+    treeDensity: number;
+    mountain: number;
+    snowBias: number;
+    volcanic: number;
+  }[];
   coastPoints: { position: THREE.Vector3; normal: THREE.Vector3 }[];
   oceanRatio: number;
 }
@@ -20,7 +32,8 @@ const C_DEEP_OCEAN    = new THREE.Color('#1E5FA0');
 const C_SHALLOW_OCEAN = new THREE.Color('#46B5C8');
 const C_TURQUOISE     = new THREE.Color('#7CD3D9');
 const C_ROCKY         = new THREE.Color('#7A6A50');
-const C_SNOW          = new THREE.Color('#FBFBFB');
+const C_POLAR_ICE     = new THREE.Color('#C8D6DA');
+const C_SNOW_CAP      = new THREE.Color('#EEF2EA');
 
 const BIOME_BASE: Record<string, THREE.Color> = {
   polar:     new THREE.Color('#D8E2E8'),
@@ -31,101 +44,12 @@ const BIOME_BASE: Record<string, THREE.Color> = {
 };
 
 // ═══════════════════════════════════════════════════════════════════
-// Mountain regions — table driven. Each region is an ellipse on the
-// lat/lng grid with a smooth cosine falloff. Adding new mountains is
-// just adding a row. Heights stack (clamped later).
-//
-// lng convention: codebase east = negative (real-world east longitude
-// is stored as a negative number here, see worldmap.ts).
-// ═══════════════════════════════════════════════════════════════════
-
-interface MountainRegion {
-  name: string;
-  lat: number;
-  lng: number;
-  latRange: number;  // half-extent N-S, degrees
-  lngRange: number;  // half-extent E-W, degrees
-  peakHeight: number;
-  // Optional: force a small snow cap painted at the centre, regardless
-  // of how tall the elevation actually is. Use for famous low peaks
-  // (Fuji, Kilimanjaro) that should LOOK iconic without poking high
-  // above the local terrain.
-  snowCap?: boolean;
-}
-
-// Only the world's famous chains — every entry has multiple sub-points
-// or a wide ellipse, never a single narrow peak. Single-cone volcanoes
-// (Fuji, Kilimanjaro, …) belong in a separate sprite system if needed.
-const MOUNTAINS: MountainRegion[] = [
-  // Asia — Himalaya chain + Tibet
-  { name: 'Karakoram',    lat:  36, lng:  -76, latRange:  3,  lngRange:  4, peakHeight: 1.10 },
-  { name: 'Himalaya W',   lat:  32, lng:  -80, latRange:  3,  lngRange:  5, peakHeight: 1.25 },
-  { name: 'Himalaya C',   lat:  28, lng:  -86, latRange:  3,  lngRange:  5, peakHeight: 1.45 }, // Everest
-  { name: 'Himalaya E',   lat:  28, lng:  -94, latRange:  3,  lngRange:  5, peakHeight: 1.20 },
-  { name: 'Tibet Plat.',  lat:  33, lng:  -88, latRange:  7,  lngRange: 13, peakHeight: 0.60 },
-  // Central Asia — Tianshan + Kunlun, both 7000m-class with snow caps.
-  { name: 'Tianshan',     lat:  42, lng:  -80, latRange:  3,  lngRange:  7, peakHeight: 0.95, snowCap: true },
-  { name: 'Kunlun',       lat:  36, lng:  -85, latRange:  3,  lngRange:  8, peakHeight: 1.05, snowCap: true },
-  { name: 'Urals',        lat:  60, lng:  -60, latRange:  9,  lngRange:  3, peakHeight: 0.30 },
-
-  // Americas — Andes chain. 4 narrow sub-ranges following the Pacific
-  // coast (lngRange 4 ≈ 450km, matches the real range width). Central
-  // sub-range = Aconcagua/Altiplano region, highest peak in S America.
-  { name: 'Andes N',       lat:   3, lng:   74, latRange: 10,  lngRange: 4, peakHeight: 0.55, snowCap: true },
-  { name: 'Andes Peru',    lat: -12, lng:   75, latRange: 12,  lngRange: 4, peakHeight: 0.72, snowCap: true },
-  { name: 'Andes Atacama', lat: -28, lng:   70, latRange: 10,  lngRange: 4, peakHeight: 0.90, snowCap: true }, // Aconcagua
-  { name: 'Andes S',       lat: -42, lng:   72, latRange:  8,  lngRange: 4, peakHeight: 0.55, snowCap: true },
-  { name: 'Patagonia',     lat: -50, lng:   73, latRange:  6,  lngRange: 4, peakHeight: 0.40, snowCap: true },
-  { name: 'Rockies',       lat:  47, lng:  113, latRange: 13,  lngRange: 6, peakHeight: 0.85, snowCap: true },
-  { name: 'Appalachians', lat:  38, lng:   80, latRange:  6,  lngRange:  4, peakHeight: 0.35 },
-
-  // Europe
-  { name: 'Alps',         lat:  46, lng:  -10, latRange:  3,  lngRange:  6, peakHeight: 0.75, snowCap: true },
-  { name: 'Pyrenees',     lat:  43, lng:    0, latRange:  1.5,lngRange:  3, peakHeight: 0.55, snowCap: true },
-  { name: 'Caucasus',     lat:42.5, lng:  -44, latRange:  2,  lngRange:  4, peakHeight: 0.70, snowCap: true },
-  { name: 'Scandinavian', lat:  64, lng:   -8, latRange:  7,  lngRange:  3, peakHeight: 0.30 },
-
-  // Africa
-  { name: 'Atlas',        lat:  33, lng:   -1, latRange:  3,  lngRange: 10, peakHeight: 0.50, snowCap: true },
-  { name: 'Ethiopian H.', lat:  10, lng:  -38, latRange:  5,  lngRange:  4, peakHeight: 0.60, snowCap: true },
-  { name: 'Drakensberg',  lat: -30, lng:  -29, latRange:  3,  lngRange:  3, peakHeight: 0.35, snowCap: true },
-
-  // Oceania
-  { name: 'Great Divide', lat: -33, lng: -148, latRange:  5,  lngRange:  3, peakHeight: 0.30 },
-  { name: 'NZ Southern',  lat: -43, lng: -170, latRange:  2,  lngRange:  3, peakHeight: 0.50 },
-
-  // Polar ice plateau
-  { name: 'Greenland',    lat:  72, lng:   37, latRange:  8,  lngRange: 12, peakHeight: 0.55 },
-
-  // Famous low peaks with PAINTED snow cap. peakHeight is intentionally
-  // small (just a hill) so the surrounding island/savannah doesn't get
-  // dominated; the snow cap is forced by `snowCap: true` and rendered
-  // as a small white patch at the centre.
-  { name: 'Fuji',         lat:  35.5, lng: -138.7, latRange: 1.5, lngRange: 1.5, peakHeight: 0.18, snowCap: true },
-  { name: 'Kilimanjaro',  lat:  -3,   lng:  -37.3, latRange: 1.6, lngRange: 1.6, peakHeight: 0.22, snowCap: true },
-];
-
-// ═══════════════════════════════════════════════════════════════════
 // Math helpers
 // ═══════════════════════════════════════════════════════════════════
 
 function smoothstep(e0: number, e1: number, x: number): number {
   const t = Math.max(0, Math.min(1, (x - e0) / (e1 - e0)));
   return t * t * (3 - 2 * t);
-}
-
-// Smooth cosine falloff inside an ellipse. Returns 1 at centre, 0 at
-// the edge of the ellipse, with a continuous derivative everywhere —
-// so adjoining regions never have a visible crease.
-function ellipseFalloff(
-  dLat: number, latRange: number,
-  dLng: number, lngRange: number,
-): number {
-  const u = dLat / latRange;
-  const v = dLng / lngRange;
-  const r2 = u * u + v * v;
-  if (r2 >= 1) return 0;
-  return Math.cos(Math.sqrt(r2) * Math.PI * 0.5);
 }
 
 // Simplex noise mapped to [0, 1] without the abs() V-fold.
@@ -141,101 +65,48 @@ const LAND_THRESHOLD = 0.5;
 const COAST_BLUR_DEG = 1.2;   // wide blur → soft coast, no pixel stair
 const COAST_FADE_END = 0.85;  // landness at which we hit full height
 
-// Global multiplier on every mountain — keeps everything proportional
-// while we tune how "tall" or "low" the ranges feel. 0.70 chosen so
-// that low-latitude mid-size ranges (Rockies, Andes outside the Bolivian
-// altiplano) sit just below the snowline and read as rocky/forested
-// chains, while only the true giants (Himalaya, Tibetan altiplano)
-// poke above and earn a snow cap.
-const MOUNTAIN_HEIGHT_SCALE = 0.70;
-
-// Forced snow cap at named famous peaks (snowCap: true). Returns the
-// max overlap with such a peak's centre as a [0..1] mix. Snow ellipse
-// capped at 2° per axis so long chains get a focused snow patch at
-// the centre rather than a giant white stripe along the spine.
-function forcedSnowAt(lat: number, lng: number): number {
-  let best = 0;
-  for (const m of MOUNTAINS) {
-    if (!m.snowCap) continue;
-    let dLng = lng - m.lng;
-    if (dLng > 180) dLng -= 360;
-    if (dLng < -180) dLng += 360;
-    const snowLatR = Math.min(m.latRange * 0.85, 2.0);
-    const snowLngR = Math.min(m.lngRange * 0.85, 2.0);
-    const f = ellipseFalloff(
-      Math.abs(lat - m.lat), snowLatR,
-      Math.abs(dLng), snowLngR,
-    );
-    if (f > best) best = f;
-  }
-  return best;
-}
-
-function mountainBoost(
-  lat: number, lng: number,
-  nx: number, ny: number, nz: number,
-): number {
-  let total = 0;
-  // Per-vertex wobble: shifts each mountain's centre by up to ±2° in
-  // lng. The shift is a smooth function of the vertex position, so the
-  // ridge meanders rather than running on a perfectly straight axis.
-  const wobble = (noise01(nx, ny, nz, 0.16) - 0.5) * 4;  // ±2°
-  for (const m of MOUNTAINS) {
-    let dLng = lng - (m.lng + wobble);
-    if (dLng > 180) dLng -= 360;
-    if (dLng < -180) dLng += 360;
-    const f = ellipseFalloff(Math.abs(lat - m.lat), m.latRange, Math.abs(dLng), m.lngRange);
-    if (f > 0) total += m.peakHeight * f;
-  }
-  return total * MOUNTAIN_HEIGHT_SCALE;
-}
-
 function elevation(
   nx: number, ny: number, nz: number,
-  lat: number, lng: number,
   landness: number,
+  geo: GeoSample,
 ): number {
   if (landness < LAND_THRESHOLD) return 0;
 
   // Smooth coast fade so the shoreline rises gradually from sea level.
   const coastGate = smoothstep(LAND_THRESHOLD, COAST_FADE_END, landness);
 
-  // Inland gate. We want the foothills to start rising near the coast
-  // and the peak to be reached only deep inland — that gives a long
-  // gentle slope from sea up to summit instead of mountains looking
-  // like a wall right behind the shoreline. The smoothstep range here
-  // is what controls that slope length.
-  // 0.55 -> mountain starts at the first vertex inside the coast.
-  // 0.95 -> peak reached only ~5° from the shore.
-  // Mountains have to be tuned low enough that their peak still sits
-  // below the local snowline; otherwise the old "white feather along
-  // the coast" artefact comes back.
-  const inlandGate = smoothstep(0.55, 0.95, landness);
+  // Inland gate. All real-geo features fade in after the coast so basins,
+  // plateaus and ranges feel embedded in the continent, not stamped onto
+  // the shoreline.
+  const inlandGate = smoothstep(0.62, 1.0, landness);
+  const geoFeatureGate = smoothstep(0.70, 1.0, landness);
 
   // Slow rolling base noise — adjacent vertices have very similar
   // values, so plains read as a smooth gradient (no spikes, no blocks).
   const baseNoise = noise01(nx, ny, nz, 0.13);
-  const baseHeight = 0.06 + baseNoise * 0.22;   // [0.06, 0.28]
+  const baseHeight = 0.035 + baseNoise * 0.14;   // [0.035, 0.175]
 
-  // Mountains (table driven; wobble-aware so chains aren't perfectly straight)
-  let mtHeight = mountainBoost(lat, lng, nx, ny, nz) * inlandGate;
+  // Geography-aware relief comes from src/geo: mountain polylines, basins,
+  // highlands, rifts and volcanoes all share one true-lon atlas.
+  const continentalRoll = (
+    (noise01(nx + 11.7, ny - 4.3, nz + 2.6, 0.34, 4) - 0.5) * 0.170 +
+    noise3D(nx * 4.8 - 6.1, ny * 4.8 + 2.9, nz * 4.8 + 9.4) * 0.050
+  );
+  const macroRelief = (
+    geo.elevation * geoFeatureGate +
+    continentalRoll * (0.55 + geo.roughness * 0.55) * inlandGate
+  );
 
-  // Asymmetric ridge variation — real mountains are NOT smooth cones.
-  // Two noise fields, different scales:
-  //   * lf (low-freq) shifts whole flanks higher or lower so the chain
-  //     has a wavy spine rather than a perfectly symmetric profile
-  //   * hf (high-freq) adds individual peaks and saddles
-  // Strength fades to 0 at the bump edge so we never get a "spike" at
-  // the foothills where the mountain meets the coast or plain.
-  if (mtHeight > 0.15) {
-    const lf = noise01(nx, ny, nz, 0.18);            // big rolling tilt
-    const hf = noise01(nx, ny, nz, 0.55);            // small peaks
-    const strength = smoothstep(0.15, 0.70, mtHeight);
-    const variation = (lf - 0.5) * 0.32 + (hf - 0.5) * 0.20;
-    mtHeight *= 1 + variation * strength;
-  }
+  // Fine land material relief. Desert gets shallow ribbing, highlands
+  // get more tooth, and plains stay subtle.
+  const ridgeNoise = Math.abs(noise3D(nx * 22 + 4.1, ny * 22 - 8.3, nz * 22 + 1.7));
+  const rollingNoise = noise3D(nx * 9 - 2.5, ny * 9 + 6.2, nz * 9 - 1.1);
+  const reliefGate = smoothstep(0.04, 0.22, Math.abs(macroRelief));
+  const materialRoughness = geo.roughness + geo.mountain * 0.45 + geo.volcanic * 0.35;
+  const detailStrength = 0.020 + materialRoughness * 0.070 + reliefGate * 0.026;
+  const surfaceDetail = (rollingNoise * 0.55 + (ridgeNoise - 0.42) * 0.45) * detailStrength;
 
-  return (baseHeight + mtHeight) * coastGate;
+  return Math.max(0, baseHeight + macroRelief + surfaceDetail) * coastGate;
 }
 
 // ═══════════════════════════════════════════════════════════════════
@@ -256,24 +127,33 @@ function dominantBiomeName(weights: BiomeWeights): string {
 // Layer: colour
 // ═══════════════════════════════════════════════════════════════════
 
-// Snowline elevation as a function of latitude.
-// Equator: only the highest peaks (snowline ≈ 0.80).
-// 70°+:    most things are snow (snowline ≈ 0.15).
-function snowline(lat: number): number {
-  return 0.80 - smoothstep(35, 70, Math.abs(lat)) * 0.65;
-}
-
 const C_JUNGLE_DARK = new THREE.Color('#1F5E1F');
 const C_FOREST_DARK = new THREE.Color('#2A5520');
 const C_SAND_LIGHT  = new THREE.Color('#EAC685');
+const C_GRASS_LIGHT = new THREE.Color('#82C75A');
+const C_FOREST_BLUE = new THREE.Color('#1E4D35');
+const C_WARM_ROCK   = new THREE.Color('#9A8566');
+const C_DARK_ROCK   = new THREE.Color('#55483A');
+const C_BASIN_GREEN = new THREE.Color('#3E6D36');
+const C_BASIN_EARTH = new THREE.Color('#6F6546');
+const C_PLATEAU_SOIL = new THREE.Color('#8C744F');
+const C_DRY_PLATEAU = new THREE.Color('#C08C52');
+const C_VOLCANIC_ROCK = new THREE.Color('#332B27');
+
+// Snow caps exist, but only on high/cold peaks. Threshold stays high
+// near the equator so mountains read as landform first, snow second.
+function snowline(lat: number): number {
+  return 0.92 - smoothstep(38, 72, Math.abs(lat)) * 0.38;
+}
 
 // Land colour combines: biome-weighted base + micro tint (sphere-wide
 // low-freq variation so flat regions don't read as one solid colour) +
 // per-biome accent patches (forest darker patches, desert sand mottle)
-// + rocky band + snow cap.
+// + rocky highlands + polar ice + restrained snow caps.
 function landColor(
-  weights: BiomeWeights, elev: number, lat: number, lng: number,
+  weights: BiomeWeights, elev: number, lat: number,
   nx: number, ny: number, nz: number,
+  geo: GeoSample,
   out: THREE.Color,
 ): THREE.Color {
   // Weighted blend of biome base colours (no dominant snap → soft borders)
@@ -302,6 +182,17 @@ function landColor(
       const darkRef = (weights.tropical ?? 0) > 0.5 ? C_JUNGLE_DARK : C_FOREST_DARK;
       out.lerp(darkRef, Math.min(0.45, (patch - 0.2) * 0.55));
     }
+
+    // Mid-frequency canopy speckles. This is intentionally colour-only:
+    // the terrain mesh is already dense enough, but the old vertex colour
+    // field read like flat paint. Tiny green/yellow flecks make forests and
+    // grasslands feel like material instead of a single biome swatch.
+    const canopy = noise3D(nx * 18 + 2.1, ny * 18 - 1.7, nz * 18 + 4.3);
+    if (canopy > 0.34) {
+      out.lerp(C_GRASS_LIGHT, Math.min(0.26, (canopy - 0.34) * 0.32));
+    } else if (canopy < -0.38) {
+      out.lerp(C_FOREST_BLUE, Math.min(0.24, (-canopy - 0.38) * 0.30));
+    }
   }
 
   // Desert mottle: sand-coloured highlights and shadowy dunes.
@@ -313,27 +204,69 @@ function landColor(
       out.r += patch * 0.04;  // slightly darker dunes
       out.g += patch * 0.03;
     }
+
+    const dune = noise3D(nx * 15 + 4, ny * 15, nz * 15 - 2);
+    if (dune > 0.18) {
+      out.lerp(C_SAND_LIGHT, Math.min(0.20, dune * 0.18));
+    } else {
+      out.lerp(C_WARM_ROCK, Math.min(0.14, -dune * 0.10));
+    }
   }
 
-  // Rocky band: decoupled from snowline (which goes very low at polar
-  // latitudes — the previous coupling produced an inverted smoothstep
-  // that painted boreal lowlands brown). Pure elevation-driven band,
-  // gated to mid-elevations; at high latitudes the polar snow rule
-  // below paints over it anyway.
-  const rockyMix = smoothstep(0.40, 0.62, elev);
+  // Named GeoAtlas landforms get a material response so their real height
+  // changes are readable: basin floors darken/cool, plateaus pick up dry
+  // exposed soil, rifts/volcanoes add black-brown rock.
+  if (geo.basin > 0.04) {
+    const basinMix = Math.min(0.36, geo.basin * 0.34 + Math.max(0, geo.moisture) * 0.08);
+    const basinRef = (weights.tropical ?? 0) + (weights.temperate ?? 0) > 0.45
+      ? C_BASIN_GREEN
+      : C_BASIN_EARTH;
+    out.lerp(basinRef, basinMix);
+  }
+  const plateauSignal = Math.max(geo.plateau, geo.shield, geo.rift * 0.65);
+  if (plateauSignal > 0.04) {
+    const plateauMix = Math.min(0.38, plateauSignal * 0.28 + geo.rock * 0.12 + geo.sand * 0.08);
+    const plateauRef = (weights.desert ?? 0) > 0.35 || geo.sand > 0.25 ? C_DRY_PLATEAU : C_PLATEAU_SOIL;
+    out.lerp(plateauRef, plateauMix);
+  }
+  if (geo.volcanic > 0.05) {
+    out.lerp(C_VOLCANIC_ROCK, Math.min(0.42, geo.volcanic * 0.36));
+  }
+
+  // Mountain material: altitude-driven ridges, scree, and dark slope
+  // pockets. The geometry supplies the silhouette; these colour layers
+  // supply the missing sense of "faces" on the mountains.
+  const highland = Math.max(smoothstep(0.30, 0.78, elev), geo.mountain * 0.65 + geo.roughness * 0.22);
+  if (highland > 0) {
+    const ridgeA = Math.abs(noise3D(nx * 26 + 9, ny * 26 - 3, nz * 26 + 2));
+    const ridgeB = Math.abs(noise3D(nx * 47 - 5, ny * 47 + 7, nz * 47 - 11));
+    const striation = Math.pow(Math.max(ridgeA, ridgeB), 2.2) * highland;
+    out.lerp(C_DARK_ROCK, Math.min(0.34, striation * 0.30));
+
+    const sunSide = smoothstep(-0.2, 0.8, nx * -0.35 + ny * 0.76 + nz * 0.28);
+    out.lerp(C_WARM_ROCK, highland * sunSide * 0.12);
+  }
+
+  // Rocky band: pure elevation-driven material. This replaces the old
+  // white snow-cap look with warmer rock and soil.
+  const rockyMix = Math.min(0.72, smoothstep(0.36, 0.66, elev) + geo.rock * 0.28 + geo.volcanic * 0.18);
   out.lerp(C_ROCKY, rockyMix);
 
-  // Snow: above snowline (altitude) or above ~60° (polar). Polar ramp
-  // starts earlier (60° → 72°) so the Arctic / Greenland / Antarctica
-  // read as icy instead of muddy boreal.
-  const sl = snowline(lat);
-  const altSnow = smoothstep(sl - 0.04, sl + 0.04, elev);
-  const polarSnow = smoothstep(60, 72, Math.abs(lat));
-  // Forced snow cap at named famous low peaks. Gated by elevation so
-  // it paints only the actual high-ground inside the snow ellipse —
-  // not a flat blob across the whole range.
-  const forcedSnow = forcedSnowAt(lat, lng) * smoothstep(0.10, 0.25, elev);
-  out.lerp(C_SNOW, Math.max(altSnow, polarSnow, forcedSnow));
+  // Polar ice only. High mountains elsewhere stay rocky, matching the
+  // requested non-white mountain material, with only small broken caps.
+  const capBreakup = noise3D(nx * 31 - 13, ny * 31 + 8, nz * 31 + 1) * 0.055;
+  const localSnowline = snowline(lat) - geo.snowBias * 0.18;
+  const capSnow = smoothstep(localSnowline + capBreakup, localSnowline + 0.12 + capBreakup, elev);
+  const polarIce = smoothstep(66, 78, Math.abs(lat));
+  out.lerp(C_SNOW_CAP, capSnow * Math.min(0.56, 0.34 + geo.snowBias * 0.38));
+  out.lerp(C_POLAR_ICE, polarIce * 0.50);
+
+  // Fine grain last. It is subtle but removes the remaining "flat vertex
+  // paint" feeling on plains without changing the macro biome colours.
+  const grain = noise3D(nx * 68 + 1.3, ny * 68 - 4.2, nz * 68 + 6.7) * 0.022;
+  out.r += grain;
+  out.g += grain * 0.9;
+  out.b += grain * 0.72;
 
   // Final clamp (some additive tints could under/overshoot a bit)
   out.r = Math.max(0, Math.min(1, out.r));
@@ -356,7 +289,7 @@ function oceanColor(landness: number, out: THREE.Color): THREE.Color {
 // ═══════════════════════════════════════════════════════════════════
 
 export function generateTerrain(): TerrainData {
-  const geometry = new THREE.SphereGeometry(GLOBE_RADIUS, 480, 480);
+  const geometry = new THREE.SphereGeometry(GLOBE_RADIUS, TERRAIN_SEGMENTS, TERRAIN_SEGMENTS);
   const posAttr = geometry.getAttribute('position');
   const vertexCount = posAttr.count;
   const colors = new Float32Array(vertexCount * 3);
@@ -366,6 +299,7 @@ export function generateTerrain(): TerrainData {
 
   const mask = createWorldMask();
   const colorBuf = new THREE.Color();
+  const geoBuf = createGeoSample();
 
   for (let i = 0; i < vertexCount; i++) {
     const x = posAttr.getX(i);
@@ -381,7 +315,8 @@ export function generateTerrain(): TerrainData {
 
     if (landness >= LAND_THRESHOLD) {
       // ── Land vertex ──
-      const elev = elevation(nx, ny, nz, lat, lng, landness);
+      const geo = sampleGeoFromGlobe(lat, lng, geoBuf);
+      const elev = elevation(nx, ny, nz, landness, geo);
       const r = GLOBE_RADIUS + elev * LAND_HEIGHT_SCALE;
       posAttr.setXYZ(i, nx * r, ny * r, nz * r);
 
@@ -395,21 +330,22 @@ export function generateTerrain(): TerrainData {
       const lngJitter = noise3D(nx * 0.6 + 17, ny * 0.6, nz * 0.6 + 5) * 5;
       const weights = mask.getBiomeWeights(lat + latJitter, lng + lngJitter);
       const biome = dominantBiomeName(weights);
-      landColor(weights, elev, lat, lng, nx, ny, nz, colorBuf);
+      landColor(weights, elev, lat, nx, ny, nz, geo, colorBuf);
       colors[i * 3]     = colorBuf.r;
       colors[i * 3 + 1] = colorBuf.g;
       colors[i * 3 + 2] = colorBuf.b;
 
       const sampleChance = (Math.sin(i * 7.13) * 0.5 + 0.5) > 0.85;
-      // Skip vertices inside a snow-cap region — we don't want trees
-      // growing across Fuji's white top.
-      const onSnowCap = forcedSnowAt(lat, lng) > 0.15;
-      if ((i % 12 === 0 || sampleChance) && landness >= 0.65 && !onSnowCap) {
+      if ((i % 12 === 0 || sampleChance) && landness >= 0.65) {
         landPoints.push({
           position: new THREE.Vector3(nx * r, ny * r, nz * r),
           normal: new THREE.Vector3(nx, ny, nz),
           height: elev,
           biome,
+          treeDensity: geo.treeDensity,
+          mountain: geo.mountain,
+          snowBias: geo.snowBias,
+          volcanic: geo.volcanic,
         });
       }
       if (elev < 0.05) {

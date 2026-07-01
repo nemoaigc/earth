@@ -1341,8 +1341,10 @@ function inDesert(lat: number, lng: number): number {
 let _cachedMask: WorldMask | null = null;
 export function createWorldMask(): WorldMask {
   if (_cachedMask) return _cachedMask;
-  // 720×360 = 0.5° resolution, halves the coastline step size vs 360×180.
-  const BW = 720, BH = 360;
+  // 360×180 = 1° resolution. This keeps coastlines smooth after the
+  // explicit blur below, while avoiding a multi-second first-load polygon
+  // rasterization pass on the main thread.
+  const BW = 360, BH = 180;
   const bitmap = new Uint8Array(BW * BH);
   for (let iy = 0; iy < BH; iy++) {
     const lat = 90 - iy * (180 / BH);

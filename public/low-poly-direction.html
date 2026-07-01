@@ -1,0 +1,678 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Three.js Low-Poly Module Quality Review</title>
+  <style>
+    :root {
+      --bg: #15140f;
+      --panel: rgba(36, 33, 22, 0.92);
+      --panel-2: rgba(48, 42, 28, 0.92);
+      --line: rgba(246, 235, 210, 0.16);
+      --ink: #f6ecd8;
+      --muted: #baaa88;
+      --gold: #dda94a;
+      --green: #8dbb55;
+      --red: #e66a35;
+      font-family: ui-serif, Georgia, "Times New Roman", serif;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 14% 0%, rgba(221, 169, 74, 0.18), transparent 35rem),
+        radial-gradient(circle at 82% 8%, rgba(103, 148, 76, 0.16), transparent 34rem),
+        linear-gradient(180deg, #1d1b13 0%, var(--bg) 48%, #0f0f0b 100%);
+      overflow-x: hidden;
+    }
+
+    main {
+      width: min(1320px, calc(100vw - 36px));
+      margin: 0 auto;
+      padding: 34px 0 64px;
+    }
+
+    .hero {
+      display: grid;
+      grid-template-columns: 0.68fr 1.32fr;
+      gap: 22px;
+      align-items: stretch;
+      margin-bottom: 22px;
+    }
+
+    .card {
+      border: 1px solid var(--line);
+      border-radius: 30px;
+      background: linear-gradient(145deg, var(--panel-2), rgba(22, 22, 15, 0.94));
+      box-shadow: 0 26px 80px rgba(0, 0, 0, 0.34);
+      overflow: hidden;
+    }
+
+    .copy {
+      min-height: 620px;
+      padding: 32px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .eyebrow {
+      margin: 0 0 14px;
+      color: var(--gold);
+      font: 850 12px/1 ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+    }
+
+    h1, h2, h3 { margin: 0; letter-spacing: -0.04em; font-weight: 650; }
+    h1 { max-width: 9ch; font-size: clamp(48px, 6.3vw, 86px); line-height: 0.86; }
+    h2 { font-size: clamp(30px, 4.1vw, 54px); line-height: 0.95; }
+    h3 { font-size: 21px; line-height: 1.1; }
+
+    p {
+      margin: 14px 0 0;
+      color: var(--muted);
+      font-size: 17px;
+      line-height: 1.66;
+    }
+
+    strong { color: var(--ink); }
+
+    .note {
+      margin-top: 24px;
+      padding: 16px 18px;
+      border: 1px solid rgba(221, 169, 74, 0.32);
+      border-radius: 18px;
+      color: #f3dca4;
+      background: rgba(221, 169, 74, 0.10);
+      font: 750 14px/1.56 ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    .stage {
+      position: relative;
+      min-height: 620px;
+    }
+
+    #module-stage {
+      display: block;
+      width: 100%;
+      height: 620px;
+      border-radius: 30px;
+      background: radial-gradient(circle at 50% 18%, #3a3422 0%, #191912 58%, #11100c 100%);
+      cursor: grab;
+    }
+
+    #module-stage:active { cursor: grabbing; }
+
+    .stage-badge {
+      position: absolute;
+      top: 18px;
+      left: 18px;
+      display: inline-flex;
+      gap: 8px;
+      align-items: center;
+      padding: 10px 13px;
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      border-radius: 999px;
+      color: var(--ink);
+      background: rgba(0, 0, 0, 0.30);
+      backdrop-filter: blur(12px);
+      font: 850 12px/1 ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    .module-labels {
+      position: absolute;
+      left: 18px;
+      right: 18px;
+      bottom: 18px;
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 14px;
+      pointer-events: none;
+    }
+
+    .module-label {
+      padding: 15px 16px;
+      border: 1px solid rgba(255, 255, 255, 0.13);
+      border-radius: 18px;
+      background: rgba(0, 0, 0, 0.38);
+      backdrop-filter: blur(12px);
+      font: 720 13px/1.48 ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    .module-label b {
+      display: block;
+      margin-bottom: 5px;
+      color: var(--gold);
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    .section { padding: 28px; margin-bottom: 22px; }
+
+    .grid { display: grid; gap: 18px; }
+    .cols-3 { grid-template-columns: repeat(3, 1fr); }
+    .cols-2 { grid-template-columns: repeat(2, 1fr); }
+
+    .rule, .module-note {
+      padding: 22px;
+      border: 1px solid var(--line);
+      border-radius: 24px;
+      background: rgba(255, 255, 255, 0.04);
+    }
+
+    .rule b, .module-note b {
+      display: block;
+      margin-bottom: 10px;
+      color: var(--gold);
+      font: 900 12px/1 ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+    }
+
+    .module-note ul {
+      margin: 14px 0 0;
+      padding-left: 18px;
+      color: var(--muted);
+      font: 500 15px/1.72 ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    .swatches { display: flex; gap: 8px; margin-top: 16px; }
+    .swatch {
+      width: 32px;
+      height: 32px;
+      border-radius: 9px;
+      border: 1px solid rgba(255, 255, 255, 0.18);
+    }
+
+    @media (max-width: 980px) {
+      .hero, .cols-2, .cols-3, .module-labels { grid-template-columns: 1fr; }
+      .copy { min-height: auto; }
+      h1 { max-width: none; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <section class="hero">
+      <div class="card copy">
+        <div>
+          <p class="eyebrow">Module quality checkpoint</p>
+          <h1>先验收树和火山。</h1>
+          <p>
+            这版只做两个 <strong>Three.js 模块资产</strong>：目标树和目标火山。
+            我刻意不做完整地球，也不继续推进主场景，避免方向错了还扩大修改。
+          </p>
+          <p>
+            重点不是“加面数”。重点是：自定义 mesh、低面数切面、材质色块、体块连接、和地表接触。
+            目标是更接近你说的地表山脉品质，而不是几个棱锥拼起来。
+          </p>
+        </div>
+        <div class="note">你只需要判断：这棵树和这个火山，是否已经接近 Image 1 那种高质量 low-poly props 的标准。</div>
+      </div>
+
+      <div class="card stage">
+        <canvas id="module-stage" aria-label="Three.js low-poly tree and volcano module prototype"></canvas>
+        <div class="stage-badge">custom three.js mesh</div>
+        <div class="module-labels">
+          <div class="module-label"><b>Target tree</b>弯曲树干、根部、分层树冠、分面暗面/亮面。不是球插棍。</div>
+          <div class="module-label"><b>Target volcano</b>宽底座、破碎火山口、暗内壁、局部熔岩、块状烟。不是锥体贴图。</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="card section">
+      <p class="eyebrow">Quality rules</p>
+      <h2>这个模块页的验收标准</h2>
+      <div class="grid cols-3" style="margin-top: 22px;">
+        <div class="rule">
+          <b>01 custom mesh</b>
+          <h3>不靠 primitive 直接堆</h3>
+          <p>树干、树冠、火山体、火山口都用自定义低多边形形体或经过雕刻的块体，不是单个 cone/sphere。</p>
+        </div>
+        <div class="rule">
+          <b>02 ground contact</b>
+          <h3>资产要长在地表上</h3>
+          <p>树有根部和投影，火山有火山岩地表扩散。模块不是插在地上的小摆件。</p>
+        </div>
+        <div class="rule">
+          <b>03 painted facets</b>
+          <h3>材质由分面表达</h3>
+          <p>暗面、亮面、边缘高光、局部暖色，不靠写实贴图，也不是纯单色塑料。</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="card section">
+      <p class="eyebrow">If approved</p>
+      <h2>确认后迁移策略</h2>
+      <div class="grid cols-2" style="margin-top: 22px;">
+        <div class="module-note">
+          <b>Tree system</b>
+          <h3>树会变成资产生成器</h3>
+          <ul>
+            <li>用同一套树干/树冠 grammar 生成不同树种。</li>
+            <li>经纬度/气候只决定位置、密度、尺寸和颜色。</li>
+            <li>先在南美森林样板里验证，不全局乱铺。</li>
+          </ul>
+          <div class="swatches"><i class="swatch" style="background:#284c29"></i><i class="swatch" style="background:#496f30"></i><i class="swatch" style="background:#8bb75a"></i><i class="swatch" style="background:#8f5e31"></i></div>
+        </div>
+        <div class="module-note">
+          <b>Volcano system</b>
+          <h3>火山会变成地貌模块</h3>
+          <ul>
+            <li>真实火山经纬度决定位置。</li>
+            <li>火山底座会和地表高度/颜色融合，不像单独插上去。</li>
+            <li>只保留少量可读火山，不为了数量牺牲质量。</li>
+          </ul>
+          <div class="swatches"><i class="swatch" style="background:#30231f"></i><i class="swatch" style="background:#684531"></i><i class="swatch" style="background:#b35a32"></i><i class="swatch" style="background:#e96935"></i></div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script type="importmap">
+    { "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.183.0/build/three.module.js" } }
+  </script>
+  <script type="module">
+    import * as THREE from 'three';
+
+    const canvas = document.querySelector('#module-stage');
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFShadowMap;
+
+    const scene = new THREE.Scene();
+    scene.fog = new THREE.Fog(0x15140f, 9, 18);
+
+    const camera = new THREE.PerspectiveCamera(34, 1, 0.1, 80);
+    camera.position.set(0, 3.2, 9.1);
+    camera.lookAt(0, 1.05, 0);
+
+    const hemi = new THREE.HemisphereLight(0xf8eed7, 0x252117, 2.85);
+    scene.add(hemi);
+
+    const key = new THREE.DirectionalLight(0xffdfaa, 3.35);
+    key.position.set(-4.2, 7.2, 5.2);
+    key.castShadow = true;
+    key.shadow.mapSize.set(1536, 1536);
+    key.shadow.camera.near = 0.5;
+    key.shadow.camera.far = 18;
+    key.shadow.camera.left = -5;
+    key.shadow.camera.right = 5;
+    key.shadow.camera.top = 5;
+    key.shadow.camera.bottom = -5;
+    scene.add(key);
+
+    const rim = new THREE.DirectionalLight(0x8ccfff, 1.15);
+    rim.position.set(4.8, 3.1, -4.2);
+    scene.add(rim);
+
+    const root = new THREE.Group();
+    scene.add(root);
+
+    function clamp01(v) { return Math.max(0, Math.min(1, v)); }
+
+    function shadeColor(hex, amount) {
+      const c = new THREE.Color(hex);
+      c.r = clamp01(c.r + amount);
+      c.g = clamp01(c.g + amount);
+      c.b = clamp01(c.b + amount);
+      return c;
+    }
+
+    function material(color, options = {}) {
+      return new THREE.MeshStandardMaterial({
+        color,
+        vertexColors: options.vertexColors ?? false,
+        roughness: options.roughness ?? 0.76,
+        metalness: 0,
+        flatShading: true,
+        emissive: options.emissive ?? 0x000000,
+        emissiveIntensity: options.emissiveIntensity ?? 0,
+        transparent: options.opacity !== undefined && options.opacity < 1,
+        opacity: options.opacity ?? 1,
+        depthWrite: options.depthWrite ?? true,
+      });
+    }
+
+    const vertexMat = material(0xffffff, { vertexColors: true });
+    const lavaMat = material(0xe96632, { emissive: 0xe95522, emissiveIntensity: 0.68, roughness: 0.48 });
+    const smokeMat = material(0xc9c1ad, { opacity: 0.74, depthWrite: false, roughness: 1 });
+
+    function addMesh(parent, geometry, mat, pos = [0, 0, 0], scale = [1, 1, 1], rot = [0, 0, 0]) {
+      const m = new THREE.Mesh(geometry, mat);
+      m.position.set(...pos);
+      m.scale.set(...scale);
+      m.rotation.set(...rot);
+      m.castShadow = true;
+      m.receiveShadow = true;
+      parent.add(m);
+      return m;
+    }
+
+    function makeIrregularDiscGeometry({ radius = 1, height = 0.18, sides = 13, colorTop = 0x4c7338, colorSide = 0x32291d, squishZ = 0.72, seed = 1 }) {
+      const positions = [];
+      const colors = [];
+      const indices = [];
+      const topCenter = 0;
+      const bottomCenter = 1;
+      positions.push(0, height / 2, 0, 0, -height / 2, 0);
+      const cTop = new THREE.Color(colorTop);
+      const cSide = new THREE.Color(colorSide);
+      colors.push(cTop.r, cTop.g, cTop.b, cSide.r, cSide.g, cSide.b);
+
+      for (let i = 0; i < sides; i++) {
+        const a = i / sides * Math.PI * 2;
+        const jitter = 0.88 + Math.sin(i * 2.1 + seed) * 0.08 + Math.sin(i * 4.7 + seed * 0.4) * 0.05;
+        const x = Math.cos(a) * radius * jitter;
+        const z = Math.sin(a) * radius * squishZ * jitter;
+        positions.push(x, height / 2, z, x * 1.04, -height / 2, z * 1.04);
+        const light = Math.sin(a - 0.8) * 0.055;
+        const tc = shadeColor(colorTop, light);
+        const sc = shadeColor(colorSide, light * 0.4);
+        colors.push(tc.r, tc.g, tc.b, sc.r, sc.g, sc.b);
+      }
+      for (let i = 0; i < sides; i++) {
+        const ni = (i + 1) % sides;
+        const t0 = 2 + i * 2;
+        const b0 = t0 + 1;
+        const t1 = 2 + ni * 2;
+        const b1 = t1 + 1;
+        indices.push(topCenter, t1, t0, bottomCenter, b0, b1, t0, t1, b0, t1, b1, b0);
+      }
+      const geo = new THREE.BufferGeometry();
+      geo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+      geo.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+      geo.setIndex(indices);
+      geo.computeVertexNormals();
+      return geo;
+    }
+
+    function makeTaperedRingGeometry({
+      sides = 7,
+      rings,
+      colors,
+      seed = 1,
+      capTop = true,
+      capBottom = true,
+    }) {
+      const positions = [];
+      const colorAttr = [];
+      const indices = [];
+      for (let r = 0; r < rings.length; r++) {
+        const ring = rings[r];
+        const baseColor = new THREE.Color(colors[Math.min(colors.length - 1, r)]);
+        for (let i = 0; i < sides; i++) {
+          const a = i / sides * Math.PI * 2 + (ring.twist ?? 0);
+          const facet = 0.92 + Math.sin(i * 1.9 + seed + r * 0.7) * (ring.jitter ?? 0.06);
+          const x = (ring.x ?? 0) + Math.cos(a) * ring.rx * facet;
+          const y = ring.y;
+          const z = (ring.z ?? 0) + Math.sin(a) * ring.rz * facet;
+          positions.push(x, y, z);
+          const light = Math.sin(a - 0.7) * 0.08 + r * 0.006;
+          const c = baseColor.clone();
+          c.r = clamp01(c.r + light);
+          c.g = clamp01(c.g + light * 0.85);
+          c.b = clamp01(c.b + light * 0.62);
+          colorAttr.push(c.r, c.g, c.b);
+        }
+      }
+      for (let r = 0; r < rings.length - 1; r++) {
+        for (let i = 0; i < sides; i++) {
+          const ni = (i + 1) % sides;
+          const a = r * sides + i;
+          const b = r * sides + ni;
+          const c = (r + 1) * sides + i;
+          const d = (r + 1) * sides + ni;
+          indices.push(a, c, b, b, c, d);
+        }
+      }
+      if (capBottom) {
+        const center = positions.length / 3;
+        const first = rings[0];
+        positions.push(first.x ?? 0, first.y, first.z ?? 0);
+        const c = new THREE.Color(colors[0]);
+        colorAttr.push(c.r, c.g, c.b);
+        for (let i = 0; i < sides; i++) indices.push(center, i, (i + 1) % sides);
+      }
+      if (capTop) {
+        const center = positions.length / 3;
+        const last = rings[rings.length - 1];
+        positions.push(last.x ?? 0, last.y, last.z ?? 0);
+        const c = new THREE.Color(colors[colors.length - 1]);
+        colorAttr.push(c.r, c.g, c.b);
+        const base = (rings.length - 1) * sides;
+        for (let i = 0; i < sides; i++) indices.push(center, base + (i + 1) % sides, base + i);
+      }
+      const geo = new THREE.BufferGeometry();
+      geo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+      geo.setAttribute('color', new THREE.Float32BufferAttribute(colorAttr, 3));
+      geo.setIndex(indices);
+      geo.computeVertexNormals();
+      return geo;
+    }
+
+    function makeFacetedBlobGeometry({ radius = 0.5, sides = 9, layers = 5, colorBottom = 0x2e5a2b, colorTop = 0x8fbd5c, flatten = 0.68, seed = 1 }) {
+      const rings = [];
+      for (let l = 0; l < layers; l++) {
+        const t = l / (layers - 1);
+        const y = (t - 0.5) * radius * 2 * flatten;
+        const width = Math.sin(t * Math.PI) * radius * (0.92 + Math.sin(seed + l * 1.7) * 0.08);
+        rings.push({
+          y,
+          rx: Math.max(0.02, width * (1.06 + Math.sin(seed + l) * 0.08)),
+          rz: Math.max(0.02, width * (0.86 + Math.cos(seed + l) * 0.07)),
+          x: Math.sin(seed * 0.7 + l) * radius * 0.05,
+          z: Math.cos(seed * 0.5 + l) * radius * 0.04,
+          twist: l * 0.18 + seed * 0.04,
+          jitter: 0.11,
+        });
+      }
+      const colors = [];
+      const bottom = new THREE.Color(colorBottom);
+      const top = new THREE.Color(colorTop);
+      for (let l = 0; l < layers; l++) colors.push(bottom.clone().lerp(top, l / (layers - 1)).getHex());
+      return makeTaperedRingGeometry({ sides, rings, colors, seed });
+    }
+
+    function makeRootGeometry(length, width, height, color = 0x7b4f2b) {
+      const w = width;
+      const h = height;
+      const l = length;
+      const positions = [
+        -w, 0, -w,  w, 0, -w,  w * 0.75, 0, l, -w * 0.55, 0, l,
+        -w * 0.62, h, -w * 0.55, w * 0.62, h * 0.9, -w * 0.45, w * 0.35, h * 0.45, l * 0.92, -w * 0.28, h * 0.4, l * 0.9,
+      ];
+      const indices = [0, 1, 4, 1, 5, 4, 1, 2, 5, 2, 6, 5, 2, 3, 6, 3, 7, 6, 3, 0, 7, 0, 4, 7, 4, 5, 7, 5, 6, 7, 0, 3, 1, 1, 3, 2];
+      const colors = [];
+      for (let i = 0; i < positions.length / 3; i++) {
+        const c = shadeColor(color, (i % 4 - 1.5) * 0.025);
+        colors.push(c.r, c.g, c.b);
+      }
+      const geo = new THREE.BufferGeometry();
+      geo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+      geo.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+      geo.setIndex(indices);
+      geo.computeVertexNormals();
+      return geo;
+    }
+
+    function makeLavaRibbonGeometry() {
+      const points = [
+        [-0.05, 0.76, 0.28, 0.06],
+        [-0.10, 0.55, 0.43, 0.045],
+        [-0.04, 0.32, 0.62, 0.035],
+        [0.04, 0.12, 0.82, 0.025],
+      ];
+      const positions = [];
+      const colors = [];
+      const indices = [];
+      for (let i = 0; i < points.length; i++) {
+        const [x, y, z, w] = points[i];
+        positions.push(x - w, y, z, x + w, y + 0.015, z);
+        const c = i < 2 ? new THREE.Color(0xff8a38) : new THREE.Color(0xc84522);
+        colors.push(c.r, c.g, c.b, c.r, c.g, c.b);
+      }
+      for (let i = 0; i < points.length - 1; i++) {
+        const a = i * 2;
+        indices.push(a, a + 1, a + 2, a + 1, a + 3, a + 2);
+      }
+      const geo = new THREE.BufferGeometry();
+      geo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+      geo.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+      geo.setIndex(indices);
+      geo.computeVertexNormals();
+      return geo;
+    }
+
+    function createTreeModule() {
+      const group = new THREE.Group();
+      group.position.set(-2.55, 0, 0);
+
+      addMesh(group, makeIrregularDiscGeometry({ radius: 1.28, height: 0.18, sides: 14, colorTop: 0x496f34, colorSide: 0x2b2118, squishZ: 0.68, seed: 4 }), vertexMat, [0, 0, 0]);
+      addMesh(group, makeIrregularDiscGeometry({ radius: 0.82, height: 0.035, sides: 11, colorTop: 0x22391f, colorSide: 0x1d1711, squishZ: 0.55, seed: 7 }), vertexMat, [0.05, 0.10, 0.02]);
+
+      const trunk = makeTaperedRingGeometry({
+        sides: 7,
+        seed: 9,
+        rings: [
+          { y: 0.08, rx: 0.20, rz: 0.16, x: -0.03, z: 0.00, twist: 0.0, jitter: 0.08 },
+          { y: 0.34, rx: 0.17, rz: 0.13, x: 0.02, z: 0.02, twist: 0.08, jitter: 0.07 },
+          { y: 0.67, rx: 0.13, rz: 0.11, x: 0.08, z: -0.02, twist: 0.14, jitter: 0.08 },
+          { y: 0.98, rx: 0.10, rz: 0.085, x: 0.02, z: -0.04, twist: 0.23, jitter: 0.08 },
+          { y: 1.20, rx: 0.075, rz: 0.065, x: -0.07, z: -0.02, twist: 0.30, jitter: 0.06 },
+        ],
+        colors: [0x70441f, 0x8d5d30, 0xa06d3d, 0x7f522d, 0xb4814c],
+      });
+      addMesh(group, trunk, vertexMat);
+
+      for (const [angle, len, width, y] of [[0.2, 0.42, 0.075, 0.07], [1.7, 0.34, 0.060, 0.065], [3.05, 0.48, 0.070, 0.08], [4.4, 0.30, 0.055, 0.06]]) {
+        addMesh(group, makeRootGeometry(len, width, y), vertexMat, [0, 0.04, 0], [1, 1, 1], [0, angle, 0]);
+      }
+
+      const canopies = [
+        { p: [-0.22, 1.42, 0.02], s: [1.18, 0.82, 0.96], r: 0.54, cb: 0x244f28, ct: 0x6da143, seed: 2 },
+        { p: [0.26, 1.55, -0.06], s: [1.03, 0.76, 0.82], r: 0.48, cb: 0x315f2c, ct: 0x8dbb55, seed: 5 },
+        { p: [0.00, 1.88, 0.08], s: [0.88, 0.68, 0.78], r: 0.42, cb: 0x3b6e31, ct: 0xa1c96a, seed: 8 },
+        { p: [-0.45, 1.68, -0.12], s: [0.74, 0.58, 0.65], r: 0.33, cb: 0x1f4425, ct: 0x5e8f38, seed: 12 },
+      ];
+      for (const c of canopies) {
+        addMesh(group, makeFacetedBlobGeometry({ radius: c.r, sides: 9, layers: 5, colorBottom: c.cb, colorTop: c.ct, flatten: 0.70, seed: c.seed }), vertexMat, c.p, c.s, [0.02, c.seed * 0.09, -0.02]);
+      }
+
+      // Small branch facets visible between crown masses.
+      for (const [x, y, z, ry, sx] of [[-0.10, 1.20, 0.03, 0.7, 0.55], [0.10, 1.28, -0.02, -0.8, 0.42], [-0.24, 1.32, -0.07, 1.8, 0.36]]) {
+        addMesh(group, makeRootGeometry(0.55, 0.035, 0.045, 0x76502e), vertexMat, [x, y, z], [sx, 0.7, 0.55], [0.55, ry, 0.35]);
+      }
+
+      return group;
+    }
+
+    function createVolcanoModule() {
+      const group = new THREE.Group();
+      group.position.set(2.45, 0, 0.02);
+
+      addMesh(group, makeIrregularDiscGeometry({ radius: 1.52, height: 0.17, sides: 15, colorTop: 0x40302a, colorSide: 0x211813, squishZ: 0.70, seed: 15 }), vertexMat, [0, 0, 0]);
+      addMesh(group, makeIrregularDiscGeometry({ radius: 1.05, height: 0.045, sides: 12, colorTop: 0x5a3d2e, colorSide: 0x2a1c17, squishZ: 0.62, seed: 19 }), vertexMat, [-0.04, 0.11, 0.02]);
+
+      const body = makeTaperedRingGeometry({
+        sides: 12,
+        seed: 21,
+        capTop: false,
+        rings: [
+          { y: 0.08, rx: 1.08, rz: 0.72, x: 0.00, z: 0.02, twist: 0.00, jitter: 0.09 },
+          { y: 0.30, rx: 0.93, rz: 0.62, x: -0.04, z: 0.00, twist: 0.08, jitter: 0.10 },
+          { y: 0.58, rx: 0.72, rz: 0.50, x: 0.02, z: -0.02, twist: 0.17, jitter: 0.10 },
+          { y: 0.82, rx: 0.52, rz: 0.38, x: 0.00, z: -0.03, twist: 0.28, jitter: 0.10 },
+          { y: 1.02, rx: 0.48, rz: 0.34, x: 0.03, z: -0.02, twist: 0.36, jitter: 0.14 },
+          { y: 1.12, rx: 0.58, rz: 0.39, x: 0.00, z: -0.01, twist: 0.43, jitter: 0.18 },
+          { y: 1.03, rx: 0.31, rz: 0.21, x: 0.01, z: -0.01, twist: 0.50, jitter: 0.16 },
+          { y: 0.94, rx: 0.20, rz: 0.14, x: 0.02, z: 0.00, twist: 0.60, jitter: 0.10 },
+        ],
+        colors: [0x6b4b36, 0x744c34, 0x654130, 0x55362b, 0x342620, 0x7b5135, 0x251916, 0x15100e],
+      });
+      addMesh(group, body, vertexMat);
+
+      // Crater floor and lava river are separate material accents.
+      addMesh(group, makeIrregularDiscGeometry({ radius: 0.23, height: 0.018, sides: 8, colorTop: 0x21110c, colorSide: 0x100908, squishZ: 0.72, seed: 24 }), vertexMat, [0.02, 0.96, -0.005]);
+      addMesh(group, makeIrregularDiscGeometry({ radius: 0.12, height: 0.014, sides: 7, colorTop: 0xe96632, colorSide: 0x782713, squishZ: 0.74, seed: 26 }), lavaMat, [0.04, 0.98, -0.01]);
+      addMesh(group, makeLavaRibbonGeometry(), lavaMat, [0, 0, 0], [1, 1, 1]);
+
+      // Basalt blocks around the cone base.
+      for (const [x, z, s, r] of [[-0.78, 0.52, 0.18, 0.2], [-0.52, -0.62, 0.14, 1.1], [0.70, -0.48, 0.16, 0.4], [0.82, 0.38, 0.12, 2.0]]) {
+        addMesh(group, makeFacetedBlobGeometry({ radius: s, sides: 7, layers: 4, colorBottom: 0x241c19, colorTop: 0x5d4a3c, flatten: 0.44, seed: 31 + r }), vertexMat, [x, 0.19, z], [1.22, 0.52, 0.88], [0.12, r, 0.03]);
+      }
+
+      // Smoke plume: blocky low-poly forms, not transparent spheres.
+      const plume = new THREE.Group();
+      plume.position.set(0.08, 1.28, -0.02);
+      group.add(plume);
+      for (const [x, y, z, radius, scale, seed] of [
+        [0.02, 0.00, 0.00, 0.19, [0.92, 0.66, 0.78], 41],
+        [0.16, 0.26, 0.02, 0.25, [1.12, 0.72, 0.86], 42],
+        [0.35, 0.56, -0.03, 0.31, [1.22, 0.78, 0.92], 43],
+        [0.55, 0.88, 0.02, 0.24, [1.06, 0.62, 0.82], 44],
+      ]) {
+        addMesh(plume, makeFacetedBlobGeometry({ radius, sides: 8, layers: 4, colorBottom: 0xa69d8b, colorTop: 0xe0d8c8, flatten: 0.72, seed }), smokeMat, [x, y, z], scale, [0.04, seed * 0.11, 0.02]);
+      }
+
+      return group;
+    }
+
+    const tree = createTreeModule();
+    const volcano = createVolcanoModule();
+    root.add(tree, volcano);
+
+    const divider = addMesh(root, new THREE.BoxGeometry(0.018, 3.3, 0.018), material(0xf6ecd8, { opacity: 0.15, depthWrite: false }), [0, 1.36, -0.82]);
+    divider.castShadow = false;
+    divider.receiveShadow = false;
+
+    let targetRot = 0;
+    let dragging = false;
+    let lastX = 0;
+    canvas.addEventListener('pointerdown', (event) => {
+      dragging = true;
+      lastX = event.clientX;
+      canvas.setPointerCapture(event.pointerId);
+    });
+    canvas.addEventListener('pointermove', (event) => {
+      if (!dragging) return;
+      const dx = event.clientX - lastX;
+      lastX = event.clientX;
+      targetRot += dx * 0.006;
+    });
+    canvas.addEventListener('pointerup', () => { dragging = false; });
+    canvas.addEventListener('pointercancel', () => { dragging = false; });
+
+    function resize() {
+      const rect = canvas.getBoundingClientRect();
+      const w = Math.max(1, Math.floor(rect.width));
+      const h = Math.max(1, Math.floor(rect.height));
+      if (canvas.width !== w || canvas.height !== h) renderer.setSize(w, h, false);
+      camera.aspect = w / h;
+      camera.updateProjectionMatrix();
+    }
+
+    function animate(time) {
+      resize();
+      if (!dragging) targetRot += 0.0009;
+      root.rotation.y += (targetRot - root.rotation.y) * 0.08;
+      tree.rotation.y = Math.sin(time * 0.00035) * 0.05;
+      volcano.rotation.y = Math.sin(time * 0.00032 + 1.2) * 0.04;
+      renderer.render(scene, camera);
+      requestAnimationFrame(animate);
+    }
+    requestAnimationFrame(animate);
+  </script>
+</body>
+</html>

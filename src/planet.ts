@@ -2,7 +2,7 @@ import { mulberry32 } from './utils/noise';
 import * as THREE from 'three';
 import { Globe } from './globe/Globe';
 import { Trees } from './features/Trees';
-import { PalmTrees } from './features/PalmTrees';
+import { Volcanoes } from './features/Volcanoes';
 import { Reefs } from './features/Reefs';
 import { Flowers } from './features/Flowers';
 import { Grass } from './features/Grass';
@@ -18,6 +18,8 @@ import { Animals } from './features/Animals';
 export interface MountOptions {
   /** Called once, after the first frame is painted (dismiss the loading screen). */
   onReady?: () => void;
+  /** Called after every WebGL render so UI glass can copy the live backdrop. */
+  onAfterRender?: (canvas: HTMLCanvasElement) => void;
 }
 
 /**
@@ -40,7 +42,7 @@ export function mountPlanet(container: HTMLElement, opts: MountOptions = {}): ()
   const height = container.clientHeight || window.innerHeight;
 
   // --- Renderer ---
-  const renderer = new THREE.WebGLRenderer({ antialias: true });
+  const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   renderer.setSize(width, height);
   renderer.toneMapping = THREE.NoToneMapping;
@@ -71,8 +73,8 @@ export function mountPlanet(container: HTMLElement, opts: MountOptions = {}): ()
   // --- Terrain features ---
   const trees = new Trees(globe.terrainData);
   scene.add(trees.group);
-  const palmTrees = new PalmTrees(globe.terrainData);
-  scene.add(palmTrees.group);
+  const volcanoes = new Volcanoes(globe.snapToSurface);
+  scene.add(volcanoes.group);
   const reefs = new Reefs(globe.terrainData);
   scene.add(reefs.group);
   const flowers = new Flowers(globe.terrainData);
@@ -106,9 +108,12 @@ export function mountPlanet(container: HTMLElement, opts: MountOptions = {}): ()
   const stars = new Stars();
   scene.add(stars.points);
 
-  // --- Lighting: Self-illuminating (no sun, sky-driven) ---
+  // --- Lighting: soft sky fill + a weak key light for terrain relief ---
   const ambientLight = new THREE.AmbientLight('#ffffff', 5.0);
   scene.add(ambientLight);
+  const reliefLight = new THREE.DirectionalLight('#fff8e8', 1.2);
+  reliefLight.position.set(-5, 7, 6);
+  scene.add(reliefLight);
 
   // --- Animation loop ---
   const clock = new THREE.Clock();
@@ -128,7 +133,9 @@ export function mountPlanet(container: HTMLElement, opts: MountOptions = {}): ()
     const skyBrightness = (state.hemiSkyColor.r + state.hemiSkyColor.g + state.hemiSkyColor.b) / 3;
     const brightnessFactor = Math.max(0.4, skyBrightness * 2);
     ambientLight.color.copy(state.hemiSkyColor).lerp(new THREE.Color('#ffffff'), 0.6);
-    ambientLight.intensity = 2.5 * brightnessFactor;
+    ambientLight.intensity = 1.85 * brightnessFactor;
+    reliefLight.color.copy(state.sunColor).lerp(new THREE.Color('#ffffff'), 0.35);
+    reliefLight.intensity = Math.max(0.35, state.sunIntensity * 0.32) * brightnessFactor;
 
     // --- Fog ---
     if (scene.fog instanceof THREE.Fog) {
@@ -153,7 +160,7 @@ export function mountPlanet(container: HTMLElement, opts: MountOptions = {}): ()
 
     // --- Terrain features ---
     trees.update(elapsed);
-    palmTrees.update(elapsed);
+    volcanoes.update(elapsed);
     reefs.update(elapsed);
     flowers.update(elapsed);
     grass.update(elapsed);
@@ -161,6 +168,7 @@ export function mountPlanet(container: HTMLElement, opts: MountOptions = {}): ()
 
     cameraController.update(deltaTime);
     renderer.render(scene, cameraController.camera);
+    opts.onAfterRender?.(renderer.domElement);
     labels.update(cameraController.camera);
     labelRenderer.render(scene, cameraController.camera);
 
