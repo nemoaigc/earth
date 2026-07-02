@@ -2,10 +2,11 @@ import * as THREE from 'three';
 import type { TerrainData } from '../globe/terrain';
 
 // 4 shape variants so not every rock looks identical.
-// Each is a squashed IcosahedronGeometry(1, 0) — 20 angular faces, clearly a rock.
+// Each is a squashed IcosahedronGeometry(1, 1) — enough faces to catch light,
+// but still angular enough to read as a natural stone.
 // Geometry Y is strongly flattened so rocks sit wide & low on terrain.
 const VARIANTS = 4;
-const PER_VARIANT = 18; // 4 × 18 = 72 rocks total
+const PER_VARIANT = 24; // 4 × 24 = 96 rocks total
 
 const BIOME_COLORS: Record<string, THREE.Color> = {
   tropical:  new THREE.Color('#8A7A6A'),
@@ -15,6 +16,7 @@ const BIOME_COLORS: Record<string, THREE.Color> = {
   polar:     new THREE.Color('#B0BCC8'),
 };
 const DEFAULT_COLOR = new THREE.Color('#8A8070');
+const VOLCANIC_COLOR = new THREE.Color('#3A302B');
 
 /**
  * One boulder geometry: IcosahedronGeometry(1,0) with each vertex non-uniformly
@@ -24,7 +26,7 @@ const DEFAULT_COLOR = new THREE.Color('#8A8070');
  */
 function buildVariant(seed: number): THREE.BufferGeometry {
   // Clone from a fresh icosahedron each time
-  const geo = new THREE.IcosahedronGeometry(1, 0);
+  const geo = new THREE.IcosahedronGeometry(1, 1);
   const pos = geo.getAttribute('position') as THREE.BufferAttribute;
   const rng = (i: number) => Math.abs(Math.sin(seed * 127.1 + i * 311.7));
 
@@ -50,12 +52,12 @@ export class Rocks {
     // double-multiplication that turned everything black.
     const material = new THREE.MeshPhongMaterial({
       color: new THREE.Color('#ffffff'),
-      flatShading: true,
-      shininess: 12,
+      flatShading: false,
+      shininess: 18,
     });
 
     const eligible = terrainData.landPoints.filter(
-      p => p.height > 0.08 && p.height < 0.58,
+      p => p.height > 0.08 && p.height < 0.62 && (p.height > 0.16 || p.mountain > 0.20 || p.volcanic > 0.12),
     );
     if (eligible.length === 0) return;
 
@@ -79,7 +81,8 @@ export class Rocks {
       const mesh = meshes[i % VARIANTS];
       if (mesh.count >= PER_VARIANT) continue;
 
-      const color = BIOME_COLORS[p.biome] ?? DEFAULT_COLOR;
+      const color = (BIOME_COLORS[p.biome] ?? DEFAULT_COLOR).clone();
+      if (p.volcanic > 0.12) color.lerp(VOLCANIC_COLOR, Math.min(0.65, p.volcanic));
 
       dummy.position.copy(p.position);
       // Orient so geometry +Y points away from globe centre (= up from terrain)

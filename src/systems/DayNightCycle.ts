@@ -68,7 +68,7 @@ const KEY_FRAMES: KeyFrame[] = [
     fogColor: c('#60ccde'), fogNear: 15, fogFar: 40,
     atmosphereColor: c('#bbddcc'),
     oceanShallow: c('#4ab8e0'), oceanDeep: c('#2268b0'), oceanFoam: c('#ddf8ff'),
-    cloudOpacity: 0.2, starVisibility: 0, auroraVisibility: 0, rainIntensity: 0,
+    cloudOpacity: 0.2, starVisibility: 0.24, auroraVisibility: 0, rainIntensity: 0,
   },
   { // SUNSET (0.45) — darker blue
     time: 0.45,
@@ -84,7 +84,7 @@ const KEY_FRAMES: KeyFrame[] = [
     fogColor: c('#182840'), fogNear: 12, fogFar: 35,
     atmosphereColor: c('#3366aa'),
     oceanShallow: c('#1e4070'), oceanDeep: c('#122850'), oceanFoam: c('#556688'),
-    cloudOpacity: 0.2, starVisibility: 0.1, auroraVisibility: 0, rainIntensity: 0,
+    cloudOpacity: 0.2, starVisibility: 0.42, auroraVisibility: 0, rainIntensity: 0,
   },
   { // NIGHT (0.70) — boosted so planet stays visible at distance
     time: 0.70,
@@ -117,7 +117,7 @@ const KEY_FRAMES: KeyFrame[] = [
     fogColor: c('#182840'), fogNear: 12, fogFar: 35,
     atmosphereColor: c('#3366aa'),
     oceanShallow: c('#1e4070'), oceanDeep: c('#122850'), oceanFoam: c('#556688'),
-    cloudOpacity: 0.15, starVisibility: 0.2, auroraVisibility: 0, rainIntensity: 0,
+    cloudOpacity: 0.15, starVisibility: 0.48, auroraVisibility: 0, rainIntensity: 0,
   },
 ];
 
@@ -169,7 +169,7 @@ export class DayNightCycle {
       fogColor: day.fogColor.clone(), fogNear: day.fogNear, fogFar: day.fogFar,
       atmosphereColor: day.atmosphereColor.clone(),
       cloudOpacity: day.cloudOpacity,
-      starVisibility: 0, auroraVisibility: 0, rainIntensity: 0,
+      starVisibility: day.starVisibility, auroraVisibility: 0, rainIntensity: 0,
       timeOfDay: 0.25,
       terrainTint: new THREE.Color('#ffffff'),
       oceanShallow: day.oceanShallow.clone(),

@@ -157,17 +157,19 @@ export class PalmTrees {
 
     const dummy = new THREE.Object3D();
     const shuffled = eligible.sort(() => Math.random() - 0.5);
+    const up = new THREE.Vector3(0, 1, 0);
 
     for (let i = 0; i < count; i++) {
       const point = shuffled[i];
+      const normal = point.normal.clone().normalize();
 
-      dummy.position.copy(point.position);
-      dummy.lookAt(0, 0, 0);
-      dummy.rotateX(Math.PI / 2);
+      dummy.position.copy(point.position).addScaledVector(normal, 0.004);
+      dummy.quaternion.setFromUnitVectors(up, normal);
 
       const scale = 0.8 + Math.random() * 0.4;
       dummy.scale.set(scale, scale, scale);
-      dummy.rotateY(Math.random() * Math.PI * 2);
+      const spin = new THREE.Quaternion().setFromAxisAngle(normal, Math.random() * Math.PI * 2);
+      dummy.quaternion.premultiply(spin);
 
       dummy.updateMatrix();
       this.mesh.setMatrixAt(i, dummy.matrix);

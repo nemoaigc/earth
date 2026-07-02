@@ -9,15 +9,16 @@ export class SkyDome {
 
   constructor() {
     this.canvas = document.createElement('canvas');
-    this.canvas.width = 64;
+    this.canvas.width = 256;
     this.canvas.height = 512;
     this.ctx = this.canvas.getContext('2d')!;
 
     this.texture = new THREE.CanvasTexture(this.canvas);
     this.texture.wrapS = THREE.ClampToEdgeWrapping;
     this.texture.wrapT = THREE.ClampToEdgeWrapping;
+    this.texture.generateMipmaps = false;
 
-    const geometry = new THREE.SphereGeometry(50, 32, 32);
+    const geometry = new THREE.SphereGeometry(50, 64, 32);
     const material = new THREE.MeshBasicMaterial({
       map: this.texture,
       side: THREE.BackSide,

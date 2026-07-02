@@ -33,43 +33,44 @@ function colorFlat(geo: THREE.BufferGeometry, color: THREE.Color): void {
 function buildFlowerGeometry(petalColor: THREE.Color, centerColor: THREE.Color): THREE.BufferGeometry {
   const parts: THREE.BufferGeometry[] = [];
 
-  // Stem
-  const stem = new THREE.CylinderGeometry(0.005, 0.006, 0.06, 4);
-  stem.translate(0, 0.03, 0);
-  colorFlat(stem, new THREE.Color('#4A8A3A'));
+  // Very short stem: flowers should read as ground colour flecks on the globe,
+  // not as tiny red-topped trees.
+  const stem = new THREE.CylinderGeometry(0.003, 0.004, 0.020, 4);
+  stem.translate(0, 0.010, 0);
+  colorFlat(stem, new THREE.Color('#3F7A32'));
   parts.push(ensureMergeReady(stem));
 
   // Small leaf on stem
-  const leaf = new THREE.SphereGeometry(0.012, 4, 3);
+  const leaf = new THREE.SphereGeometry(0.007, 4, 3);
   const lp = leaf.getAttribute('position');
   for (let i = 0; i < lp.count; i++) {
     lp.setY(i, lp.getY(i) * 0.3);
     lp.setX(i, lp.getX(i) * 1.5);
   }
-  leaf.translate(0.01, 0.025, 0);
+  leaf.translate(0.006, 0.010, 0);
   colorFlat(leaf, new THREE.Color('#5A9A4A'));
   parts.push(ensureMergeReady(leaf));
 
   // Center (pistil)
-  const center = new THREE.SphereGeometry(0.008, 5, 4);
-  center.translate(0, 0.065, 0);
+  const center = new THREE.SphereGeometry(0.005, 5, 4);
+  center.translate(0, 0.023, 0);
   colorFlat(center, centerColor);
   parts.push(ensureMergeReady(center));
 
   // 5 petals arranged around center
   for (let i = 0; i < 5; i++) {
     const angle = (i / 5) * Math.PI * 2;
-    const petal = new THREE.SphereGeometry(0.012, 4, 3);
+    const petal = new THREE.SphereGeometry(0.007, 4, 3);
     const pp = petal.getAttribute('position');
     // Flatten into petal shape
     for (let v = 0; v < pp.count; v++) {
       pp.setY(v, pp.getY(v) * 0.25);
       pp.setZ(v, pp.getZ(v) * 0.7);
     }
-    const px = Math.cos(angle) * 0.014;
-    const pz = Math.sin(angle) * 0.014;
+    const px = Math.cos(angle) * 0.008;
+    const pz = Math.sin(angle) * 0.008;
     petal.rotateY(angle);
-    petal.translate(px, 0.065, pz);
+    petal.translate(px, 0.023, pz);
     colorFlat(petal, petalColor);
     parts.push(ensureMergeReady(petal));
   }
@@ -119,7 +120,7 @@ export class Flowers {
         dummy.position.copy(p.position);
         dummy.lookAt(0, 0, 0);
         dummy.rotateX(Math.PI / 2);
-        dummy.scale.setScalar(0.7 + Math.random() * 0.6);
+        dummy.scale.setScalar(0.35 + Math.random() * 0.35);
         dummy.rotateY(Math.random() * Math.PI * 2);
         dummy.updateMatrix();
         mesh.setMatrixAt(i, dummy.matrix);

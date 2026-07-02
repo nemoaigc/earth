@@ -1,12 +1,15 @@
-import './animal-panel.css';
+// NOTE: animal-panel.css is imported from app/layout.tsx — Next only allows
+// global (non-module) CSS to be imported from the root layout.
 import type { AnimalInfo } from '../data/animals';
 import type { ChatMessage } from '../ai/types';
 import { getChat } from '../ai/registry';
 import soundManifest from '../../public/animal-sounds/manifest.json';
+import html2canvas from 'html2canvas';
 
 const STATUS_COLORS = {
-  extinct:    { bg: 'rgba(120, 122, 128, 0.14)', text: '#7f8794', label: 'EXTINCT'    },
-  endangered: { bg: 'rgba(255, 95, 87, 0.14)',   text: '#f85d54', label: 'ENDANGERED' },
+  // Stronger colours so the badge is readable on the dark hero veil.
+  extinct:    { bg: 'rgba(60, 65, 80, 0.55)',    text: '#E8ECF2', label: 'EXTINCT'    },
+  endangered: { bg: 'rgba(220, 60, 50, 0.55)',   text: '#FFFFFF', label: 'ENDANGERED' },
 } as const;
 
 type ChatState =
@@ -172,6 +175,7 @@ export class AnimalPanel {
 
     this.chatAbort?.abort();
     this.chatAbort = new AbortController();
+    const localAbort = this.chatAbort;
     this.chat = { status: 'streaming', turns: nextTurns, liveText: '' };
     // Use renderChatOnly for user-initiated messages so the shell's scroll
     // position is preserved — a full render() replaces the DOM node and
@@ -188,7 +192,7 @@ export class AnimalPanel {
 
     try {
       let buffer = '';
-      for await (const chunk of chat.stream(info, [...systemMessages, ...nextTurns], this.chatAbort.signal)) {
+      for await (const chunk of chat.stream(info, [...systemMessages, ...nextTurns], localAbort.signal)) {
         if (this.current?.id !== info.id) return;
         buffer += chunk;
         if (this.chat.status === 'streaming') {
@@ -208,11 +212,15 @@ export class AnimalPanel {
       }
 
     } catch (err) {
-      if (this.chatAbort?.signal.aborted) return;
+      if (localAbort.signal.aborted) return;
+      if (this.current?.id !== info.id) return;
+      // Don't show abort-related errors to user
+      const msg = err instanceof Error ? err.message : String(err);
+      if (msg.includes('abort') || msg.includes('signal')) return;
       this.chat = {
         status: 'error',
         turns: nextTurns,
-        message: err instanceof Error ? err.message : String(err),
+        message: msg,
       };
       this.render();
     }
@@ -277,6 +285,9 @@ export class AnimalPanel {
             </span>
             <button class="animal-panel__close" type="button" data-action="close" aria-label="Close">×</button>
           </div>
+          <button class="animal-panel__snap-btn" type="button" data-action="share" aria-label="Snap">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+          </button>
         </section>
 
         <div class="animal-panel__body">
@@ -302,15 +313,15 @@ export class AnimalPanel {
 
           <div class="animal-panel__summary">${escapeHtml(info.blurb)}</div>
 
-          <div class="animal-panel__actions">
-            <button class="animal-panel__action animal-panel__action--primary" type="button" data-action="explain">
-              <span class="animal-panel__action-label">${this.chat.status === 'streaming' ? 'Chatting…' : 'Chat'}</span>
+          <div class="animal-panel__bottom-actions">
+            <button class="animal-panel__bottom-btn" type="button" data-action="explain">
+              ${this.chat.status === 'streaming' ? 'Chatting…' : 'Chat'}
             </button>
-            <button class="animal-panel__action animal-panel__action--primary" type="button" data-action="sound" ${soundUnavailable ? 'disabled' : ''}>
-              <span class="animal-panel__action-label">${this.sound.status === 'playing' ? 'Playing…' : 'Listen'}</span>
+            <button class="animal-panel__bottom-btn" type="button" data-action="sound" ${soundUnavailable ? 'disabled' : ''}>
+              ${this.sound.status === 'playing' ? 'Playing…' : 'Listen'}
             </button>
-            <button class="animal-panel__action animal-panel__action--secondary" type="button" data-action="wiki">
-              <span class="animal-panel__action-label">Wiki</span>
+            <button class="animal-panel__bottom-btn" type="button" data-action="wiki">
+              Wiki
             </button>
           </div>
 
@@ -420,6 +431,9 @@ export class AnimalPanel {
       const info = this.current;
       if (info) this.openWiki(info.wikiTitle, info.name);
     });
+    this.container.querySelector<HTMLElement>('[data-action="share"]')?.addEventListener('click', () => {
+      void this.captureAndShare();
+    });
     this.bindChatInput();
   }
 
@@ -469,6 +483,58 @@ export class AnimalPanel {
     el.classList.remove('is-visible');
     this.wikiOverlay = null;
     setTimeout(() => el.remove(), 220);
+  }
+
+  private async captureAndShare() {
+    const shell = this.container.querySelector<HTMLElement>('.animal-panel__shell');
+    if (!shell) return;
+
+    // Temporarily expand shell to full content height for long screenshot
+    const origMaxH = shell.style.maxHeight;
+    const origOverflow = shell.style.overflow;
+    shell.style.maxHeight = 'none';
+    shell.style.overflow = 'visible';
+
+    try {
+      const canvas = await html2canvas(shell, {
+        backgroundColor: '#0a0c14',
+        scale: 2,
+        useCORS: true,
+        logging: false,
+      });
+
+      // Restore
+      shell.style.maxHeight = origMaxH;
+      shell.style.overflow = origOverflow;
+
+      // Try native share first (mobile), fallback to download
+      const blob = await new Promise<Blob | null>((resolve) =>
+        canvas.toBlob(resolve, 'image/png')
+      );
+      if (!blob) return;
+
+      const fileName = `${this.current?.id ?? 'animal'}-card.png`;
+
+      if (navigator.share && navigator.canShare) {
+        const file = new File([blob], fileName, { type: 'image/png' });
+        const shareData = { files: [file] };
+        if (navigator.canShare(shareData)) {
+          await navigator.share(shareData);
+          return;
+        }
+      }
+
+      // Fallback: download
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = fileName;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      shell.style.maxHeight = origMaxH;
+      shell.style.overflow = origOverflow;
+    }
   }
 
   private bindChatInput() {

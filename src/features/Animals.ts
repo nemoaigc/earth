@@ -52,16 +52,14 @@ export class Animals {
     // Event listeners
     domElement.addEventListener('mousemove', this.onMouseMove);
     domElement.addEventListener('click', this.onClick);
-    window.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape') this.deselect();
-    });
+    window.addEventListener('keydown', this.onKeyDown);
 
     // Load and place animals
     for (const info of ANIMALS) {
       const positions = this.getPositions(info, terrainData);
       if (positions.length === 0) continue;
 
-      loader.load(`animals/${info.id}.png`, (texture) => {
+      loader.load(`/animals/${info.id}.png`, (texture) => {
         texture.minFilter = THREE.LinearFilter;
         texture.magFilter = THREE.LinearFilter;
 
@@ -71,10 +69,15 @@ export class Animals {
             transparent: true,
             alphaTest: 0.1,
             depthWrite: false,
+            // Never let nearby trees / sprites occlude an animal. Combined
+            // with the dot-product back-face culling in update(), the
+            // sprite still only renders on the camera-facing hemisphere.
+            depthTest: false,
             fog: true,
           });
 
           const sprite = new THREE.Sprite(material);
+          sprite.renderOrder = 10;  // draw above terrain features
           const s = info.scale * 1.5 * (0.9 + Math.random() * 0.2);
           sprite.scale.set(s, s, s);
 
@@ -169,10 +172,17 @@ export class Animals {
     }
   };
 
+  private onKeyDown = (e: KeyboardEvent) => {
+    if (e.key === 'Escape') this.deselect();
+  };
+
   onSelect: ((info: AnimalInfo, position: THREE.Vector3) => void) | null = null;
+
+  private selectedAt = -1;
 
   private select(animal: PlacedAnimal) {
     this.selectedAnimal = animal;
+    this.selectedAt = performance.now() / 1000;
     this.panel.show(animal.info);
     this.tooltip.style.display = 'none';
     this.onSelect?.(animal.info, animal.sprite.position);
@@ -214,11 +224,10 @@ export class Animals {
     if (newHover !== this.hoveredAnimal) {
       this.hoveredAnimal = newHover;
       if (newHover && !this.selectedAnimal) {
-        const statusLabel = newHover.info.status === 'extinct' ? '已灭绝' : '濒危';
+        const statusLabel = newHover.info.status === 'extinct' ? 'EXTINCT' : 'ENDANGERED';
         this.tooltip.innerHTML = `
-          <span style="color:#86868b;font-size:11px;margin-right:6px;">${statusLabel}</span>
-          ${newHover.info.nameCn}
-          <span style="color:#86868b;font-size:11px;margin-left:4px;">${newHover.info.name}</span>
+          <span style="color:#86868b;font-size:11px;margin-right:6px;letter-spacing:0.08em;">${statusLabel}</span>
+          ${newHover.info.name}
         `;
         this.tooltip.style.display = 'block';
         this.domElement.style.cursor = 'pointer';
@@ -234,13 +243,25 @@ export class Animals {
       this.tooltip.style.top = `${this._tooltipY}px`;
     }
 
-    // Animate scales (hover effect)
+    // Animate scales. Selected animal gets a short bounce burst on
+    // top of the steady 1.8× hover/select scale — visible feedback
+    // that the click "took". Decays back to 1.8× in ~0.6s.
+    const now = performance.now() / 1000;
     for (const placed of this.placed) {
       const isHovered = placed === this.hoveredAnimal;
       const isSelected = placed === this.selectedAnimal;
-      const target = (isHovered || isSelected ? 1.8 : 1) * placed.baseScale;
+      let mult = isHovered || isSelected ? 1.8 : 1;
+      if (isSelected && this.selectedAt > 0) {
+        const dt = now - this.selectedAt;
+        if (dt < 1.0) {
+          // Bouncy spring: spike up then settle with multiple bounces
+          const k = Math.exp(-dt * 5);
+          mult += k * Math.cos(dt * 18) * 1.2;
+        }
+      }
+      const target = mult * placed.baseScale;
       const cur = placed.sprite.scale.x;
-      const next = cur + (target - cur) * 0.12;
+      const next = cur + (target - cur) * 0.18;
       placed.sprite.scale.set(next, next, next);
     }
   }
@@ -248,6 +269,7 @@ export class Animals {
   dispose() {
     this.domElement.removeEventListener('mousemove', this.onMouseMove);
     this.domElement.removeEventListener('click', this.onClick);
+    window.removeEventListener('keydown', this.onKeyDown);
     this.tooltip.remove();
     this.panel.dispose();
   }

@@ -22,7 +22,7 @@ export class CameraController {
 
   constructor(aspect: number, domElement: HTMLElement) {
     this.camera = new THREE.PerspectiveCamera(50, aspect, 0.1, 100);
-    this.camera.position.set(ORBIT_RADIUS * 0.5, 3, ORBIT_RADIUS * 0.87);
+    this.camera.position.set(-1.78, 14.34, 20.40);
     this.camera.lookAt(0, 0, 0);
 
     this.controls = new OrbitControls(this.camera, domElement);
@@ -91,5 +91,14 @@ export class CameraController {
   resize(aspect: number): void {
     this.camera.aspect = aspect;
     this.camera.updateProjectionMatrix();
+  }
+
+  /**
+   * Release OrbitControls' input listeners. OrbitControls binds a capture-phase
+   * keydown handler to the document (which outlives the canvas), so removing the
+   * canvas alone does not free it — this must be called on teardown.
+   */
+  dispose(): void {
+    this.controls.dispose();
   }
 }
