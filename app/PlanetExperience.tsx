@@ -7,6 +7,12 @@ import dynamic from 'next/dynamic';
 // Static-importing it makes DOMContentLoaded block on a large client bundle.
 const PlanetCanvas = dynamic(() => import('./PlanetCanvas'), { ssr: false });
 
+// Keep the liquid-glass refraction, but make it cheaper than the original
+// full-device-pixel-ratio copy path. The HUD is static and the planet rotates
+// slowly, so ~5fps still reads as live glass without hammering the GPU/CPU.
+const LIVE_GLASS_COPY_INTERVAL_MS = 200;
+const LIVE_GLASS_MAX_PIXEL_RATIO = 0.75;
+
 async function createLiquidGlassMapUrl(): Promise<string | null> {
   const width = 256;
   const height = 144;
@@ -108,7 +114,7 @@ function useLiquidGlassCopies(enabled: boolean) {
     if (!enabled) return;
 
     const now = performance.now();
-    if (now - lastCopyTimeRef.current < 66) return;
+    if (now - lastCopyTimeRef.current < LIVE_GLASS_COPY_INTERVAL_MS) return;
     lastCopyTimeRef.current = now;
 
     const sourceRect = sourceCanvas.getBoundingClientRect();
@@ -116,12 +122,19 @@ function useLiquidGlassCopies(enabled: boolean) {
 
     const scaleX = sourceCanvas.width / sourceRect.width;
     const scaleY = sourceCanvas.height / sourceRect.height;
+    const targetScale = Math.min(window.devicePixelRatio || 1, LIVE_GLASS_MAX_PIXEL_RATIO);
     const liveElements = new Set<HTMLElement>();
 
     for (const selector of GLASS_LENS_SELECTORS) {
       document.querySelectorAll<HTMLElement>(selector).forEach((element) => {
+        if (element.matches('.help-panel:not(.is-visible)')) return;
+        if (element.closest('.animal-panel:not(.is-visible), .wiki-overlay:not(.is-visible)')) return;
+
         const rect = element.getBoundingClientRect();
         if (rect.width <= 1 || rect.height <= 1) return;
+
+        const style = window.getComputedStyle(element);
+        if (style.display === 'none' || style.visibility === 'hidden' || Number(style.opacity) < 0.02) return;
 
         liveElements.add(element);
         let copy = copiesRef.current.get(element);
@@ -136,8 +149,8 @@ function useLiquidGlassCopies(enabled: boolean) {
           copiesRef.current.set(element, copy);
         }
 
-        const width = Math.max(1, Math.round(rect.width * scaleX));
-        const height = Math.max(1, Math.round(rect.height * scaleY));
+        const width = Math.max(1, Math.round(rect.width * targetScale));
+        const height = Math.max(1, Math.round(rect.height * targetScale));
         if (copy.canvas.width !== width || copy.canvas.height !== height) {
           copy.canvas.width = width;
           copy.canvas.height = height;
@@ -145,8 +158,8 @@ function useLiquidGlassCopies(enabled: boolean) {
 
         const sx = Math.max(0, Math.round((rect.left - sourceRect.left) * scaleX));
         const sy = Math.max(0, Math.round((rect.top - sourceRect.top) * scaleY));
-        const sw = Math.min(width, sourceCanvas.width - sx);
-        const sh = Math.min(height, sourceCanvas.height - sy);
+        const sw = Math.min(Math.round(rect.width * scaleX), sourceCanvas.width - sx);
+        const sh = Math.min(Math.round(rect.height * scaleY), sourceCanvas.height - sy);
         if (sw <= 0 || sh <= 0) return;
 
         copy.context.clearRect(0, 0, width, height);
@@ -164,13 +177,28 @@ function useLiquidGlassCopies(enabled: boolean) {
 }
 
 export default function PlanetExperience() {
-  const [ready, setReady] = useState(false);
+  const [canvasReady, setCanvasReady] = useState(false);
+  const [introReady, setIntroReady] = useState(false);
+  const [canvasFailed, setCanvasFailed] = useState(false);
+  const [loadingTimedOut, setLoadingTimedOut] = useState(false);
   const [helpOpen, setHelpOpen] = useState(true);
   const [glassMapUrl, setGlassMapUrl] = useState<string | null>(null);
+  const ready = (canvasReady || canvasFailed || loadingTimedOut) && introReady;
 
   // Stable callback so PlanetCanvas's effect mounts exactly once.
-  const handleReady = useCallback(() => setReady(true), []);
+  const handleReady = useCallback(() => setCanvasReady(true), []);
+  const handleError = useCallback(() => setCanvasFailed(true), []);
   const handleAfterRender = useLiquidGlassCopies(Boolean(glassMapUrl));
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => setIntroReady(true), 1300);
+    return () => window.clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => setLoadingTimedOut(true), 6000);
+    return () => window.clearTimeout(timer);
+  }, []);
 
   useEffect(() => {
     let disposed = false;
@@ -194,7 +222,7 @@ export default function PlanetExperience() {
 
   return (
     <>
-      <PlanetCanvas onReady={handleReady} onAfterRender={handleAfterRender} />
+      <PlanetCanvas onReady={handleReady} onAfterRender={handleAfterRender} onError={handleError} />
 
       <svg className="liquid-glass-filters" aria-hidden="true" focusable="false">
         <filter
@@ -219,7 +247,7 @@ export default function PlanetExperience() {
           <feDisplacementMap
             in="SourceGraphic"
             in2="lensMap"
-            scale="56"
+            scale="28"
             xChannelSelector="R"
             yChannelSelector="G"
             result="lensColor"
@@ -295,9 +323,7 @@ export default function PlanetExperience() {
         id="loading-screen"
         className={ready ? 'fade-out' : ''}
         aria-label="Loading Lost Planet"
-      >
-        <div className="ls-bar" />
-      </div>
+      />
     </>
   );
 }

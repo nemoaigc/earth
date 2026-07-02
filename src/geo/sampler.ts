@@ -2,8 +2,7 @@ import { noise3D } from '../utils/noise';
 import { globeLngToLon, localKmDelta } from './coordinates';
 import { LANDFORMS } from './data/landforms';
 import { MOUNTAIN_RANGES } from './data/mountain-ranges';
-import { VOLCANOES } from './data/volcanoes';
-import type { GeoPoint, GeoSample, LandformFeature, MountainRangeFeature, VolcanoFeature } from './types';
+import type { GeoPoint, GeoSample, LandformFeature, MountainRangeFeature } from './types';
 
 function clamp(v: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, v));
@@ -71,7 +70,6 @@ export function createGeoSample(): GeoSample {
     rift: 0,
     desert: 0,
     shield: 0,
-    volcano: 0,
   };
 }
 
@@ -91,7 +89,6 @@ function resetGeoSample(out: GeoSample): GeoSample {
   out.rift = 0;
   out.desert = 0;
   out.shield = 0;
-  out.volcano = 0;
   return out;
 }
 
@@ -144,27 +141,11 @@ function addLandform(lat: number, lon: number, feature: LandformFeature, out: Ge
   if (feature.kind === 'shield') out.shield = Math.max(out.shield, influence);
 }
 
-function addVolcano(lat: number, lon: number, volcano: VolcanoFeature, out: GeoSample): void {
-  const d = localKmDelta(volcano.position.lat, volcano.position.lon, lat, lon);
-  const distance = Math.sqrt(d.x * d.x + d.y * d.y);
-  if (distance >= volcano.radiusKm) return;
-
-  const falloff = Math.cos((distance / volcano.radiusKm) * Math.PI * 0.5);
-  const cone = Math.pow(falloff, 2.25);
-  out.elevation += volcano.elevation * cone;
-  out.roughness += 0.36 * falloff;
-  out.rock += volcano.rock * falloff;
-  out.volcanic += volcano.volcanic * falloff;
-  out.treeDensity -= volcano.volcanic * falloff * 0.24;
-  out.volcano = Math.max(out.volcano, falloff);
-}
-
 export function sampleGeo(lat: number, lon: number, out: GeoSample = createGeoSample()): GeoSample {
   resetGeoSample(out);
 
   for (const range of MOUNTAIN_RANGES) addMountain(lat, lon, range, out);
   for (const feature of LANDFORMS) addLandform(lat, lon, feature, out);
-  for (const volcano of VOLCANOES) addVolcano(lat, lon, volcano, out);
 
   const absLat = Math.abs(lat);
   out.moisture += (1 - smoothstep(0, 38, absLat)) * 0.10;

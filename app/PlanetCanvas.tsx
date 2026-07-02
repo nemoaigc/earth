@@ -12,9 +12,11 @@ import { mountPlanet } from '../src/planet';
 export default function PlanetCanvas({
   onReady,
   onAfterRender,
+  onError,
 }: {
   onReady?: () => void;
   onAfterRender?: (canvas: HTMLCanvasElement) => void;
+  onError?: (error: unknown) => void;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   // Keep the latest onReady without making it an effect dependency, so the
@@ -23,14 +25,22 @@ export default function PlanetCanvas({
   onReadyRef.current = onReady;
   const onAfterRenderRef = useRef(onAfterRender);
   onAfterRenderRef.current = onAfterRender;
+  const onErrorRef = useRef(onError);
+  onErrorRef.current = onError;
 
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
-    const dispose = mountPlanet(container, {
-      onReady: () => onReadyRef.current?.(),
-      onAfterRender: (canvas) => onAfterRenderRef.current?.(canvas),
-    });
+    let dispose: (() => void) | undefined;
+    try {
+      dispose = mountPlanet(container, {
+        onReady: () => onReadyRef.current?.(),
+        onAfterRender: (canvas) => onAfterRenderRef.current?.(canvas),
+      });
+    } catch (error) {
+      console.error('[Lost Planet] WebGL scene failed to start', error);
+      onErrorRef.current?.(error);
+    }
     return dispose;
   }, []);
 

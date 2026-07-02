@@ -38,18 +38,6 @@ export interface LandformFeature {
   treeDensityBias?: number;
 }
 
-export interface VolcanoFeature {
-  id: string;
-  name: string;
-  position: GeoPoint;
-  radiusKm: number;
-  elevation: number;
-  rock: number;
-  volcanic: number;
-  size: number;
-  smoke?: boolean;
-}
-
 export interface GeoSample {
   /** Extra stylized elevation contributed by real geographic features. */
   elevation: number;
@@ -67,7 +55,6 @@ export interface GeoSample {
   rift: number;
   desert: number;
   shield: number;
-  volcano: number;
 }
 
 export interface ClimateSample {

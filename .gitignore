@@ -44,3 +44,4 @@ next-env.d.ts
 !public/**/*.jpeg
 !public/**/*.jpg
 .vercel
+.gstack/

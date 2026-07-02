@@ -2,7 +2,6 @@ import { mulberry32 } from './utils/noise';
 import * as THREE from 'three';
 import { Globe } from './globe/Globe';
 import { Trees } from './features/Trees';
-import { Reefs } from './features/Reefs';
 import { Flowers } from './features/Flowers';
 import { Grass } from './features/Grass';
 import { SkyDome } from './sky/SkyDome';
@@ -41,7 +40,11 @@ export function mountPlanet(container: HTMLElement, opts: MountOptions = {}): ()
   const height = container.clientHeight || window.innerHeight;
 
   // --- Renderer ---
-  const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
+  const renderer = new THREE.WebGLRenderer({
+    antialias: true,
+    preserveDrawingBuffer: true,
+    powerPreference: 'high-performance',
+  });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   renderer.setSize(width, height);
   renderer.toneMapping = THREE.NoToneMapping;
@@ -72,8 +75,6 @@ export function mountPlanet(container: HTMLElement, opts: MountOptions = {}): ()
   // --- Terrain features ---
   const trees = new Trees(globe.terrainData);
   scene.add(trees.group);
-  const reefs = new Reefs(globe.terrainData);
-  scene.add(reefs.group);
   const flowers = new Flowers(globe.terrainData);
   scene.add(flowers.group);
   const grass = new Grass(globe.terrainData);
@@ -157,7 +158,6 @@ export function mountPlanet(container: HTMLElement, opts: MountOptions = {}): ()
 
     // --- Terrain features ---
     trees.update(elapsed);
-    reefs.update(elapsed);
     flowers.update(elapsed);
     grass.update(elapsed);
     animals.update(elapsed, cameraController.camera);
