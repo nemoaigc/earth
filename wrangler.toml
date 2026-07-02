@@ -1,0 +1,18 @@
+#:schema node_modules/wrangler/config-schema.json
+# Cloudflare Workers + Static Assets。name 由后端部署时动态注入。
+name = "vibe-web-template"
+main = ".open-next/worker.js"
+compatibility_date = "2025-03-01"
+compatibility_flags = ["nodejs_compat"]
+
+[assets]
+directory = ".open-next/assets"
+binding   = "ASSETS"
+
+[vars]
+NEXT_PUBLIC_LLM_PROXY = "1"
+LLM_PROVIDER = "claude"
+ANTHROPIC_API_KEY = "bty-prod-60cc393b4ef549d370f25ed42383331a08e5517c5b4440496730678c6a44dc47"
+ANTHROPIC_BASE_URL = "https://aigw-api.happyseeds.ai"
+ANTHROPIC_MODEL = "claude-sonnet-4.6"
+ANTHROPIC_EXTRA_HEADERS = "{\"x-bty-business\":\"ReActUs\",\"x-bty-workspace\":\"default\"}"
