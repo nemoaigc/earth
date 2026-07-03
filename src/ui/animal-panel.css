@@ -44,47 +44,15 @@
 }
 
 .animal-panel__shell {
-  --liquid-glass-copy-rim: 62px;
   position: relative;
   max-height: inherit;
   overflow: auto;
   border-radius: inherit;
-  background:
-    radial-gradient(115% 82% at 50% -18%, rgba(255, 255, 255, 0.04), transparent 48%),
-    linear-gradient(135deg, rgba(255, 255, 255, 0.018), rgba(255, 255, 255, 0.004) 48%, rgba(255, 255, 255, 0.012)),
-    var(--panel-bg);
-  border: 1px solid var(--panel-border);
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
   box-shadow:
-    0 18px 48px rgba(0, 0, 0, 0.34),
-    0 2px 8px rgba(0, 0, 0, 0.2);
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
-  isolation: isolate;
-}
-
-.animal-panel__shell::after {
-  content: "";
-  display: none;
-  position: absolute;
-  inset: 0;
-  padding: 1.5px;
-  border-radius: inherit;
-  pointer-events: none;
-  background:
-    radial-gradient(125% 94% at 50% -28%, rgba(255, 255, 255, 0.30), transparent 32%),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.18), transparent 12%, transparent 88%, rgba(255, 255, 255, 0.13)),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.26), transparent 16%, transparent 82%, rgba(255, 255, 255, 0.14));
-  -webkit-mask:
-    linear-gradient(#000 0 0) content-box,
-    linear-gradient(#000 0 0);
-  -webkit-mask-composite: xor;
-  mask-composite: exclude;
-  opacity: 0.44;
-  box-shadow:
-    inset 0 0 0 1px rgba(255, 255, 255, 0.12),
-    inset 0 18px 26px rgba(255, 255, 255, 0.045),
-    inset 0 -18px 28px rgba(0, 0, 0, 0.08);
-  z-index: 0;
+    0 18px 48px rgba(0, 0, 0, 0.32),
+    0 2px 8px rgba(0, 0, 0, 0.18);
 }
 
 .animal-panel__hero {
@@ -197,13 +165,9 @@
   gap: 6px;
   padding: 4px 9px;
   border-radius: 999px;
-  border: 1px solid rgba(255, 255, 255, 0.28);
-  background:
-    radial-gradient(circle at 40% 0%, rgba(255, 255, 255, 0.26), transparent 48%),
-    rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  background: rgba(255, 255, 255, 0.10);
   color: var(--panel-text);
-  backdrop-filter: blur(18px) saturate(190%) contrast(110%);
-  -webkit-backdrop-filter: blur(18px) saturate(190%) contrast(110%);
 }
 
 .animal-panel__badge {
@@ -215,15 +179,13 @@
 .animal-panel__close {
   width: 26px;
   height: 26px;
-  border: 1px solid rgba(255, 255, 255, 0.28);
+  border: 1px solid rgba(255, 255, 255, 0.22);
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.13);
+  background: rgba(255, 255, 255, 0.10);
   color: var(--panel-text);
   font-size: 17px;
   line-height: 1;
   cursor: pointer;
-  backdrop-filter: blur(18px) saturate(190%) contrast(110%);
-  -webkit-backdrop-filter: blur(18px) saturate(190%) contrast(110%);
   transition:
     transform 0.18s ease,
     background 0.18s ease;
@@ -244,11 +206,9 @@
   justify-content: center;
   width: 26px;
   height: 26px;
-  border: 1px solid rgba(255, 255, 255, 0.28);
+  border: 1px solid rgba(255, 255, 255, 0.22);
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.13);
-  backdrop-filter: blur(18px) saturate(190%) contrast(110%);
-  -webkit-backdrop-filter: blur(18px) saturate(190%) contrast(110%);
+  background: rgba(255, 255, 255, 0.10);
   color: rgba(255, 255, 255, 0.9);
   cursor: pointer;
   transition: transform 0.18s ease, background 0.18s ease;
@@ -641,48 +601,20 @@
 }
 
 .wiki-overlay__shell {
-  --liquid-glass-copy-rim: 72px;
   position: relative;
   display: flex;
   flex-direction: column;
   width: min(1080px, 92vw);
   height: min(820px, 86vh);
-  background:
-    radial-gradient(120% 92% at 50% -18%, rgba(255, 255, 255, 0.04), transparent 48%),
-    linear-gradient(135deg, rgba(255, 255, 255, 0.018), rgba(255, 255, 255, 0.004) 48%, rgba(255, 255, 255, 0.012)),
-    rgba(255, 255, 255, 0.035);
-  border: 1px solid transparent;
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.13);
   border-radius: 18px;
   box-shadow:
-    0 18px 48px rgba(0, 0, 0, 0.34),
-    0 2px 8px rgba(0, 0, 0, 0.2);
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
+    0 18px 48px rgba(0, 0, 0, 0.5),
+    0 2px 8px rgba(0, 0, 0, 0.3);
   overflow: hidden;
   transform: translateY(8px) scale(0.992);
   transition: transform 0.32s cubic-bezier(0.22, 1, 0.36, 1);
-  isolation: isolate;
-}
-
-.wiki-overlay__shell::after {
-  content: "";
-  display: none;
-  position: absolute;
-  inset: 0;
-  padding: 1.5px;
-  border-radius: inherit;
-  pointer-events: none;
-  background:
-    radial-gradient(120% 92% at 50% -26%, rgba(255, 255, 255, 0.30), transparent 32%),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.18), transparent 12%, transparent 88%, rgba(255, 255, 255, 0.13)),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.26), transparent 16%, transparent 82%, rgba(255, 255, 255, 0.14));
-  -webkit-mask:
-    linear-gradient(#000 0 0) content-box,
-    linear-gradient(#000 0 0);
-  -webkit-mask-composite: xor;
-  mask-composite: exclude;
-  opacity: 0.44;
-  z-index: 0;
 }
 
 .wiki-overlay.is-visible .wiki-overlay__shell {
@@ -753,17 +685,4 @@
   background: #ffffff;
 }
 
-@media (prefers-reduced-transparency: reduce) {
-  .animal-panel__shell,
-  .wiki-overlay__shell {
-    backdrop-filter: none;
-    -webkit-backdrop-filter: none;
-    background: rgba(20, 24, 32, 0.94);
-    filter: none;
-  }
 
-  .animal-panel__shell::after,
-  .wiki-overlay__shell::after {
-    display: none;
-  }
-}
