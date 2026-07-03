@@ -33,6 +33,12 @@
     ".next/dev/types/**/*.ts"
   ],
   "exclude": [
-    "node_modules"
+    "node_modules",
+    "components",
+    "hooks",
+    "lib",
+    "utils",
+    "db",
+    "drizzle.config.ts"
   ]
 }
