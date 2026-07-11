@@ -12,6 +12,12 @@ const nextConfig: NextConfig = {
   // Hide the Next.js dev indicator (the bottom-left logo button) in `next dev`.
   // It never appears in production builds anyway.
   devIndicators: false,
+  env: {
+    PROJECT_ID: process.env.HAPPYSEEDS_PROJECT_ID ?? '',
+    REACTUS_BASE_URL: process.env.REACTUS_BASE_URL ?? '',
+    NEXT_PUBLIC_PROJECT_ID: process.env.HAPPYSEEDS_PROJECT_ID ?? '',
+    NEXT_PUBLIC_REACTUS_BASE_URL: process.env.REACTUS_BASE_URL ?? '',
+  },
 };
 
 export default nextConfig;

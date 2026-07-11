@@ -11,6 +11,8 @@ binding   = "ASSETS"
 
 [vars]
 NEXT_PUBLIC_LLM_PROXY = "1"
+HAPPYSEEDS_PROJECT_ID = "81092ce5d8ae49c6be0c88f5b2452760"
+REACTUS_BASE_URL = "https://reactus-api.happyseeds.ai"
 LLM_PROVIDER = "claude"
 ANTHROPIC_API_KEY = "bty-prod-60cc393b4ef549d370f25ed42383331a08e5517c5b4440496730678c6a44dc47"
 ANTHROPIC_BASE_URL = "https://aigw-api.happyseeds.ai"
